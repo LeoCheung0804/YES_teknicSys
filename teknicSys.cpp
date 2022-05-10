@@ -8,75 +8,72 @@
 #include <vector>
 #include <conio.h>
 #include <Windows.h>
-#include "pose_to_length.h"
+#include "CDPR.h"
 #include "Dependencies\sFoundation20\inc\pubSysCls.h"
-#include "Dependencies\DynamixelSDK-3.7.31\include\dynamixel_sdk\dynamixel_sdk.h"
+// #include "Dependencies\DynamixelSDK-3.7.31\include\dynamixel_sdk\dynamixel_sdk.h"
 
 using namespace std;
 using namespace sFnd;
 
-bool SetSerialParams();
+bool SetSerialParams(HANDLE hComm);
+void SendGripperSerial(HANDLE hComm, unsigned char* Ard_char);
 int CheckMotorNetwork();
-int RunParaBlend(double point[7], bool showAttention = false);
-void RunBricksTraj(bool groupSyncRead, int listOffset, bool showAttention = false, bool waitBtn = false);
-void ReverseBricksTraj(bool groupSyncRead, int listOffset, bool showAttention = false);
-void RunDemoTraj(bool groupSyncRead, bool showAttention = false);
-void SendMotorGrp(bool IsTorque = false, bool IsLinearRail = false);
-int32_t ToMotorCmd(int motorID, double length);
-void TrjHome();
-bool CheckLimits();
+int RunParaBlend(CDPR &r, double point[7], bool showAttention = false);
+void RunBricksTraj(HANDLE hComm, CDPR &r, unsigned char* Ard_char, int listOffset, bool showAttention = false, bool waitBtn = false);
+void ReverseBricksTraj(CDPR &r, int listOffset, bool showAttention = false);
+void RunTrajPoints(CDPR &r);
+void SendMotorGrp(CDPR &r, bool IsTorque = false, bool IsLinearRail = false);
+// int32_t ToMotorCmd(CDPR r, int motorID, double length);
+void TrjHome(CDPR &r);
+// bool CheckLimits();
 bool ReadBricksFile();
-void HomeLinearRail(int n);
+// void HomeLinearRail(int n);
 void MN_DECL AttentionDetected(const mnAttnReqReg &detected); // this is attention from teknic motors
 
 vector<string> comHubPorts;
 vector<INode*> nodeList; // create a list for each node
 vector<vector<double>> brickPos;
-vector<double> spcLimit;
+// vector<double> spcLimit;
 unsigned int portCount;
 char attnStringBuf[512]; // Create a buffer to hold the attentionReg information    
-const int NodeNum = 8; // !!!!! IMPORTANT !!!!! Put in the number of motors before compiling the programme
+// const int NodeNum = 8; // !!!!! IMPORTANT !!!!! Put in the number of motors before compiling the programme
 const double RAIL_UP = 1.25, RAIL_DOWN = 0; // Linear rail upper and lower bound
-const double endEffOffset = -0.125; // meters, offset from endeffector to ground
+// const double endEffOffset = -0.125; // meters, offset from endeffector to ground // YES -0.280
 double step = 0.01; // in meters, for manual control
 float targetTorque = -4.1; //2.5 in %, -ve for tension, also need to UPDATE in switch case 't'!!!!!!!!!
-const float absTorqueLmt = 60.0; // Absolute torque limit, to be checked before commanding 8 motors to move simutaneously in length command
+// const float absTorqueLmt = 60.0; // Absolute torque limit, to be checked before commanding 8 motors to move simutaneously in length command
 const int MILLIS_TO_NEXT_FRAME = 35, UserInput_Sec_Timeout = 15, SleepTime = 21; // note the basic calculation time is abt 16ms; sleep-time in 24 hr
-double home[6] = {7.3, 6.2, -1.6, 0, 0, 0}; // home posisiton
-double offset[8]; //12 L0, from "zero position", will be updated by "set home" command
-double railOffset = 0.969599; // linear rails offset
-double in1[6] = {1.5, 1.5, 1.4, 0, 0, 0};
-double out1[8] = {2.87451, 2.59438, 2.70184, 2.40053, 2.46908, 2.15523, 2.65123, 2.35983}; //12 assume there are 8 motors + 4 linear rails
-double a[6], b[6], c[6], d[6], e[6], f[6], g[6], tb[6]; // trajectory coefficients
+// double home[6] = {7.3, 6.2, -2.3, 0, 0, 0}; // home posisiton
+// double offset[8]; //12 L0, from "zero position", will be updated by "set home" command
+double railOffset = 0.0; // linear rails offset
+// double in1[6] = {7.3, 6.2, -2.3, 0, 0, 0};
+// double out1[8] = {2.87451, 2.59438, 2.70184, 2.40053, 2.46908, 2.15523, 2.65123, 2.35983}; //12 assume there are 8 motors + 4 linear rails
+// double a[6], b[6], c[6], d[6], e[6], f[6], g[6], tb[6]; // trajectory coefficients
 char limitType = 'C'; // A for home, B for limits, C for default
 char quitType = 'r'; // q for emergency quit, f for finish traj, e for error msg received, r for resume/default
 int loopCount = 0, abbCount = 0; // log info for loop numbers and error occurs daily
 
-/*dynamixel::PortHandler *portHandler;
-dynamixel::PacketHandler *packetHandler;
-uint8_t dxl_error = 0; // Dynamixel error
-int32_t dxl1Pos = 0, dxl2Pos = 0, gpOpen = -30, gpClose = 80, neutralRot = 1820; // define some position reading, and gripper commands. neutralRot is 1024.90 deg // 1820 is 160 deg
-int dxl_comm_result, rotationG, gripperG, dxl_pre_pos = 0;
-const int DXL1_ID = 1, DXL2_ID = 2; //dxl 1 is rotation motor, dxl 2 is gripper motor
-const int ADDR_TORQUE_ENABLE = 64, ADDR_GOAL_POSITION = 116, ADDR_PRESENT_POSITION = 132, ADDR_GOAL_CURRENT = 102, ADDR_PRESENT_CURRENT = 126; // Control table adresses
-const int LEN_GOAL_POSITION = 4, LEN_PRESENT_POSITION = 4, LEN_GOAL_CURRENT = 2, LEN_PRESENT_CURRENT = 2, DXL_THRESHOLD = 10;*/
 bool groupSyncRead = true;
 
-HANDLE hComm; // Handle to the Serial port, https://github.com/xanthium-enterprises/Serial-Programming-Win32API-C
-DWORD dwEventMask, BytesRead, dNoOfBytesWritten = 0;
-bool Status;
-char ComPortName[] = "\\\\.\\COM33"; // Name of the arduino Serial port(May Change) to be opened,
-unsigned char tmp, msg[256], Ard_char[] = {'s'};
-
 int main()
-{     
-    //// Open serial port for Arduino
+{   
+    CDPR robot; // Read model.json and create object
+    if(!robot.IsGood()){ return -1; } // quit programme if object creation
+    robot.PrintHome();
+    targetTorque = robot.TargetTorque();
+    
+    // Local varia)bles for COM port communication
+    HANDLE hComm; // Handle to the Serial port, https://github.com/xanthium-enterprises/Serial-Programming-Win32API-C
+    char ComPortName[] = "\\\\.\\COM9"; // Name of the arduino Serial port(May Change) to be opened,
+    unsigned char Ard_char[8] = {'(','o',',',' ',' ',' ',' ',')'};
+
+    //// Open serial port for Arduino with bluetooth
     hComm = CreateFile(ComPortName, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
     if (hComm == INVALID_HANDLE_VALUE){ cout << "Error: " << ComPortName << " cannot be opened.\n"; }
     else { cout << ComPortName << " opened.\n"; }
-    if (!SetSerialParams()) { return -1; }
+    if (!SetSerialParams(hComm)) { return -1; }
     
-    //// initiallize cable robot motor network
+    //// Initiallize cable robot motor network
     SysManager* myMgr = SysManager::Instance();
     // Start the programme, scan motors in network
     try{
@@ -91,22 +88,24 @@ int main()
         return -1;
     }
     IPort &myPort = myMgr->Ports(2);
-    pose_to_length(home, offset); // save offset values according to home pose
+    // pose_to_length(home, offset); // save offset values according to home pose
+    robot.PoseToLength(robot.home, robot.offset); // save offset values according to home pose
 
-    cout << "Motor network available. Pick from menu for the next action:\nt - Tighten cables with Torque mode\ny - Loose the cables\ns - Set current position as home\nh - Move to Home\n8 - Manually adjust cable lengths\nl - Linear rails motions\nu - Update current position from external file\nr - Reset Rotation to zero\ni - Info: show menu\nn - Move on to Next step" << endl;
+    cout << "Motor network available. Pick from menu for the next action:\nt - Tighten cables with Torque mode\ny - Loose the cables\nh - Move to Home\n8 - Manually adjust cable lengths\nl - Linear rails motions\nu - Update current position from external file\nr - Reset Rotation to zero\ni - Info: show menu\nn - Move on to Next step" << endl;
     char cmd;
     try{
         do {
             bool allDone = false, stabilized = false;
-            time_t now = time(0); time_t timeout = now + UserInput_Sec_Timeout; cmd = 'u'; // default value
-            while(now < timeout){
-                Sleep(50);
-                now = time(0);
-                if(kbhit()){ cin >> cmd; break; }
-            }
+            // time_t now = time(0); time_t timeout = now + UserInput_Sec_Timeout; cmd = 'u'; // default value
+            // while(now < timeout){
+            //     Sleep(50);
+            //     now = time(0);
+            //     if(kbhit()){ cin >> cmd; break; }
+            // }
+            cin >> cmd;
             switch (cmd){
                 case 'i':   // Show menu
-                    cout << "Pick from menu for the next action:\nt - Tighten cables with Torque mode\ny - Loose the cables\ns - Set current position as home\nh - Move to Home\n8 - Manually adjust cable lengths\nl - Linear rails motions\nu - Update current position from external file\nr - Reset Rotation to zero\ni - Info: show menu\nn - Move on to Next step\n";
+                    cout << "Pick from menu for the next action:\nt - Tighten cables with Torque mode\ny - Loose the cables\nh - Move to Home\n8 - Manually adjust cable lengths\nl - Linear rails motions\nu - Update current position from external file\nr - Reset Rotation to zero\ni - Info: show menu\nn - Move on to Next step\n";
                     break;
                 case 'y':   // Loosen cables using positive torque
                     targetTorque = 1;
@@ -114,9 +113,9 @@ int main()
                     cout << "Current target torque = " << targetTorque << endl;
                     for(INode* n : nodeList){ n->Motion.AccLimit = 200; }
                     while(!stabilized) {
-                        SendMotorGrp(true);
+                        SendMotorGrp(robot, true);
                         Sleep(50);
-                        for (int n = 0; n < NodeNum; n++){
+                        for (int n = 0; n < robot.NodeNum(); n++){
                             if(nodeList[n]->Motion.TrqCommanded.Value() > targetTorque) { break; }
                             stabilized = true;
                         }
@@ -128,26 +127,26 @@ int main()
                         n->Motion.AccLimit = 40000;
                     }
                     cout << "\nTorque mode tightening completed" << endl;
-                    targetTorque = -2.5;
+                    targetTorque = robot.TargetTorque();
                     break;
-                case 's':   // Set zero
-                    for (int n = 0; n < NodeNum; n++){
-                        nodeList[n]->Motion.AddToPosition(-nodeList[n]->Motion.PosnMeasured.Value()); // Zeroing the number space around the current Measured Position
-                    }
-                    copy(begin(home), end(home), begin(in1)); // copy home array into input array
-                    cout << "Setting zero completed" << endl;
-                    cout <<  "Home coordinates: " << in1[0] << ", " << in1[1] << ", " << in1[2] << ", " << in1[3] << ", " << in1[4] << ", " << in1[5] << endl;
-
-                    cout << "Do you want to set current rail position as zero? (k - OK)\n";;
-                    cin >> cmd;
-                    if(cmd == 'k'){
-                        for (int n = NodeNum; n < NodeNum+4; n++){
-                            nodeList[n]->Motion.AddToPosition(-nodeList[n]->Motion.PosnMeasured.Value());
-                        }
-                        cout << "Linear rails are set to zero.\n";
-                    }
-                    else{ cout << "Current rail position may not be at zero\n"; }
-                    break;
+                // case 's':   // Set zero
+                //     for (int n = 0; n < NodeNum; n++){
+                //         nodeList[n]->Motion.AddToPosition(-nodeList[n]->Motion.PosnMeasured.Value()); // Zeroing the number space around the current Measured Position
+                //     }
+                //     copy(begin(home), end(home), begin(in1)); // copy home array into input array
+                //     cout << "Setting zero completed" << endl;
+                //     cout <<  "Home coordinates: " << in1[0] << ", " << in1[1] << ", " << in1[2] << ", " << in1[3] << ", " << in1[4] << ", " << in1[5] << endl;
+                //
+                //     cout << "Do you want to set current rail position as zero? (k - OK)\n";;
+                //     cin >> cmd;
+                //     if(cmd == 'k'){
+                //         for (int n = NodeNum; n < NodeNum+4; n++){
+                //             nodeList[n]->Motion.AddToPosition(-nodeList[n]->Motion.PosnMeasured.Value());
+                //         }
+                //         cout << "Linear rails are set to zero.\n";
+                //     }
+                //     else{ cout << "Current rail position may not be at zero\n"; }
+                //     break;
                 case 'h':   // Homing for all motors!! Including linear rail
                     allDone = false;
                     for (int n = 0; n<nodeList.size(); n++) { 
@@ -160,31 +159,31 @@ int main()
                             allDone = true;
                         }
                     }
-                    copy(begin(home), end(home), begin(in1)); // copy home array into input array
+                    copy(begin(robot.home), end(robot.home), begin(robot.in)); // copy home array into input array
                     cout << "Homing completed" << endl;
                     break;
                 case '8':   // Manual cable adjustment
                     cout << "0 to 7 - motor id to adjust cable length\n8 - move 4 linear rails together\na or d - increase or decrease cable length\nb - Back to previous menu\n";
                     while(cmd != 'b'){
                         cin >> cmd;
-                        if('/' < cmd && cmd < NodeNum + 49){
+                        if('/' < cmd && cmd < robot.NodeNum() + 49){
                             int id = cmd - 48;
-                            int sCount = ToMotorCmd(-1, step) / 5;
+                            int sCount = robot.ToMotorCmd(-1, step) / 5 ;// = ToMotorCmd(robot, -1, step) / 5;
                             cout << "Motor "<< cmd <<" selected.\n";
                             do{
                                 cmd = getch();
                                 switch(cmd){
                                     case 'a':
-                                        if(id == NodeNum){ for(int n = NodeNum; n<NodeNum+4; n++){ nodeList[n]->Motion.MovePosnStart(sCount); }}
+                                        if(id == robot.NodeNum()){ for(int n = robot.NodeNum(); n<robot.NodeNum()+4; n++){ nodeList[n]->Motion.MovePosnStart(sCount); }}
                                         else { nodeList[id]->Motion.MovePosnStart(sCount); }
                                         break;
                                     case 'd':
-                                        if(id == NodeNum){ for(int n = NodeNum; n<NodeNum+4; n++){ nodeList[n]->Motion.MovePosnStart(-sCount); }}
+                                        if(id == robot.NodeNum()){ for(int n = robot.NodeNum(); n<robot.NodeNum()+4; n++){ nodeList[n]->Motion.MovePosnStart(-sCount); }}
                                         else { nodeList[id]->Motion.MovePosnStart(-sCount); }
                                         break;
                                     case 'i':
-                                        if(id == NodeNum){
-                                            for(int n = NodeNum; n<NodeNum+4; n++){
+                                        if(id == robot.NodeNum()){
+                                            for(int n = robot.NodeNum(); n<robot.NodeNum()+4; n++){
                                                 nodeList[n]->Motion.PosnMeasured.Refresh();
                                                 cout << (double) nodeList[n]->Motion.PosnMeasured << endl;
                                             }
@@ -196,7 +195,7 @@ int main()
                                         }
                                         break;
                                     case 'h':
-                                        if(id == NodeNum){ cout << "Homing for linear rails are not implemented here.\n"; break; }
+                                        if(id == robot.NodeNum()){ cout << "Homing for linear rails are not implemented here.\n"; break; }
                                         nodeList[id]->Motion.VelLimit = 300;
                                         nodeList[id]->Motion.MoveWentDone();
                                         nodeList[id]->Motion.MovePosnStart(0, true);
@@ -216,30 +215,30 @@ int main()
                     cout << "Attenion: robot will rotate to 0,0,0...\n";
                     {
                         double point[7] = {0,0,0,0,0,0,3500}; // Default 3500 ms duaration to rotate to 0
-                        copy(in1, in1+3, begin(point)); // copy x,y,z position
+                        copy(robot.in, robot.in+3, begin(point)); // copy x,y,z position
                         cout << "Goal coordinates: " << point[0] << ", " << point[1] << ", " << point[2] << ", " << point[3] << ", " << point[4] << ", " << point[5] << ", " << point[6] << endl;
-                        if(RunParaBlend(point) < 0) { cout << "Trajectory aborted.\n"; break; }
+                        if(RunParaBlend(robot, point) < 0) { cout << "Trajectory aborted.\n"; break; }
                         cout << "Rotation reset completed.\n";      
                     }
                     break;
-                case 'l':   // Linear rail motions
-                    cout << "0 to 3 - home linear rail individually\n4 - home all 4 linear rails automatically\nb - Back to previous menu\nany other keys - stop the linear rail from current motion\n";
-                    while(cmd != 'b'){
-                        cin >> cmd;
-                        if('/' < cmd && cmd < 52){ // homing individually
-                            int id = cmd - 48;
-                            cout << "Homing linear rail #"<< cmd <<".\n";
-                            HomeLinearRail(id);
-                        }
-                        else if(cmd == 52){ // homing 4 all tgt
-                            for (int i = 0; i < 4 ; i++){
-                                HomeLinearRail(i);
-                            }
-                            cout << "All linear rails are homed.\n";
-                        }
-                    }
-                    cout << "Linear rail homing terminated\n";
-                    break; 
+                // case 'l':   // Linear rail motions
+                //     cout << "0 to 3 - home linear rail individually\n4 - home all 4 linear rails automatically\nb - Back to previous menu\nany other keys - stop the linear rail from current motion\n";
+                //     while(cmd != 'b'){
+                //         cin >> cmd;
+                //         if('/' < cmd && cmd < 52){ // homing individually
+                //             int id = cmd - 48;
+                //             cout << "Homing linear rail #"<< cmd <<".\n";
+                //             HomeLinearRail(id);
+                //         }
+                //         else if(cmd == 52){ // homing 4 all tgt
+                //             for (int i = 0; i < 4 ; i++){
+                //                 HomeLinearRail(i);
+                //             }
+                //             cout << "All linear rails are homed.\n";
+                //         }
+                //     }
+                //     cout << "Linear rail homing terminated\n";
+                //     break; 
                 case 'u':   // Update in1[] and offset[] from csv file
                     ifstream file ("lastPos.txt"); //"lastPos.txt" or "currentPos.csv"
                     string temp;
@@ -247,8 +246,8 @@ int main()
                     if(file.is_open()){
                         try{
                             while (file >> temp){
-                                if(count > 5) { railOffset = stod(temp); break; } // reading the rail offset, then break while loop
-                                in1[count++] = stod(temp); // convert string to double stod()
+                                if(count > 5) { break; } //{ railOffset = stod(temp); break; } // reading the rail offset, then break while loop
+                                robot.in[count++] = stod(temp); // convert string to double stod()
                             }
                             cout << "Completed reading from external file" << endl; //"Completed updating from external pose file"
                         }
@@ -258,14 +257,14 @@ int main()
                         //     cin >> railOffset; // do we need other constraits? ie 0 <= railOffset < 2
                         // }while(!cin.good() || railOffset>2);
                         
-                        pose_to_length(in1, out1, railOffset);
+                        robot.PoseToLength(robot.in, robot.out, railOffset); //pose_to_length(in1, out1, railOffset);
                         for (int n = 0; n < nodeList.size(); n++){
-                            int32_t step = ToMotorCmd(n, out1[n]);
+                            int32_t step = robot.ToMotorCmd(n, robot.out[n]);
                             nodeList[n]->Motion.PosnMeasured.Refresh();
                             nodeList[n]->Motion.AddToPosition(-nodeList[n]->Motion.PosnMeasured.Value() + step);
                         }
                         cout << "Updating motor counts completed" << endl;
-                        cout << "Current coordinates: " << in1[0] << ", " << in1[1] << ", " << in1[2] << ", " << in1[3] << ", " << in1[4] << ", " << in1[5] << endl;
+                        cout << "Current coordinates: "; robot.PrintIn();
                         cout << "Motor internal counts: ";
                         for (int id = 0; id < nodeList.size(); id++){
                             nodeList[id]->Motion.PosnMeasured.Refresh();
@@ -274,13 +273,13 @@ int main()
                         cout << endl;
                         cout << "Linear rail offset: " << railOffset << endl;
                         
-                        now = time(0); timeout = now + UserInput_Sec_Timeout; cout << "!! If no input detected in " << UserInput_Sec_Timeout << " sec, programme will enter next section. !!" << endl;
+                        /*now = time(0); timeout = now + UserInput_Sec_Timeout; cout << "!! If no input detected in " << UserInput_Sec_Timeout << " sec, programme will enter next section. !!" << endl;
                         cmd = 'n'; // default value to move on to next section
                         while(now < timeout){
                             Sleep(50);
                             now = time(0);
                             if(kbhit()){ cin >> cmd; break; }
-                        }
+                        }*/
                     }
                     break;
             }
@@ -292,146 +291,98 @@ int main()
         return -3;
     }
     
-    //// Initialize dynamexial gripper
-    /*portHandler = dynamixel::PortHandler::getPortHandler("\\\\.\\COM31"); // Initialize PacketHandler and PacketHandler instance
-    packetHandler = dynamixel::PacketHandler::getPacketHandler(2.0);
-    dynamixel::GroupSyncRead groupSyncRead(portHandler, packetHandler, ADDR_PRESENT_POSITION, LEN_PRESENT_POSITION);
-    // dynamixel::GroupSyncWrite groupSyncWrite(portHandler, packetHandler, ADDR_GOAL_POSITION, LEN_GOAL_POSITION);       
-    {    // Open dynamixel port
-        if (portHandler->openPort()) { cout << "Succeeded to open Dynamixel port\n"; }
-        else { cout << "Failed to open the port!\nPress any key to terminate...\n"; getch(); return -1; }
-        // Set port baudrate
-        if (portHandler->setBaudRate(57600)) { cout << "Succeeded to change Dynamixel baudrate!\n"; }
-        else { cout << "Failed to change the baudrate!\nPress any key to terminate...\n"; getch(); return -1; }
-
-        Sleep(20);
-        // Enable Dynamixel#1 Torque
-        dxl_comm_result = packetHandler->write1ByteTxRx(portHandler, DXL1_ID, ADDR_TORQUE_ENABLE, 1, &dxl_error);
-        if (dxl_comm_result != COMM_SUCCESS) {cout << "Torque Comm result: " << dxl_comm_result <<endl; }
-        else if (dxl_error != 0) { cout << "Error: " << dxl_error << endl; }
-        else { printf("Dynamixel#%d has been successfully connected \n", DXL1_ID); }
-
-        Sleep(20);
-        // Change Dynamixel#2 to current mode
-        dxl_comm_result = packetHandler->write1ByteTxRx(portHandler, DXL2_ID, 11, 0, &dxl_error);
-        if (dxl_comm_result != COMM_SUCCESS) {cout << "Torque Comm result: " << dxl_comm_result <<endl; }
-        else if (dxl_error != 0) { cout << "Error: " << dxl_error << endl; }
-        else { printf("Dynamixel#%d has been successfully connected \n", DXL2_ID); }
-
-        Sleep(20);
-        // Enable Dynamixel#2 Torque
-        dxl_comm_result = packetHandler->write1ByteTxRx(portHandler, DXL2_ID, ADDR_TORQUE_ENABLE, 1, &dxl_error);
-        if (dxl_comm_result != COMM_SUCCESS) {cout << "Torque Comm result: " << dxl_comm_result <<endl; }
-        else if (dxl_error != 0) { cout << "Error: " << dxl_error << endl; }
-        else { printf("Dynamixel#%d has been successfully connected \n", DXL2_ID); }
-
-        // // Setup Dynamixel#2 Current
-        // dxl_comm_result = packetHandler->write2ByteTxRx(portHandler, DXL2_ID, ADDR_GOAL_CURRENT, 50, &dxl_error);
-        // if (dxl_comm_result != COMM_SUCCESS) {cout << "Current Comm result: " << dxl_comm_result <<endl; }
-        // else if (dxl_error != 0) { cout << "Error: " << dxl_error << endl; }
-        // else { printf("Goal current of Dynamixel#%d is set \n", DXL2_ID); }
-
-        // Add parameter storage for present position value
-        if(!groupSyncRead.addParam(DXL1_ID)){ cout << DXL1_ID << " groupSyncRead addparam failed\n"; }
-        if(!groupSyncRead.addParam(DXL2_ID)){ cout << DXL2_ID << " groupSyncRead addparam failed\n"; }
-
-        cout << endl;
-    }*/
     // Set linear rail brakes as usually enabled
-    myMgr->Ports(2).BrakeControl.BrakeSetting(0, BRAKE_PREVENT_MOTION);
+    // myMgr->Ports(2).BrakeControl.BrakeSetting(0, BRAKE_PREVENT_MOTION);
 
-    //// Read input .txt file
-    cout << "Choose from menu for cable robot motion:\nt - Read from \"bricks.csv\" file for brick positions\nl - Loop through set num of bricks\nb - Loop and wait for Button input\nm - Manual input using w,a,s,d,r,f,v,g\nd - Run Demo loop\ni - Info: show menu\nn - Prepare to disable motors and exit programme" << endl;
+    cout << "Choose from menu for cable robot motion:\nt - Read from \"bricks.csv\" file for brick positions\nl - Loop through set num of bricks\nb - Loop and wait for Button input\nm - Manual input using w,a,s,d,r,f,v,g\np - Run Point-to-point trajectory\ni - Info: show menu\nn - Prepare to disable motors and exit programme" << endl;
     do {
         bool waitBtn = false;
-        tm *fn; time_t now = time(0); time_t timeout = now + UserInput_Sec_Timeout; cmd = 'b'; // default value for button loop
-        while(now < timeout){
-            Sleep(50);
-            now = time(0);
-            if(kbhit()){ cin >> cmd; break; }
-        }
+        // tm *fn; time_t now = time(0); time_t timeout = now + UserInput_Sec_Timeout; cmd = 'b'; // default value for button loop
+        // while(now < timeout){
+        //     Sleep(50);
+        //     now = time(0);
+        //     if(kbhit()){ cin >> cmd; break; }
+        // }
+        cin >> cmd;
         switch (cmd){
             case 'i':    // Show menu
-                cout << "Choose from menu for cable robot motion:\nt - Read from \"bricks.csv\" file for brick positions\nl - Loop through set num of bricks\nb - Loop and wait for Button input\nm - Manual input using w,a,s,d,r,f,v,g\nd - Run Demo loop\ni - Info: show menu\nn - Prepare to disable motors and exit programme" << endl;
+                cout << "Choose from menu for cable robot motion:\nt - Read from \"bricks.csv\" file for brick positions\nl - Loop through set num of bricks\nb - Loop and wait for Button input\nm - Manual input using w,a,s,d,r,f,v,g\np - Run Point-to-point trajectory\ni - Info: show menu\nn - Prepare to disable motors and exit programme" << endl;
                 break;
             case 't':   // Read brick file, plan trajectory
             case 'T':
                 if(!ReadBricksFile()){ continue; } // Read "bricks.csv"
-                RunBricksTraj(groupSyncRead, 0);
+                RunBricksTraj(hComm, robot, Ard_char, 0, true);
                 break;
             case 'm':   // Manual wasdrf
             case 'M':
                 cout << "Press 'q' to quit manual input anytime.\n'h' for Homing.\n'x' to adjust increment step size.\n";
-                nodeList[8]->Port.BrakeControl.BrakeSetting(0, BRAKE_ALLOW_MOTION); // disable enable brake
+                // nodeList[8]->Port.BrakeControl.BrakeSetting(0, BRAKE_ALLOW_MOTION); // disable enable brake
                 while(cmd != 'q' && cmd != 'Q'){
                     cmd = getch();
                     switch(cmd){
-                        // case 'K': // Read Dynamixel#2 current position // TODO: cannot read feedback?
-                        // case 'k':
-                        //     if(packetHandler->read4ByteTxRx(portHandler, DXL2_ID, ADDR_PRESENT_POSITION, (uint32_t*)&dxl_pre_pos, &dxl_error)){ cout << "Error in reading gripper positio\n"; }
-                        //     else{ cout << "Gripper position: " << dxl_pre_pos << endl; }
-                        //     continue;
-                        /*case 'I':
+                        case 'I':
                         case 'i':
-                            if(packetHandler->write2ByteTxRx(portHandler, DXL2_ID, ADDR_GOAL_CURRENT, gpClose, &dxl_error)){ cout << "Error in closing gripper\n"; }
+                            Ard_char[1] = 'c';
+                            SendGripperSerial(hComm, Ard_char);
                             continue;
                         case 'O':
                         case 'o':
-                            if(packetHandler->write2ByteTxRx(portHandler, DXL2_ID, ADDR_GOAL_CURRENT, gpOpen, &dxl_error)){ cout << "Error in opening gripper\n"; }
+                            Ard_char[1] = 'o';
+                            SendGripperSerial(hComm, Ard_char);
                             continue;
                         case 'P':
                         case 'p':
+                            Ard_char[1] = 'd';
                             cout << "Rotation: ";
-                            cin >> rotationG;
-                            if(cin.good()){
-                                rotationG *= 11.26666;
-                                if(packetHandler->write4ByteTxRx(portHandler, DXL1_ID, ADDR_GOAL_POSITION, rotationG, &dxl_error)){ cout << "Error in gripper rotation command\n"; };
-                            }
-                            continue; */
+                            cin >> attnStringBuf;
+                            copy(begin(attnStringBuf), begin(attnStringBuf)+4, begin(Ard_char)+3); // Write the first 4 char into the serial array
+                            SendGripperSerial(hComm, Ard_char);
+                            fill(begin(Ard_char)+3, begin(Ard_char)+7, ' '); // Reset the ending number with space char
+                            continue;
                         case 'W':
                         case 'w':
-                            in1[1] += step;
+                            robot.in[1] += step;
                             break;
                         case 'S':
                         case 's':
-                            in1[1] -= step;
+                            robot.in[1] -= step;
                             break;
                         case 'A':
                         case 'a':
-                            in1[0] -= step;
+                            robot.in[0] -= step;
                             break;
                         case 'D':
                         case 'd':
-                            in1[0] += step;
+                            robot.in[0] += step;
                             break;
                         case 'R':
                         case 'r':
-                            in1[2] += step;
+                            robot.in[2] += step;
                             break;
                         case 'F':
                         case 'f':
-                            in1[2] -= step;
+                            robot.in[2] -= step;
                             break;
-                        case 'G':
-                        case 'g':
-                            railOffset += step/20;
-                            if(railOffset > RAIL_UP) { cout << "WARNING! Rail offset beyond upper bound!\n"; railOffset -= step/20; }
-                            cout << "Current rail offset: " << railOffset << endl;
-                            pose_to_length(in1, out1, railOffset);
-                            SendMotorGrp(false, true);
-                            continue;
-                        case 'V':
-                        case 'v':
-                            railOffset -= step/20;
-                            if(railOffset < RAIL_DOWN) { cout << "WARNING! Rail offset beyond lower bound!\n"; railOffset += step/20; }
-                            cout << "Current rail offset: " << railOffset << endl;
-                            pose_to_length(in1, out1, railOffset);
-                            SendMotorGrp(false, true);
-                            continue;
+                        // case 'G':
+                        // case 'g':
+                        //     railOffset += step/20;
+                        //     if(railOffset > RAIL_UP) { cout << "WARNING! Rail offset beyond upper bound!\n"; railOffset -= step/20; }
+                        //     cout << "Current rail offset: " << railOffset << endl;
+                        //     pose_to_length(in1, out1, railOffset);
+                        //     SendMotorGrp(false, true);
+                        //     continue;
+                        // case 'V':
+                        // case 'v':
+                        //     railOffset -= step/20;
+                        //     if(railOffset < RAIL_DOWN) { cout << "WARNING! Rail offset beyond lower bound!\n"; railOffset += step/20; }
+                        //     cout << "Current rail offset: " << railOffset << endl;
+                        //     pose_to_length(in1, out1, railOffset);
+                        //     SendMotorGrp(false, true);
+                        //     continue;
                         case 'H':
                         case 'h':
                             cout << "Homing...\n"; 
-                            TrjHome();
+                            TrjHome(robot);
                             break;
                         case 'X':
                         case 'x':
@@ -454,11 +405,11 @@ int main()
                             }
                             continue;
                     }
-                    cout << "IN: "<< in1[0] << " " << in1[1] << " " << in1[2] << " " << in1[3] << " " << in1[4] << " " << in1[5] << endl;
-                    if(CheckLimits()){
-                        pose_to_length(in1, out1, railOffset);
-                        cout << "OUT: "<<  out1[0] << " " << out1[1] << " " << out1[2] << " " << out1[3] << " " <<  out1[4] << " " << out1[5] << " " << out1[6] << " " << out1[7] << " " <<  out1[8] << " " << out1[9] << " " << out1[10] << " " << out1[11] << endl;
-                        SendMotorGrp();
+                    robot.PrintIn();
+                    if(robot.CheckLimits()){
+                        robot.PoseToLength(robot.in, robot.out, railOffset);
+                        robot.PrintOut();
+                        SendMotorGrp(robot);
                         
                         Sleep(step*1000);
                     }
@@ -467,32 +418,32 @@ int main()
                         switch(cmd){
                             case 'W':
                             case 'w':
-                                in1[1] -= step;
+                                robot.in[1] -= step;
                                 break;
                             case 'S':
                             case 's':
-                                in1[1] += step;
+                                robot.in[1] += step;
                                 break;
                             case 'A':
                             case 'a':
-                                in1[0] += step;
+                                robot.in[0] += step;
                                 break;
                             case 'D':
                             case 'd':
-                                in1[0] -= step;
+                                robot.in[0] -= step;
                                 break;
                             case 'R':
                             case 'r':
-                                in1[2] -= step;
+                                robot.in[2] -= step;
                                 break;
                             case 'F':
                             case 'f':
-                                in1[2] += step;
+                                robot.in[2] += step;
                                 break;
                         }
                     }
                 }
-                nodeList[8]->Port.BrakeControl.BrakeSetting(0, BRAKE_PREVENT_MOTION); // enable brake afterwards
+                // nodeList[8]->Port.BrakeControl.BrakeSetting(0, BRAKE_PREVENT_MOTION); // enable brake afterwards
                 cout << "Quit manual control\n";
                 break;
             case 'b':   // loop through set no. of bricks and wait for user Button input to continue
@@ -511,12 +462,12 @@ int main()
                 brickPos.erase(brickPos.begin(), brickPos.end()-loopNum); // Only need the last elements
                 while(quitType != 'f' && quitType != 'F'){ // if not running the final loop.....
                     // always reverse from a complete built, then rebuild it
-                    ReverseBricksTraj(groupSyncRead, listOffset, true);
+                    ReverseBricksTraj(robot, listOffset, true);
                     if(quitType == 'q' || quitType == 'Q' || quitType == 'e'){ break; }
-                    RunBricksTraj(groupSyncRead, listOffset, true, waitBtn);
+                    RunBricksTraj(hComm, robot, Ard_char, listOffset, true, waitBtn);
                     if(quitType == 'q' || quitType == 'Q' || quitType == 'e'){ break; }
                     loopCount += 1;
-                    now = time(0); fn = localtime(&now); if(fn->tm_hour >= SleepTime) { break; } // quit loop after sleep time
+                    // now = time(0); fn = localtime(&now); if(fn->tm_hour >= SleepTime) { break; } // quit loop after sleep time
                     if(quitType != 'f' && !waitBtn){
                         cout << "Taking a 3 minute rest~ ^O^\n\n";
                         Sleep(1000*180);
@@ -524,47 +475,11 @@ int main()
                 }
                 cout << "Quit looping trajectory.\n";}
                 break;
-            case 'd':   // Temporary Demo function for moving top bricks around
-            case 'D':
-                ifstream file ("demo.csv");
-                vector<double> row;
-                string line, word, temp;
-
-                brickPos.clear();
-                if(file.is_open()){
-                    while (getline(file, line)){
-                        row.clear();
-                        stringstream s(line);
-                        while (s >> word){
-                            row.push_back(stod(word)); // convert string to double stod()
-                        }
-                        for(int i=0; i<3; i++){ row[i] /= 1000; } // convert mm to m unit for xyz
-                        row[2] *= 1.01; // actual scale of bricks
-                        row[3] *= -1; // convert Adam's file from anticlockwise to clockwise in gripper
-                        if(row[3]>180){ row[3] -= 180; } // convert 360 degs to 180
-                        brickPos.push_back(row);
-                    }
-                    cout << "Completed reading brick position input file" << endl;
-                }
-                else{ cout << "Failed to read input file. Please check \"bricks.csv\" file." << endl; break;
-                }
-
-                loopCount = 0;
-
-                quitType = 'r';
-                while(quitType != 'f' && quitType != 'F'){ // if not running the final loop.....
-                    // always reverse from a complete built, then rebuild it
-                    RunDemoTraj(groupSyncRead, true);
-                    loopCount += 1;
-                    if(quitType == 'q' || quitType == 'Q' || quitType == 'e'){ break; }
-                    cout << "Taking a 5 sec rest ;) \n"; Sleep(5000); // Sleep for a while before next run for every 8 loop 
-                    if(!(loopCount%25)){ cout << "Taking a 15 minute rest~ ^O^ \n\n"; Sleep(1000*900); } // Sleep for a while before next run for every 400 loop
-                }
-                cout << "Quit looping demo trajectory.\n";
+            case 'p':   // Typical point to point trajectory
+            case 'P':
+                RunTrajPoints(robot);
                 break;
         }
-        now = time(0); fn = localtime(&now);
-        if(fn->tm_hour >= SleepTime) { cout << "\nATTENTION: Exhibit closing time. Thank you!\n" << endl; cmd = 'n'; }
     } while(cmd != 'n' && quitType != 'e');
 
     //// Safe system shut down, safe last pos and emegency shut down
@@ -572,7 +487,7 @@ int main()
     cout << "Saving last position...\n";
     ofstream myfile;
     myfile.open ("lastPos.txt");
-    myfile << in1[0] << " " << in1[1] << " " << in1[2] << " " << in1[3] << " " << in1[4] << " " << in1[5] << endl;
+    myfile << robot.in[0] << " " << robot.in[1] << " " << robot.in[2] << " " << robot.in[3] << " " << robot.in[4] << " " << robot.in[5] << endl;
     myfile << railOffset << endl;
     for(INode* n : nodeList){
         n->Motion.PosnMeasured.Refresh();
@@ -586,27 +501,11 @@ int main()
     
     //// List of what-if-s??
     
-    {   // Send 'p'signal to arduino for shutting down
-        // Ard_char[0] = 'p';
-        // if (!(bool)WriteFile(hComm, Ard_char, 1, &dNoOfBytesWritten, NULL)){ cout << "Arduino writing error: " << GetLastError() << endl; }
+    {   // Send 'f' signal to bluetooth gripper for shutting down
+        Ard_char[1] = 'f';
+        SendGripperSerial(hComm, Ard_char);
         CloseHandle(hComm); //Close the Serial Port
     }
-
-    /*{   // Disable Dynamixel Torque
-        packetHandler->write2ByteTxRx(portHandler, DXL2_ID, ADDR_GOAL_CURRENT, 0, &dxl_error);
-        Sleep(20);
-        dxl_comm_result = packetHandler->write1ByteTxRx(portHandler, DXL1_ID, ADDR_TORQUE_ENABLE, 0, &dxl_error);
-        if (dxl_comm_result != COMM_SUCCESS) {cout << "Torque Comm result: " << dxl_comm_result <<endl; }
-        else if (dxl_error != 0) { cout << "Error: " << dxl_error << endl; }
-        Sleep(20);
-        dxl_comm_result = packetHandler->write1ByteTxRx(portHandler, DXL2_ID, ADDR_TORQUE_ENABLE, 0, &dxl_error);
-        if (dxl_comm_result != COMM_SUCCESS) {cout << "Torque Comm result: " << dxl_comm_result <<endl; }
-        else if (dxl_error != 0) { cout << "Error: " << dxl_error << endl; }
-
-        // Close port
-        portHandler->closePort();
-    }
-    cout << "Dynamixel is closed correctly\n"; */
 
     for(int i = 0; i < nodeList.size(); i++){ //Disable Nodes
         nodeList[i]->EnableReq(false);
@@ -617,15 +516,15 @@ int main()
     return 1;
 }
 
-bool SetSerialParams(){
+bool SetSerialParams(HANDLE hComm){
     // Set parameters for serial port
     DCB dcbSerialParams = { 0 }; // Initializing DCB structure
     dcbSerialParams.DCBlength = sizeof(dcbSerialParams);
-    Status = GetCommState(hComm, &dcbSerialParams); // retreives  the current settings
+    bool Status = GetCommState(hComm, &dcbSerialParams); // retreives  the current settings
     if (Status == false){ cout << "Error in GetCommState()\n"; return false; }
 
-    dcbSerialParams.BaudRate = CBR_115200;// Setting BaudRate
-    dcbSerialParams.ByteSize = 1;         // Setting ByteSize = 8
+    dcbSerialParams.BaudRate = CBR_57600;// Setting BaudRate
+    dcbSerialParams.ByteSize = 8;         // Setting ByteSize = 8
     dcbSerialParams.StopBits = ONESTOPBIT;// Setting StopBits = 1
     dcbSerialParams.Parity   = NOPARITY;  // Setting Parity = None
 
@@ -643,7 +542,7 @@ bool SetSerialParams(){
     // Set timeouts
     COMMTIMEOUTS timeouts = { 0 };
     timeouts.ReadIntervalTimeout         = 50;
-    timeouts.ReadTotalTimeoutConstant    = 50; //50
+    timeouts.ReadTotalTimeoutConstant    = 50;
     timeouts.ReadTotalTimeoutMultiplier  = 10;
     timeouts.WriteTotalTimeoutConstant   = 50;
     timeouts.WriteTotalTimeoutMultiplier = 10;
@@ -653,6 +552,33 @@ bool SetSerialParams(){
     if (!(bool)SetCommMask(hComm, EV_RXCHAR)){ cout << "Error! in Setting CommMask\n"; }
     
     return true;
+}
+
+void ReadGripperSerial(HANDLE hComm){
+    DWORD dwEventMask, BytesRead;
+    int i{0};
+    char tmp, msg[256];
+
+    bool Status = WaitCommEvent(hComm, &dwEventMask, NULL); // wait till brick is ready from ABB
+    if (Status == false){ cout << "Error in setting WaitCommEvent()\n";} //quitType = 'q'; return; }
+    else {
+        do{
+            ReadFile(hComm, &tmp, sizeof(tmp), &BytesRead, NULL);
+            msg[i] = tmp;
+            i++;
+        }while (BytesRead>0);        
+    }
+    
+    for(int j=0; j< i-1; j++){
+        cout << msg[j];
+    } 
+}
+
+void SendGripperSerial(HANDLE hComm, unsigned char* Ard_char){
+    DWORD dNoOfBytesWritten = 0;
+    if (!(bool)WriteFile(hComm, Ard_char, 8, &dNoOfBytesWritten, NULL)){ cout << "Arduino writing error: " << GetLastError() << endl; }    
+    ReadGripperSerial(hComm);
+    ReadGripperSerial(hComm); // Repeat to make sure the feedback is received
 }
 
 int CheckMotorNetwork() {
@@ -673,8 +599,8 @@ int CheckMotorNetwork() {
     myMgr->PortsOpen(portCount);
     for (int i = 0; i < portCount; i++) { // check no. of nodes in each ports
         IPort &myPort = myMgr->Ports(i);
-        myPort.BrakeControl.BrakeSetting(0, BRAKE_AUTOCONTROL); // do we need this?
-        myPort.BrakeControl.BrakeSetting(1, BRAKE_AUTOCONTROL);
+        // myPort.BrakeControl.BrakeSetting(0, BRAKE_AUTOCONTROL); // do we need this?
+        // myPort.BrakeControl.BrakeSetting(1, BRAKE_AUTOCONTROL);
         printf(" Port[%d]: state=%d, nodes=%d\n", myPort.NetNumber(), myPort.OpenState(), myPort.NodeCount());
     
         for (int iNode = 0; iNode < myPort.NodeCount(); iNode++) {
@@ -713,26 +639,12 @@ int CheckMotorNetwork() {
                     return -2;
                 }
             }
-
-            if (i == 2) { // Set the Node's Attention Mask to generate attentions on "Enabled" on every linear rail nodes
-                attnReg attnReq;
-                attnReq.cpm.InA = 1;
-                attnReq.cpm.InB = 1;
-                theNode.Adv.Attn.Mask = attnReq;
-
-                theNode.Adv.Attn.ClearAttn(attnReq);
-                theNode.EnableReq(true);
-            }
-        }
-        if (i == 2){ // For linear rail port
-            myPort.Adv.Attn.Enable(true); // Enable the attentions for this port, ie Port#2 for linear rails
-            myPort.Adv.Attn.AttnHandler(AttentionDetected); // Register handler at the port level, just for illustrative purposes.
         }
     }
     return 0;
 }
 
-int RaiseRailTo(double target){ // !!! Define velocity limit !!!
+int RaiseRailTo(CDPR &r, double target){ // !!! Define velocity limit !!!
     cout << "RAil target: " << target << endl;
     if (target < 0 || target > 1.25) { cout << "WARNING! Intended rail offset is out of bound!\n"; return -2; }
     nodeList[8]->Port.BrakeControl.BrakeSetting(0, BRAKE_ALLOW_MOTION); // disable brake before motion
@@ -756,10 +668,10 @@ int RaiseRailTo(double target){ // !!! Define velocity limit !!!
         railOffset = a + b * t * t + c * t * t * t; // update new rail offset
 
         // get absolute cable lengths and rail positions in meters
-        pose_to_length(in1, out1, railOffset);
-        cout << "OUT: "<<  out1[4] << "\t" << out1[5] << "\t" << out1[6] << "\t" << out1[7] << "\t" <<  out1[8] << "\t" << out1[9] << "\t" << out1[10] << "\t" << out1[11] << endl;
+        r.PoseToLength(r.in, r.out, railOffset);
+        r.PrintOut();
 
-        SendMotorGrp(false, true);
+        SendMotorGrp(r, false, true);
 
         dur = chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now()-start).count();
         double dif = MILLIS_TO_NEXT_FRAME - dur - 1;
@@ -785,18 +697,20 @@ int RaiseRailTo(double target){ // !!! Define velocity limit !!!
     return 0;
 }
 
-int RunParaBlend(double point[7], bool showAttention){
+int RunParaBlend(CDPR &r, double point[7], bool showAttention){
     float vMax[6] = {.4, .4, .4, 0.8, 0.8, 0.8}; // m/s, define the maximum velocity for each DoF
     float aMax[6] = {80, 80, 80, 10, 10, 10}; // m/s^2, define the maximum acceleration for each DoF
-    double sQ[6], Q[6], o[6];
-    double dura = point[6];
-    double unitV = sqrt(pow(point[0]-in1[0],2)+pow(point[1]-in1[1],2)+pow(point[2]-in1[2],2)); // the root to divide by to get unit vector
+    static double a[6], b[6], c[6], d[6], e[6], f[6], g[6], tb[6]; // trajectory coefficients
+    static double sQ[6], Q[6], o[6];
+    static double dura;
+    double unitV = sqrt(pow(point[0]-r.in[0],2)+pow(point[1]-r.in[1],2)+pow(point[2]-r.in[2],2)); // the root to divide by to get unit vector
+    dura = point[6]; // Save the new dura for every new point
     cout << "Will run for " << dura << "ms...\n";
     if(dura <= 200){ return 0; } // Don't run traj for incorrect timing 
 
     // Solve parabolic blend coefficients for each DoF
     for(int i = 0; i < 6; i++){
-        sQ[i] = in1[i]; // start point, from current position
+        sQ[i] = r.in[i]; // start point, from current position
         Q[i] = point[i]; // end point, from goal position
         vMax[i] /= 1000; // change the velocity unit to meter per ms
         aMax[i] /= 1000000; // change the unit to meter per ms square
@@ -839,21 +753,21 @@ int RunParaBlend(double point[7], bool showAttention){
         // PARABOLIC BLEND equation, per time step pose
         for (int j = 0; j < 6; j++){
             if (t <= tb[j]){
-                in1[j] = a[j] + b[j] * t * t;
+                r.in[j] = a[j] + b[j] * t * t;
             }
             else if(t <= point[6]-tb[j]){
-                in1[j] = c[j] + d[j] * t;
+                r.in[j] = c[j] + d[j] * t;
             }
             else{
-                in1[j] = e[j] + f[j] * t + g[j] * t * t;
+                r.in[j] = e[j] + f[j] * t + g[j] * t * t;
             }
         }
         // get absolute cable lengths in meters
         // cout << "IN: "<< in1[0] << " " << in1[1] << " " << in1[2] << " " << in1[3] << " " << in1[4] << " " << in1[5] << endl;
-        pose_to_length(in1, out1, railOffset);
+        r.PoseToLength(r.in, r.out, railOffset);
         // cout << "OUT: "<<  out1[0] << "\t" << out1[1] << "\t" << out1[2] << "\t" << out1[3] << "\t" <<  out1[4] << "\t" << out1[5] << "\t" << out1[6] << "\t" << out1[7] << endl;
-
-        SendMotorGrp();
+        
+        SendMotorGrp(r);
         if(quitType == 'e'){ // Motor error message?
             cout << "WARNING! Motor error message received. System will now shut now.\n";
             return -4;
@@ -862,7 +776,7 @@ int RunParaBlend(double point[7], bool showAttention){
         // Write to traking file
         ofstream myfile;
         myfile.open ("traking.txt");
-        myfile << in1[0] << " " << in1[1] << " " << in1[2] << " " << in1[3] << " " << in1[4] << " " << in1[5] << endl;
+        myfile << r.in[0] << " " << r.in[1] << " " << r.in[2] << " " << r.in[3] << " " << r.in[4] << " " << r.in[5] << endl;
         myfile << railOffset << endl;
         myfile.close();
 
@@ -889,34 +803,36 @@ int RunParaBlend(double point[7], bool showAttention){
     return 0;
 }
 
-double ScaleRailLvl(double brickLvl){
-    double output = brickLvl * 0.8;
-    if (output > 1.2){ return 1.2; } // Upper limit of linear rail
-    else if (output < 0) { return 0; } // lower limit of linear rail
-    return output;
-}
+// double ScaleRailLvl(double brickLvl){
+//     double output = brickLvl * 0.8;
+//     if (output > 1.2){ return 1.2; } // Upper limit of linear rail
+//     else if (output < 0) { return 0; } // lower limit of linear rail
+//     return output;
+// }
 
 //void RunBricksTraj(const dynamixel::GroupSyncRead &groupSyncRead, int listOffset, bool showAttention, bool waitBtn){
-void RunBricksTraj(bool groupSyncRead, int listOffset, bool showAttention, bool waitBtn){
-    // 0.75 0.865 1.6 p10 //{0.6723, 1.3195, 1.4611
-    double brickPickUp[7] = {0.765, 0.8693, 1.604, 0, 0, 0, 10}; // !!!! Define the brick pick up point !!!!, the last digit is a dummy number for time duration.
-    double safePt[3] = {1.5, 1.37, 1.65}; // a safe area near to the arm // 0.21 safe height from ABB
+void RunBricksTraj(HANDLE hComm, CDPR &r, unsigned char* Ard_char, int listOffset, bool showAttention, bool waitBtn){
+    double brickPickUp[7] = {9.9, 6.72, -2.97, 0, 0, 0, 10}; // !!!! Define the brick pick up point !!!!, the last digit is a dummy number for time duration.
+    double safePt[3] = {8.3, 6.72, -2.7}; // a safe area near to the arm // 0.21 safe height from ABB
     double goalPos[7] = {2, 2, 1, 0, 0, 0, 10}; // updated according to brick position
-    double velLmt = 0.14; // meters per second
-    double safeT = 1200; // in ms, time to raise to safety height
-    double safeH = 0.08; // meter, safety height from building brick level
+    double velLmt = 0.14; // meters per second //////// -65 deg for pick up //////////9.88 6.71 -2.76 safe height after pick up
+    double safeT = 1600; // in ms, time to raise to safety height
+    double safeH = 0.12; // meter, safety height from building brick level
     double currentBrkLvl = railOffset; // meter, check if the rail offset is the same as target BrkLvl
     double dura = 0;
+    unsigned char tmp, msg[256];
+    DWORD dwEventMask, BytesRead, dNoOfBytesWritten = 0;
+    bool Status;
 
     // Go through the given bricks
     for (int i = 0; i < brickPos.size(); i++) {
         ofstream myfile; int timeout_i = 0;
 
-        // Check if rails need to be raised
-        if(ScaleRailLvl(brickPos[i][2] - 0.04) != currentBrkLvl){
-            currentBrkLvl = ScaleRailLvl(brickPos[i][2] - 0.0404); // Offset one brick height from building levei, ie 0.0404m
-            if(RaiseRailTo(currentBrkLvl) < 0) { cout << "Trajectory aborted.\n"; return; } // raise rail to the building brick level
-        }
+        // // Check if rails need to be raised
+        // if(ScaleRailLvl(brickPos[i][2] - 0.04) != currentBrkLvl){
+        //     currentBrkLvl = ScaleRailLvl(brickPos[i][2] - 0.0404); // Offset one brick height from building levei, ie 0.0404m
+        //     if(RaiseRailTo(currentBrkLvl) < 0) { cout << "Trajectory aborted.\n"; return; } // raise rail to the building brick level
+        // }
 
         // Wait for button input before builing a brick
         if(waitBtn && quitType != 'f'){
@@ -941,140 +857,87 @@ void RunBricksTraj(bool groupSyncRead, int listOffset, bool showAttention, bool 
 
         // Go pick up a brick
         if(showAttention) { cout << "Picking up a brick\n"; }
-        Ard_char[0] = 'g'; // Signal arduino to release ABB gripper and hard code waiting
-        if (!(bool)WriteFile(hComm, Ard_char, 1, &dNoOfBytesWritten, NULL)){ cout << "Arduino writing error: " << GetLastError() << endl; quitType = 'q'; return; }
-        // if(packetHandler->write4ByteTxRx(portHandler, DXL1_ID, ADDR_GOAL_POSITION, 114, &dxl_error)){ cout << "Error in rotating gripper\n"; return; } //////////////////114 is 10 deg
-        Sleep(10); // short break between RS-485 communication
-        // if(packetHandler->write2ByteTxRx(portHandler, DXL2_ID, ADDR_GOAL_CURRENT, gpOpen, &dxl_error)){ cout << "Error in opening gripper\n"; return; }
-        goalPos[6] = sqrt(pow(brickPickUp[0]-in1[0],2)+pow(brickPickUp[1]-in1[1],2)+pow(brickPickUp[2]+0.21-in1[2],2))/velLmt*1000; // calculate time // 0.21 is height above brick pickup
+        //// ... inform brick station ... ////
+        Ard_char[1] = 'd'; Ard_char[3] = '-'; Ard_char[4] = '6'; Ard_char[5] = '3'; Ard_char[6] = ' ';
+        SendGripperSerial(hComm, Ard_char); // Rotate gripper // -63 deg at brick pick-up station
+        Ard_char[3] = ' '; Ard_char[4] = ' '; // Reset the ending number with space char
+        Sleep(50); // short break between bluetooth communication
+        Ard_char[1] = 'o';
+        SendGripperSerial(hComm, Ard_char); // Open gripper
+        goalPos[6] = sqrt(pow(brickPickUp[0]-r.in[0],2)+pow(brickPickUp[1]-r.in[1],2)+pow(brickPickUp[2]+0.21-r.in[2],2))/velLmt*1000; // calculate time // 0.21 is height above brick pickup
         copy(brickPickUp, brickPickUp+3, begin(goalPos));
         goalPos[2] += 0.21; // 0.21 safe height from ABB
-        if(RunParaBlend(goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // Go to safe height above pick up
+        if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // Go to safe height above pick up
         Sleep(100);
-        // Wait for brick to be ready from ABB
-        msg[0] = 'w';
-        while(msg[0]!='d'){
-            // if(kbhit()){ // manual input
-            //     cout << "\nmanual input\n";
-            //     cin >> tmp;
-            //     if(tmp == 'd'){msg[0]='d'; cout << "Brick is ready from ABB :) \n"; break;}
-            // }
-            Status = WaitCommEvent(hComm, &dwEventMask, NULL); // wait till brick is ready from ABB
-            if (Status == false){ cout << "Error in setting WaitCommEvent()\n";} //quitType = 'q'; return; }
-            else {
-                ReadFile(hComm, &tmp, sizeof(tmp), &BytesRead, NULL);
-                msg[0] = tmp;
-                cout << msg[0] << ";";
-                if(msg[0]=='d'){ cout << "Brick is ready from ABB :) \n"; }
-            }
-        }
+        //// ... wait for brick to be available ... ////
         
         // fall and pick up brick
         brickPickUp[6] = safeT*1.2;
-        if(RunParaBlend(brickPickUp) < 0) { cout << "Trajectory aborted.\n"; return; } // Go pick up
+        if(RunParaBlend(r, brickPickUp) < 0) { cout << "Trajectory aborted.\n"; return; } // Go pick up
         Sleep(600); //////////// FOR TESTING ONYL, delete later!!!!!!!!!!!!!!!!!!
-        // if(packetHandler->write2ByteTxRx(portHandler, DXL2_ID, ADDR_GOAL_CURRENT, gpClose, &dxl_error)){ cout << "Error in closing gripper\n"; return; }
+        Ard_char[1] = 'c';
+        SendGripperSerial(hComm, Ard_char); // Close gripper
         Sleep(800); // wait for grippper to close
-        Ard_char[0] = 'r'; // Signal arduino to release ABB gripper and hard code waiting
-        if (!(bool)WriteFile(hComm, Ard_char, 1, &dNoOfBytesWritten, NULL)){ cout << "Arduino writing error: " << GetLastError() << endl; quitType = 'q'; return; }
-        
-        // Wait till brick is released from ABB
-        int msgCnt = 0; Ard_char[0] = 'o'; // Hard code signal arduino to open ABB gripper
-        Status = WaitCommEvent(hComm, &dwEventMask, NULL); // wait till brick is ready from ABB
-        if (Status == false){ cout << "Error in setting WaitCommEvent()\n";} //quitType = 'q'; return; }
-        else {
-            do{
-                ReadFile(hComm, &tmp, sizeof(tmp), &BytesRead, NULL);
-                msg[msgCnt] = tmp;
-                if(tmp == 'o'){ cout << " -o- Received the gripper opening done signal :) \n"; }
-                if (msgCnt<250){ msgCnt++; }
-                else{
-                    msgCnt = 0; // Restart msg count
-                    timeout_i += 1;
-                    if (!(timeout_i%3)){ // Send hard code open to ABB after some timeout; 20 loops is ard 5 min
-                        Ard_char[0] = 'c'; // Hard code signal arduino to close ABB gripper
-                        if (!(bool)WriteFile(hComm, Ard_char, 1, &dNoOfBytesWritten, NULL)){ cout << "Arduino writing error: " << GetLastError() << endl; quitType = 'q'; return; }
-                        Sleep(3000); // Wait a bit before sending next signal
-                        Ard_char[0] = 'o'; // Hard code signal arduino to close ABB gripper
-                        if (!(bool)WriteFile(hComm, Ard_char, 1, &dNoOfBytesWritten, NULL)){ cout << "Arduino writing error: " << GetLastError() << endl; quitType = 'q'; return; }
-                        cout << "ATTENTION: hard code closing is sent to ABB\n";
-                        abbCount += 1;
-                    }
-                }
-                if(kbhit()){ // Emergency quit during trajectory control
-                    cout << "\nSystem interruption (Waiting for ABB)!! Do you want to quit the trajectory control?\nq - Quit trajectory\nf - Finish this loop of motion\nr - Resume trajectory and Request ABB gripper release\n";
-                    cin >> quitType;
-                    if(quitType == 'q' || quitType == 'Q'){
-                        cout << "Trajectory emergency quit\n";
-                        return;
-                    }
-                    if(quitType == 'r' || quitType == 'R'){
-                        Ard_char[0] = 'c'; // Hard code signal arduino to close ABB gripper
-                        if (!(bool)WriteFile(hComm, Ard_char, 1, &dNoOfBytesWritten, NULL)){ cout << "Arduino writing error: " << GetLastError() << endl; quitType = 'q'; return; }
-                        Sleep(3000); // Wait a bit before sending next signal
-                        Ard_char[0] = 'o'; // Hard code signal arduino to close ABB gripper
-                        if (!(bool)WriteFile(hComm, Ard_char, 1, &dNoOfBytesWritten, NULL)){ cout << "Arduino writing error: " << GetLastError() << endl; quitType = 'q'; return; }
-                        cout << "ATTENTION: hard code closing is sent to ABB\n";
-                        abbCount += 1;
-                    }
-                }
-            } while (tmp != 'o'); // while (BytesRead > 0 && tmp != 'o');
-        }
-        Sleep(4000); // wait for ABB to return stand by pos??? // fastest 7000
+        //// ... wait for brick released from station, also 5th pole is at safe position ... ////
 
         // Go to building level
-        if(showAttention) { cout << "Raising brick from ABB\n"; }
+        if(showAttention) { cout << "Raising brick from station\n"; }
         copy(brickPickUp, brickPickUp+3, begin(goalPos));
         goalPos[2] += 0.14;
         goalPos[6] = safeT;
-        if(RunParaBlend(goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // raise the brick from robot arm
-        Sleep(50); // Wait for ABB to leave
+        if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // raise the brick from robot arm
         if(showAttention) { cout << "Going to building level\n"; }
-        // rotationG = brickPos[i][3] * 11.26666;; // conversion from angle to motor command
-        // if(packetHandler->write4ByteTxRx(portHandler, DXL1_ID, ADDR_GOAL_POSITION, rotationG, &dxl_error)){ cout << "Error in rotating gripper\n"; return; }
+        Ard_char[1] = 'd';
+        string s = to_string((int)brickPos[i][3]);
+        for(int i=0; i<min(s.size(),4); i++){ Ard_char[i+3]=s[i]; }
+        SendGripperSerial(hComm, Ard_char); // Rotate gripper according to brickPos
         copy(safePt, safePt+3, begin(goalPos)); // safe point
-        goalPos[6] = sqrt(pow(safePt[0]-in1[0],2)+pow(safePt[1]-in1[1],2)+pow(safePt[2]-in1[2],2))/velLmt*1000; // calculate time
-        if(RunParaBlend(goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // return to safe point
-        goalPos[2] = brickPos[i][2] + endEffOffset + safeH; // brick level with safe height
-        goalPos[6] = sqrt(pow(goalPos[0]-in1[0],2)+pow(goalPos[1]-in1[1],2)+pow(goalPos[2]-in1[2],2))/velLmt*1000;
-        if(RunParaBlend(goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // raise the brick to building level
-
+        goalPos[6] = sqrt(pow(safePt[0]-r.in[0],2)+pow(safePt[1]-r.in[1],2)+pow(safePt[2]-r.in[2],2))/velLmt*1000; // calculate time
+        if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // return to safe point
+        goalPos[2] = brickPos[i][2] + r.EEOffset() + safeH; // brick level with safe height
+        goalPos[6] = sqrt(pow(goalPos[0]-r.in[0],2)+pow(goalPos[1]-r.in[1],2)+pow(goalPos[2]-r.in[2],2))/velLmt*1000;
+        if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // raise the brick to building level
+        
         // Go to brick placing position
         if(showAttention) { cout << "Going to brick position\n"; }
         goalPos[0] = brickPos[i][0];
         goalPos[1] = brickPos[i][1];
-        goalPos[6] = sqrt(pow(goalPos[0]-in1[0],2)+pow(goalPos[1]-in1[1],2))/velLmt*1000;
-        if(RunParaBlend(goalPos) < 0) { cout << "Trajectory aborted.\n"; return; }
+        goalPos[6] = sqrt(pow(goalPos[0]-r.in[0],2)+pow(goalPos[1]-r.in[1],2))/velLmt*1000;
+        if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; }
 
         // Place brick
         if(showAttention) { cout << "Placing brick\n"; }
         goalPos[2] -= safeH;
         goalPos[6] = safeT;
-        if(RunParaBlend(goalPos) < 0) { cout << "Trajectory aborted.\n"; return; }
-        // if(packetHandler->write2ByteTxRx(portHandler, DXL2_ID, ADDR_GOAL_CURRENT, gpOpen, &dxl_error)){ cout << "Error in opening gripper\n"; return; }
+        if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; }
+        Ard_char[1] = 'o';
+        SendGripperSerial(hComm, Ard_char); // Open gripper
         Sleep(200); //Wait a while after placing brick
         
         // Rise and leave building area, stand by for next brick pick up
         if(showAttention) { cout << "Going to stand by position\n"; }
         goalPos[2] += safeH;
-        if(RunParaBlend(goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // leave building level
-        // if(packetHandler->write4ByteTxRx(portHandler, DXL1_ID, ADDR_GOAL_POSITION, neutralRot, &dxl_error)){ cout << "Error in rotating gripper\n"; return; }
+        if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // leave building level
+        Ard_char[1] = 'd'; Ard_char[3] = '3'; Ard_char[4] = '0'; Ard_char[5] = ' '; Ard_char[6] = ' ';
+        SendGripperSerial(hComm, Ard_char); // Rotate gripper // 30 deg at brick pick-up station
         copy(begin(safePt), end(safePt), begin(goalPos)); // safe x,y,z position
-        goalPos[6] = sqrt(pow(goalPos[0]-in1[0],2)+pow(goalPos[1]-in1[1],2)+pow(goalPos[2]-in1[2],2))/velLmt*1000;
-        if(RunParaBlend(goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // return to safe point 
+        goalPos[6] = sqrt(pow(goalPos[0]-r.in[0],2)+pow(goalPos[1]-r.in[1],2)+pow(goalPos[2]-r.in[2],2))/velLmt*1000;
+        if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // return to safe point 
         
-        cout << "IN: "<< in1[0] << " " << in1[1] << " " << in1[2] << " " << in1[3] << " " << in1[4] << " " << in1[5] << railOffset << endl;
+        r.PrintIn();
+        cout << railOffset << endl;
         cout << "----------Completed brick #" << i + 1 + listOffset <<"----------" << endl;
     }
-    // packetHandler->write2ByteTxRx(portHandler, DXL2_ID, ADDR_GOAL_CURRENT, 0, &dxl_error);
-    copy(home, home+3, begin(goalPos));
-    goalPos[6] = sqrt(pow(goalPos[0]-in1[0],2)+pow(goalPos[1]-in1[1],2)+pow(goalPos[2]-in1[2],2))/velLmt*1000;
-    if(RunParaBlend(goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // home after building all
+    Ard_char[1] = 'r';
+    SendGripperSerial(hComm, Ard_char); // Release gripper
+    copy(r.home, r.home+3, begin(goalPos));
+    goalPos[6] = sqrt(pow(goalPos[0]-r.in[0],2)+pow(goalPos[1]-r.in[1],2)+pow(goalPos[2]-r.in[2],2))/velLmt*1000;
+    if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // home after building all
     cout << "Photo time~~\n"; Sleep(3000);
 }
 
 // void ReverseBricksTraj(const dynamixel::GroupSyncRead &groupSyncRead, int listOffset, bool showAttention){
-void ReverseBricksTraj(bool groupSyncRead, int listOffset, bool showAttention){
+void ReverseBricksTraj(CDPR &r, int listOffset, bool showAttention){
     double brickDropOff[7] = {0.72, 2.14, 1.9, 0, 0, 0, 10}; // !!!! Define the brick drop off point !!!!, the last digit is a dummy number for time duration. // rotation 165 for drop off
     double safePt[3] = {1.6, 1.8, 2.05}; // a safe area near the drop off
     double goalPos[7] = {2, 2, 1, 0, 0, 0, 10}; // updated according to brick position
@@ -1091,25 +954,19 @@ void ReverseBricksTraj(bool groupSyncRead, int listOffset, bool showAttention){
     
     // Go through the given bricks
     for (int i = brickPos.size()-1; i > -1; i--) {
-        // Check if rails need to be raised
-        if(ScaleRailLvl(brickPos[i][2] - 0.04) != currentBrkLvl){
-            currentBrkLvl = ScaleRailLvl(brickPos[i][2] - 0.04); // Offset one brick height from building levei, ie 0.04m
-            if(RaiseRailTo(currentBrkLvl) < 0) { cout << "Trajectory aborted.\n"; return; } // raise rail to the building brick level
-        }
-
-        // Update index file for grasshopper display
-        // ofstream myfile;
-        // myfile.open ("indexBrk.txt");
-        // myfile << i + 1 + listOffset;
-        // myfile.close();
+        // // Check if rails need to be raised
+        // if(ScaleRailLvl(brickPos[i][2] - 0.04) != currentBrkLvl){
+        //     currentBrkLvl = ScaleRailLvl(brickPos[i][2] - 0.04); // Offset one brick height from building levei, ie 0.04m
+        //     if(RaiseRailTo(currentBrkLvl) < 0) { cout << "Trajectory aborted.\n"; return; } // raise rail to the building brick level
+        // }
 
         // Go to building level
         if(showAttention) { cout << "Going to building level\n"; }
         // if(packetHandler->write2ByteTxRx(portHandler, DXL2_ID, ADDR_GOAL_CURRENT, gpOpen, &dxl_error)){ cout << "Error in opening gripper\n"; return; }
-        copy(in1, in1+2, begin(goalPos));
-        goalPos[2] = brickPos[i][2] + endEffOffset + safeH; // brick level
-        goalPos[6] = sqrt(pow(goalPos[2]-in1[2],2))/velLmt*1000 + 800; // calculate time + hardcode time to smooth out sudden jump
-        if(RunParaBlend(goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // raise from current pos to builing level
+        copy(r.in, r.in+2, begin(goalPos));
+        goalPos[2] = brickPos[i][2] + r.EEOffset() + safeH; // brick level
+        goalPos[6] = sqrt(pow(goalPos[2]-r.in[2],2))/velLmt*1000 + 800; // calculate time + hardcode time to smooth out sudden jump
+        if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // raise from current pos to builing level
         
         // Go to brick placing position
         // rotationG = brickPos[i][3] * 11.26666;; // conversion from angle to motor command
@@ -1117,154 +974,104 @@ void ReverseBricksTraj(bool groupSyncRead, int listOffset, bool showAttention){
         if(showAttention) { cout << "Going to brick position\n"; }
         goalPos[0] = brickPos[i][0];                       
         goalPos[1] = brickPos[i][1];
-        goalPos[6] = sqrt(pow(goalPos[0]-in1[0],2)+pow(goalPos[1]-in1[1],2))/velLmt*1000;
-        if(RunParaBlend(goalPos) < 0) { cout << "Trajectory aborted.\n"; return; }
+        goalPos[6] = sqrt(pow(goalPos[0]-r.in[0],2)+pow(goalPos[1]-r.in[1],2))/velLmt*1000;
+        if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; }
         
         // Retrieve brick
         if(showAttention) { cout << "Retrieving brick\n"; }
         goalPos[2] -= safeH;
         goalPos[6] = safeT;
-        if(RunParaBlend(goalPos) < 0) { cout << "Trajectory aborted.\n"; return; }
+        if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; }
         // if(packetHandler->write2ByteTxRx(portHandler, DXL2_ID, ADDR_GOAL_CURRENT, gpClose, &dxl_error)){ cout << "Error in closing gripper\n"; return; }
         Sleep(1500); // Wait for gripper to close
 
         // Rise and leave building area, stand by for next brick pick up
         if(showAttention) { cout << "Going to drop off position\n"; }
         goalPos[2] += safeH;
-        if(RunParaBlend(goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // leave building level
+        if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // leave building level
         // if(packetHandler->write4ByteTxRx(portHandler, DXL1_ID, ADDR_GOAL_POSITION, neutralRot, &dxl_error)){ cout << "Error in rotating gripper\n"; return; }
         copy(begin(safePt), end(safePt), begin(goalPos)); // safe x,y position
-        goalPos[6] = sqrt(pow(goalPos[0]-in1[0],2)+pow(goalPos[1]-in1[1],2)+pow(goalPos[2]-in1[2],2))/velLmt*1000;
-        if(RunParaBlend(goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // return to safe point 
+        goalPos[6] = sqrt(pow(goalPos[0]-r.in[0],2)+pow(goalPos[1]-r.in[1],2)+pow(goalPos[2]-r.in[2],2))/velLmt*1000;
+        if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // return to safe point 
         
         // Dropping off a brick
         if(showAttention) { cout << "Dropping off the brick\n"; }
-        brickDropOff[6] = sqrt(pow(brickDropOff[0]-in1[0],2)+pow(brickDropOff[1]-in1[1],2)+pow(brickDropOff[2]-in1[2],2))/velLmt*1000; // calculate time
-        if(RunParaBlend(brickDropOff) < 0) { cout << "Trajectory aborted.\n"; return; }
+        brickDropOff[6] = sqrt(pow(brickDropOff[0]-r.in[0],2)+pow(brickDropOff[1]-r.in[1],2)+pow(brickDropOff[2]-r.in[2],2))/velLmt*1000; // calculate time
+        if(RunParaBlend(r, brickDropOff) < 0) { cout << "Trajectory aborted.\n"; return; }
         brickDropOff[6] = 800; // Safe time for dropping
         brickDropOff[2] -= 0.02; // go down a little more before real drop
-        if(RunParaBlend(brickDropOff) < 0) { cout << "Trajectory aborted.\n"; return; }
+        if(RunParaBlend(r, brickDropOff) < 0) { cout << "Trajectory aborted.\n"; return; }
         // if(packetHandler->write2ByteTxRx(portHandler, DXL2_ID, ADDR_GOAL_CURRENT, gpOpen, &dxl_error)){ cout << "Error in opening gripper\n"; return; }
         Sleep(500); // wait a little after dropping brick
         brickDropOff[2] += 0.02; // go up a little more after real drop
-        if(RunParaBlend(brickDropOff) < 0) { cout << "Trajectory aborted.\n"; return; }
+        if(RunParaBlend(r, brickDropOff) < 0) { cout << "Trajectory aborted.\n"; return; }
         copy(begin(safePt), end(safePt), begin(goalPos)); // safe point
-        goalPos[6] = sqrt(pow(goalPos[0]-in1[0],2)+pow(goalPos[1]-in1[1],2)+pow(goalPos[2]-in1[2],2))/velLmt*1000;
-        if(RunParaBlend(goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // return to safe point 
+        goalPos[6] = sqrt(pow(goalPos[0]-r.in[0],2)+pow(goalPos[1]-r.in[1],2)+pow(goalPos[2]-r.in[2],2))/velLmt*1000;
+        if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // return to safe point 
         
-        cout << "IN: "<< in1[0] << " " << in1[1] << " " << in1[2] << " " << in1[3] << " " << in1[4] << " " << in1[5] << endl;
+        r.PrintIn();
         cout << "----------Retrieved brick #" << i + 1 + listOffset <<"----------" << endl;
     }
     // packetHandler->write2ByteTxRx(portHandler, DXL2_ID, ADDR_GOAL_CURRENT, 0, &dxl_error);
-    copy(home, home+3, begin(goalPos));
-    goalPos[6] = sqrt(pow(goalPos[0]-in1[0],2)+pow(goalPos[1]-in1[1],2)+pow(goalPos[2]-in1[2],2))/velLmt*1000;
-    if(RunParaBlend(goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // home after retrieving all
+    copy(r.home, r.home+3, begin(goalPos));
+    goalPos[6] = sqrt(pow(goalPos[0]-r.in[0],2)+pow(goalPos[1]-r.in[1],2)+pow(goalPos[2]-r.in[2],2))/velLmt*1000;
+    if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // home after retrieving all
 }
 
-// void RunDemoTraj(const dynamixel::GroupSyncRead &groupSyncRead, bool showAttention){ 
-void RunDemoTraj(bool groupSyncRead, bool showAttention){ 
-    double goalPos[7] = {2, 2, 1, 0, 0, 0, 10}; // updated according to brick position
-    const double velLmt = 0.12; // meters per second
-    const double safeT = 1500; // in ms, time to raise to safety height
-    const double safeH = 0.08; // meter, safety height from building brick level
-    double currentBrkLvl = railOffset; // meter, check if the rail offset is the same as target BrkLvl
-    double dura = 0;
-    
-    if (brickPos.size()%2) { cout << "demo.csv line no. inconsistant, please check file\n"; return; } // Check if the brick pos file is even number
+void RunTrajPoints(CDPR &r){
+    // Read raw points from traj.csv
+    ifstream file ("traj.csv");
+    vector<double> row;
+    string line, word, temp;
 
-    // Go through the given bricks
-    for (int i = 0; i < brickPos.size(); i++) {
-        // Check if rails need to be raised
-        if(ScaleRailLvl(brickPos[i][2] - 0.04) != currentBrkLvl){
-            currentBrkLvl = ScaleRailLvl(brickPos[i][2] - 0.04); // Offset one brick height from building levei, ie 0.04m
-            if(RaiseRailTo(currentBrkLvl) < 0) { cout << "Trajectory aborted.\n"; return; } // raise rail to the building brick level
+    brickPos.clear();
+    if(file.is_open()){
+        while (getline(file, line)){
+            row.clear();
+            stringstream s(line);
+            while (s >> word){
+                row.push_back(stod(word)); // convert string to double stod()
+            }
+            brickPos.push_back(row);
         }
-
-        // Go to building level
-        if(showAttention) { cout << "Going to building level\n"; }
-        // if(packetHandler->write2ByteTxRx(portHandler, DXL2_ID, ADDR_GOAL_CURRENT, gpOpen, &dxl_error)){ cout << "Error in opening gripper\n"; return; }
-        copy(in1, in1+2, begin(goalPos));
-        goalPos[2] = brickPos[i][2] + endEffOffset + safeH; // brick level, WITH  end effector offset?????
-        goalPos[6] = sqrt(pow(goalPos[2]-in1[2],2))/velLmt*1000; // calculate time
-        if(RunParaBlend(goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // raise from current pos to builing level
-        
-        // Go to brick placing position
-        Sleep(500);
-        // rotationG = brickPos[i][3] * 11.26666; // conversion from angle to motor command
-        // if(packetHandler->write4ByteTxRx(portHandler, DXL1_ID, ADDR_GOAL_POSITION, rotationG, &dxl_error)){ cout << "Error in rotating gripper\n"; return; }
-        if(showAttention) { cout << "Going to brick position\n"; }
-        goalPos[0] = brickPos[i][0];                       
-        goalPos[1] = brickPos[i][1];
-        goalPos[6] = sqrt(pow(goalPos[0]-in1[0],2)+pow(goalPos[1]-in1[1],2))/velLmt*1000;
-        if(RunParaBlend(goalPos) < 0) { cout << "Trajectory aborted.\n"; return; }
-        
-        // Retrieve brick
-        if(showAttention) { cout << "Retrieving brick\n"; }
-        goalPos[2] -= safeH;
-        goalPos[6] = safeT;
-        if(RunParaBlend(goalPos) < 0) { cout << "Trajectory aborted.\n"; return; }
-        // if(packetHandler->write2ByteTxRx(portHandler, DXL2_ID, ADDR_GOAL_CURRENT, gpClose, &dxl_error)){ cout << "Error in closing gripper\n"; return; }
-        Sleep(1500); // Wait for gripper to close
-
-        // Rise and leave building area, stand by for next brick pick up
-        if(showAttention) { cout << "Going to drop off position\n"; }
-        goalPos[2] += safeH;
-        if(RunParaBlend(goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // leave building level
-        
-
-        ///////////////////////////////////// Place brick in second location /////////////////////////////////////
-        i += 1; // Add to next brick position
-
-        // Rotate brick to next place down brick posisiton angle
-        Sleep(500);
-        // rotationG = brickPos[i][3] * 11.26666; // conversion from angle to motor command
-        // if(packetHandler->write4ByteTxRx(portHandler, DXL1_ID, ADDR_GOAL_POSITION, rotationG, &dxl_error)){ cout << "Error in rotating gripper\n"; return; }
-        
-        // Go to brick placing position
-        if(showAttention) { cout << "Going to brick position\n"; }
-        goalPos[0] = brickPos[i][0];                       
-        goalPos[1] = brickPos[i][1];
-        goalPos[2] = brickPos[i][2] + endEffOffset + safeH; // With end effector offset
-        goalPos[6] = sqrt(pow(goalPos[0]-in1[0],2)+pow(goalPos[1]-in1[1],2))/velLmt*1000;
-        if(RunParaBlend(goalPos) < 0) { cout << "Trajectory aborted.\n"; return; }
-
-        // Place brick
-        if(showAttention) { cout << "Placing brick\n"; }
-        goalPos[2] -= safeH;
-        goalPos[6] = safeT;
-        if(RunParaBlend(goalPos) < 0) { cout << "Trajectory aborted.\n"; return; }
-        // if(packetHandler->write2ByteTxRx(portHandler, DXL2_ID, ADDR_GOAL_CURRENT, gpOpen, &dxl_error)){ cout << "Error in opening gripper\n"; return; }
-        Sleep(500); //Wait a while after placing brick
-        goalPos[2] += safeH;
-        if(RunParaBlend(goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // leave building level
-              
-        cout << "IN: "<< in1[0] << " " << in1[1] << " " << in1[2] << " " << in1[3] << " " << in1[4] << " " << in1[5] << railOffset << endl;
+        cout << "Completed reading traj input file" << endl;
+    }
+    else{ cout << "Failed to read input file. Please check \"traj.csv\" file." << endl; return;
+    }
+    
+    // Go through the given points
+    double goalPos[7] {};
+    for (int i = 0; i < brickPos.size(); i++) {
+        copy(begin(brickPos[i]), end(brickPos[i]), begin(goalPos));
+        // cout << "i: " << i << endl;
+        // cout << "brickPos("<< brickPos[i].size()<<"): "<< brickPos[i][0]<<","<< brickPos[i][1]<<","<< brickPos[i][2]<<","<< brickPos[i][3]<<","<< brickPos[i][4]<<","<< brickPos[i][5]<<","<< brickPos[i][6]<<endl;
+        if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; }              
+        r.PrintIn();
+        cout << railOffset << endl;
         cout << "----------Completed brick #" << i + 1 <<"----------" << endl;
     }
-    copy(home, home+3, begin(goalPos));
-    goalPos[6] = sqrt(pow(goalPos[0]-in1[0],2)+pow(goalPos[1]-in1[1],2)+pow(goalPos[2]-in1[2],2))/velLmt*1000;
-    if(RunParaBlend(goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // home after each loop
 }
 
-int32_t ToMotorCmd(int motorID, double length){ // applicable for all 12 motors
-    double scale = 490310.0949; //509295.818; // 6400 encoder count per revoltion, 25 times gearbox, 50mm spool radias. ie 6400*25/(2*pi*0.05) 
-    if(motorID >= NodeNum) {
+/* int32_t ToMotorCmd(CDPR r, int motorID, double length){ // applicable for all 12 motors
+    double scale = r.MotorScale(); //509,295.8179; // 6400 encoder count per revoltion, 25 times gearbox, 50mm spool radias. ie 6400*25/(2*pi*0.05) 
+    if(motorID >= r.NodeNum()) {
         scale = 38400000; // 38400000; // 6400 encoder count per revoltion, 30 times gearbox, linear rail pitch 5mm. ie 6400*30/0.005 
         return length * scale;
     }
     else if(motorID == -1) { return length * scale; }
-    return (length - offset[motorID]) * scale;
-}
+    return (length - r.offset[motorID]) * scale;
+} */
 
-void SendMotorCmd(int n){
+void SendMotorCmd(CDPR &r, int n){
     ofstream myfile;
     // convert to absolute cable length command
     try{
-        int32_t step = ToMotorCmd(n, out1[n]);
+        // int32_t step = ToMotorCmd(n, out1[n]);
+        int32_t step = r.ToMotorCmd(n, r.out[n]);
         nodeList[n]->Motion.MoveWentDone();
         nodeList[n]->Motion.MovePosnStart(step, true, true); // absolute position
         float trq = nodeList[n]->Motion.TrqMeasured.Value();
-        if(abs(trq)>absTorqueLmt){
+        if(abs(trq)>r.AbsTorqLmt()){
             myfile.open("log.txt", ios::app);
             myfile << "Motor [" << n << "] exceeds torque limit: " << trq;
             myfile.close();
@@ -1291,7 +1098,7 @@ void SendMotorCmd(int n){
     }
 }
 
-void SendMotorTrq(int n){
+void SendMotorTrq(CDPR &r, int n){
     nodeList[n]->Motion.TrqCommanded.Refresh();
     float currentTorque = nodeList[n]->Motion.TrqCommanded.Value();
 
@@ -1301,36 +1108,37 @@ void SendMotorTrq(int n){
     printf("Node[%d], current torque: %f\n", n, currentTorque);
 }
 
-void SendMotorGrp(bool IsTorque, bool IsLinearRail){
+void SendMotorGrp(CDPR &r, bool IsTorque, bool IsLinearRail){
     SysManager* myMgr = SysManager::Instance();
     IPort &myPort = myMgr->Ports(0);
-    void (*func)(int){ SendMotorCmd };
+    void (*func)(CDPR&, int){ SendMotorCmd };
     if(IsTorque){ func = SendMotorTrq; }
     int n = IsLinearRail? 4 : 0; // offset in nodeList
     
-    thread nodeThreads[NodeNum];
-    for(int i = 0; i < NodeNum; i++){
-        nodeThreads[i] = thread((*func), i + n); 
+    thread nodeThreads[8];
+    for(int i = 0; i < r.NodeNum(); i++){
+        nodeThreads[i] = thread((*func), r, i + n); 
     }
-    for(int i = 0; i < NodeNum; i++){
+    for(int i = 0; i < r.NodeNum(); i++){
         nodeThreads[i].join();
     }
     // myPort.Adv.TriggerMovesInGroup(1);
     if (quitType!='e'){ myPort.Adv.TriggerMovesInGroup(1); } // Only move all if no error is caugth
 }
 
-void TrjHome(){// !!! Define the task space velocity limit for homing !!!
-    double velLmt = 0.1; // unit in meters per sec
-    double dura = sqrt(pow(in1[0]-home[0],2)+pow(in1[1]-home[1],2)+pow(in1[2]-home[2],2))/velLmt*1000; // *1000 to change unit to ms
+void TrjHome(CDPR &r){// !!! Define the task space velocity limit for homing !!!
+    double velLmt = 0.08; // 0.1 // unit in meters per sec
+    double dura = sqrt(pow(r.in[0]-r.home[0],2)+pow(r.in[1]-r.home[1],2)+pow(r.in[2]-r.home[2],2))/velLmt*1000; // *1000 to change unit to ms
+    double a[6], b[6], c[6]; // cubic coefficients
     double t = 0;
     cout << "Expected homing duration: " << dura <<"ms\n";
     if (dura == 0){ return; }
 
     for(int i = 0; i < 6; i++){
         // solve coefficients of equations for cubic
-        a[i] = in1[i];
-        b[i] = 3 / (dura * dura) * (home[i] - in1[i]);
-        c[i] = -2 / (dura * dura * dura) * (home[i] - in1[i]);
+        a[i] = r.in[i];
+        b[i] = 3 / (dura * dura) * (r.home[i] - r.in[i]);
+        c[i] = -2 / (dura * dura * dura) * (r.home[i] - r.in[i]);
     }
     while (t <= dura){
         auto start = chrono::steady_clock::now();
@@ -1338,18 +1146,18 @@ void TrjHome(){// !!! Define the task space velocity limit for homing !!!
         
         // CUBIC equation
         for (int j = 0; j < 6; j++){
-            in1[j] = a[j] + b[j] * t * t + c[j] * t * t * t;
+            r.in[j] = a[j] + b[j] * t * t + c[j] * t * t * t;
         }
-        cout << "IN: "<< in1[0] << " " << in1[1] << " " << in1[2] << " " << in1[3] << " " << in1[4] << " " << in1[5] << endl;
-        pose_to_length(in1, out1, railOffset);
+        r.PrintIn();
+        r.PoseToLength(r.in, r.out, railOffset);
         // cout << "OUT: "<<  out1[0] << " " << out1[1] << " " << out1[2] << " " << out1[3] << endl;
         
-        SendMotorGrp();
+        SendMotorGrp(r);
 
         // Write to traking file
         ofstream myfile;
         myfile.open ("traking.txt");
-        myfile << in1[0] << " " << in1[1] << " " << in1[2] << " " << in1[3] << " " << in1[4] << " " << in1[5] << endl;
+        myfile << r.in[0] << " " << r.in[1] << " " << r.in[2] << " " << r.in[3] << " " << r.in[4] << " " << r.in[5] << endl;
         myfile << railOffset << endl;
         myfile.close();
         
@@ -1383,7 +1191,7 @@ void TrjHome(){// !!! Define the task space velocity limit for homing !!!
     cout << "Homing with trajectory completed\n";
 }
 
-bool CheckLimits(){
+/* bool CheckLimits(){
     if(spcLimit.empty()){
         ifstream file ("limit.csv"); // Read limit file
         string temp;
@@ -1398,7 +1206,7 @@ bool CheckLimits(){
         if(spcLimit[i*2]>in1[i] || in1[i]>spcLimit[i*2+1]){ return false; }
     }
     return true;
-}
+}*/
 
 bool ReadBricksFile(){ // Define which file to read here !!!
     ifstream file ("bricks.csv");
@@ -1468,8 +1276,7 @@ void HomeLinearRail(int n){
     cout << "Linear rail motion interrupted\n";
 }
 
-void MN_DECL AttentionDetected(const mnAttnReqReg &detected)
-{
+void MN_DECL AttentionDetected(const mnAttnReqReg &detected){
     // Make a local, non-const copy for printing purposes
     mnAttnReqReg myAttns = detected;
     // Load the buffer with the string representation of the attention information

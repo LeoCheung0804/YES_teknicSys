@@ -5,7 +5,6 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "${workspaceFolder}",
-                "${workspaceFolder}/Dependencies/DynamixelSDK-3.7.31/build/win32",
                 "${workspaceFolder}/Dependencies/sFoundation20/inc"
             ],
             "defines": [

@@ -11,8 +11,7 @@
                 "/Fe:",
                 "${fileDirname}\\${fileBasenameNoExtension}.exe",
                 "${workspaceFolder}\\*.cpp",
-                "${workspaceFolder}\\Dependencies\\sFoundation20\\win32\\sFoundation20.lib",
-                "${workspaceFolder}\\Dependencies\\DynamixelSDK-3.7.31\\build\\win32\\dxl_x86_cpp.lib"
+                "${workspaceFolder}\\Dependencies\\sFoundation20\\win32\\sFoundation20.lib"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
