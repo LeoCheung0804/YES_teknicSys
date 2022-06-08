@@ -43,6 +43,4 @@ public:
     double offset[12]{}; //12 //L0, from "zero position", will be updated by "set home" command
 };
 
-// void pose_to_length(double pose[], double lengths[], double rail_offset = 0);
-
 #endif
