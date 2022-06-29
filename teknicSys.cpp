@@ -23,37 +23,25 @@ void RunBricksTraj(HANDLE hComm, CDPR &r, unsigned char* Ard_char, int listOffse
 void ReverseBricksTraj(CDPR &r, int listOffset, bool showAttention = false);
 void RunTrajPoints(CDPR &r);
 void SendMotorGrp(CDPR &r, bool IsTorque = false, bool IsLinearRail = false);
-// int32_t ToMotorCmd(CDPR r, int motorID, double length);
 void TrjHome(CDPR &r);
-// bool CheckLimits();
 bool ReadBricksFile();
-// void HomeLinearRail(int n);
 void MN_DECL AttentionDetected(const mnAttnReqReg &detected); // this is attention from teknic motors
 
 vector<string> comHubPorts;
 vector<INode*> nodeList; // create a list for each node
 vector<vector<double>> brickPos;
-// vector<double> spcLimit;
 unsigned int portCount;
 char attnStringBuf[512]; // Create a buffer to hold the attentionReg information    
-// const int NodeNum = 8; // !!!!! IMPORTANT !!!!! Put in the number of motors before compiling the programme
 const double RAIL_UP = 1.25, RAIL_DOWN = 0; // Linear rail upper and lower bound
-// const double endEffOffset = -0.125; // meters, offset from endeffector to ground // YES -0.280
 double step = 0.01; // in meters, for manual control
 float targetTorque = -4.1; //2.5 in %, -ve for tension, also need to UPDATE in switch case 't'!!!!!!!!!
-// const float absTorqueLmt = 60.0; // Absolute torque limit, to be checked before commanding 8 motors to move simutaneously in length command
 const int MILLIS_TO_NEXT_FRAME = 35, UserInput_Sec_Timeout = 15, SleepTime = 21; // note the basic calculation time is abt 16ms; sleep-time in 24 hr
-// double home[6] = {7.3, 6.2, -2.3, 0, 0, 0}; // home posisiton
-// double offset[8]; //12 L0, from "zero position", will be updated by "set home" command
 double railOffset = 0.0; // linear rails offset
-// double in1[6] = {7.3, 6.2, -2.3, 0, 0, 0};
-// double out1[8] = {2.87451, 2.59438, 2.70184, 2.40053, 2.46908, 2.15523, 2.65123, 2.35983}; //12 assume there are 8 motors + 4 linear rails
-// double a[6], b[6], c[6], d[6], e[6], f[6], g[6], tb[6]; // trajectory coefficients
 char limitType = 'C'; // A for home, B for limits, C for default
 char quitType = 'r'; // q for emergency quit, f for finish traj, e for error msg received, r for resume/default
 int loopCount = 0, abbCount = 0; // log info for loop numbers and error occurs daily
 
-bool groupSyncRead = true;
+// bool groupSyncRead = true;
 
 int main()
 {   
@@ -91,395 +79,398 @@ int main()
     // pose_to_length(home, offset); // save offset values according to home pose
     robot.PoseToLength(robot.home, robot.offset); // save offset values according to home pose
 
-    cout << "Motor network available. Pick from menu for the next action:\nt - Tighten cables with Torque mode\ny - Loose the cables\nh - Move to Home\n8 - Manually adjust cable lengths\nl - Linear rails motions\nu - Update current position from external file\nr - Reset Rotation to zero\ni - Info: show menu\nn - Move on to Next step" << endl;
+    cout << "Motor network available. Pick from menu for the next action:\nt - Tighten cables with Torque mode\ny - Loose the cables\nh - Move to Home\n8 - Manually adjust cable lengths\nl - Linear rails motions\nu - Update current position from external file\nr - Reset Rotation to zero\ng - Gripper functions\ni - Info: show menu\nn - Move on to Next step" << endl;
     char cmd;
-    try{
+    do {
+        try{
+            do {
+                bool allDone = false, stabilized = false;
+                cin >> cmd;
+                switch (cmd){
+                    case 'i':   // Show menu
+                        cout << "Pick from menu for the next action:\nt - Tighten cables with Torque mode\ny - Loose the cables\nh - Move to Home\n8 - Manually adjust cable lengths\nl - Linear rails motions\nu - Update current position from external file\nr - Reset Rotation to zero\ng - Gripper functions\ni - Info: show menu\nn - Move on to Next step\n";
+                        break;
+                    case 'y':   // Loosen cables using positive torque
+                        targetTorque = 1;
+                    case 't':   // Tighten cables according to torque **Only for 8 motors
+                        cout << "Current target torque = " << targetTorque << endl;
+                        for(INode* n : nodeList){ n->Motion.AccLimit = 200; }
+                        while(!stabilized) {
+                            SendMotorGrp(robot, true);
+                            Sleep(50);
+                            for (int n = 0; n < robot.NodeNum(); n++){
+                                if(nodeList[n]->Motion.TrqCommanded.Value() > targetTorque) { break; }
+                                stabilized = true;
+                            }
+                        } 
+                        for(INode* n : nodeList){
+                            n->Motion.TrqCommanded.Refresh();
+                            cout << n->Motion.TrqCommanded.Value() << "\t";
+                            n->Motion.MoveVelStart(0);
+                            n->Motion.AccLimit = 40000;
+                        }
+                        cout << "\nTorque mode tightening completed" << endl;
+                        targetTorque = robot.TargetTorque();
+                        break;
+                    // case 's':   // Set zero
+                    //     for (int n = 0; n < NodeNum; n++){
+                    //         nodeList[n]->Motion.AddToPosition(-nodeList[n]->Motion.PosnMeasured.Value()); // Zeroing the number space around the current Measured Position
+                    //     }
+                    //     copy(begin(home), end(home), begin(in1)); // copy home array into input array
+                    //     cout << "Setting zero completed" << endl;
+                    //     cout <<  "Home coordinates: " << in1[0] << ", " << in1[1] << ", " << in1[2] << ", " << in1[3] << ", " << in1[4] << ", " << in1[5] << endl;
+                    //
+                    //     cout << "Do you want to set current rail position as zero? (k - OK)\n";;
+                    //     cin >> cmd;
+                    //     if(cmd == 'k'){
+                    //         for (int n = NodeNum; n < NodeNum+4; n++){
+                    //             nodeList[n]->Motion.AddToPosition(-nodeList[n]->Motion.PosnMeasured.Value());
+                    //         }
+                    //         cout << "Linear rails are set to zero.\n";
+                    //     }
+                    //     else{ cout << "Current rail position may not be at zero\n"; }
+                    //     break;
+                    case 'h':   // Homing for all motors!! Including linear rail
+                        allDone = false;
+                        for (int n = 0; n<nodeList.size(); n++) { 
+                            nodeList[n]->Motion.MoveWentDone();
+                            nodeList[n]->Motion.MovePosnStart(0, true); // absolute position
+                        }
+                        while(!allDone) {
+                            for (INode* n : nodeList) {
+                                if(!n->Motion.MoveIsDone()) { break; }
+                                allDone = true;
+                            }
+                        }
+                        copy(begin(robot.home), end(robot.home), begin(robot.in)); // copy home array into input array
+                        cout << "Homing completed" << endl;
+                        break;
+                    case '8':   // Manual cable adjustment
+                        cout << "0 to 7 - motor id to adjust cable length\n8 - move 4 linear rails together\na or d - increase or decrease cable length\nb - Back to previous menu\n";
+                        while(cmd != 'b'){
+                            cin >> cmd;
+                            if('/' < cmd && cmd < robot.NodeNum() + 49){
+                                int id = cmd - 48;
+                                int sCount = robot.ToMotorCmd(-1, step) / 5 ;// = ToMotorCmd(robot, -1, step) / 5;
+                                cout << "Motor "<< cmd <<" selected.\n";
+                                do{
+                                    cmd = getch();
+                                    switch(cmd){
+                                        case 'a':
+                                            if(id == robot.NodeNum()){ for(int n = robot.NodeNum(); n<robot.NodeNum()+4; n++){ nodeList[n]->Motion.MovePosnStart(sCount); }}
+                                            else { nodeList[id]->Motion.MovePosnStart(sCount); }
+                                            break;
+                                        case 'd':
+                                            if(id == robot.NodeNum()){ for(int n = robot.NodeNum(); n<robot.NodeNum()+4; n++){ nodeList[n]->Motion.MovePosnStart(-sCount); }}
+                                            else { nodeList[id]->Motion.MovePosnStart(-sCount); }
+                                            break;
+                                        case 'i':
+                                            if(id == robot.NodeNum()){
+                                                for(int n = robot.NodeNum(); n<robot.NodeNum()+4; n++){
+                                                    nodeList[n]->Motion.PosnMeasured.Refresh();
+                                                    cout << (double) nodeList[n]->Motion.PosnMeasured << endl;
+                                                }
+                                                cout << endl;
+                                            }
+                                            else{
+                                                nodeList[id]->Motion.PosnMeasured.Refresh();
+                                                cout << (double) nodeList[id]->Motion.PosnMeasured << endl;
+                                            }
+                                            break;
+                                        case 'h':
+                                            if(id == robot.NodeNum()){ cout << "Homing for linear rails are not implemented here.\n"; break; }
+                                            nodeList[id]->Motion.VelLimit = 300;
+                                            nodeList[id]->Motion.MoveWentDone();
+                                            nodeList[id]->Motion.MovePosnStart(0, true);
+                                            while(!nodeList[id]->Motion.MoveIsDone()){}
+                                            cout << "Individual homing completed.\n";
+                                            nodeList[id]->Motion.VelLimit = 3000;
+                                            break;
+                                    }                        
+                                    Sleep(100); // do we need this?
+                                }while(cmd =='a'|| cmd =='d' || cmd =='h' || cmd =='i');
+                                cout << "Motor "<< id <<" deselected.\n";
+                            }
+                        }
+                        cout << "Manual adjustment terminated" << endl;
+                        break;
+                    case 'r':
+                        cout << "Attenion: robot will rotate to 0,0,0...\n";
+                        {
+                            double point[7] = {0,0,0,0,0,0,3500}; // Default 3500 ms duaration to rotate to 0
+                            copy(robot.in, robot.in+3, begin(point)); // copy x,y,z position
+                            cout << "Goal coordinates: " << point[0] << ", " << point[1] << ", " << point[2] << ", " << point[3] << ", " << point[4] << ", " << point[5] << ", " << point[6] << endl;
+                            if(RunParaBlend(robot, point) < 0) { cout << "Trajectory aborted.\n"; break; }
+                            cout << "Rotation reset completed.\n";      
+                        }
+                        break;
+                    case 'g':
+                        cout << "In gripper testing mode:\ni - close gripper\no = open gripper\np - rotate gripper\nb - return to previous menu\n";
+                        while(cmd != 'b'){
+                            cmd = getch();
+                            switch(cmd){
+                                case 'i':
+                                    Ard_char[1] = 'c';
+                                    SendGripperSerial(hComm, Ard_char);
+                                    break;
+                                case 'o':
+                                    Ard_char[1] = 'o';
+                                    SendGripperSerial(hComm, Ard_char);
+                                    break;
+                                case 'p':
+                                    Ard_char[1] = 'd';
+                                    cout << "Rotation: ";
+                                    cin >> attnStringBuf;
+                                    copy(begin(attnStringBuf), begin(attnStringBuf)+4, begin(Ard_char)+3); // Write the first 4 char into the serial array
+                                    SendGripperSerial(hComm, Ard_char);
+                                    fill(begin(Ard_char)+3, begin(Ard_char)+7, ' '); // Reset the ending number with space char
+                                    break;
+                                case 'r':
+                                    Ard_char[1] = 'r';
+                                    SendGripperSerial(hComm, Ard_char);
+                                    break;
+                            }                        
+                        }
+                        cout << "Gripper testing terminated.\n";
+                        break;
+                    // case 'l':   // Linear rail motions
+                    //     cout << "0 to 3 - home linear rail individually\n4 - home all 4 linear rails automatically\nb - Back to previous menu\nany other keys - stop the linear rail from current motion\n";
+                    //     while(cmd != 'b'){
+                    //         cin >> cmd;
+                    //         if('/' < cmd && cmd < 52){ // homing individually
+                    //             int id = cmd - 48;
+                    //             cout << "Homing linear rail #"<< cmd <<".\n";
+                    //             HomeLinearRail(id);
+                    //         }
+                    //         else if(cmd == 52){ // homing 4 all tgt
+                    //             for (int i = 0; i < 4 ; i++){
+                    //                 HomeLinearRail(i);
+                    //             }
+                    //             cout << "All linear rails are homed.\n";
+                    //         }
+                    //     }
+                    //     cout << "Linear rail homing terminated\n";
+                    //     break; 
+                    case 'u':   // Update in1[] and offset[] from csv file
+                        ifstream file ("lastPos.txt"); //"lastPos.txt" or "currentPos.csv"
+                        string temp;
+                        int count = 0;
+                        if(file.is_open()){
+                            try{
+                                while (file >> temp){
+                                    if(count > 5) { break; } //{ railOffset = stod(temp); break; } // reading the rail offset, then break while loop
+                                    robot.in[count++] = stod(temp); // convert string to double stod()
+                                }
+                                cout << "Completed reading from external file" << endl; //"Completed updating from external pose file"
+                            }
+                            catch(int e){ cout << "Check if currentPos.csv matches the in1 input no." << endl; }
+                            // do{
+                            //     cout << "Current linear rail offset: ";
+                            //     cin >> railOffset; // do we need other constraits? ie 0 <= railOffset < 2
+                            // }while(!cin.good() || railOffset>2);
+                            
+                            robot.PoseToLength(robot.in, robot.out, railOffset); //pose_to_length(in1, out1, railOffset);
+                            for (int n = 0; n < nodeList.size(); n++){
+                                int32_t step = robot.ToMotorCmd(n, robot.out[n]);
+                                nodeList[n]->Motion.PosnMeasured.Refresh();
+                                nodeList[n]->Motion.AddToPosition(-nodeList[n]->Motion.PosnMeasured.Value() + step);
+                            }
+                            cout << "Updating motor counts completed" << endl;
+                            cout << "Current coordinates: "; robot.PrintIn();
+                            cout << "Motor internal counts: ";
+                            for (int id = 0; id < nodeList.size(); id++){
+                                nodeList[id]->Motion.PosnMeasured.Refresh();
+                                cout << (double) nodeList[id]->Motion.PosnMeasured << "\t";
+                            }
+                            cout << endl;
+                            cout << "Linear rail offset: " << railOffset << endl;
+                        }
+                        break;
+
+                }
+            } while(cmd != 'n');
+        }
+        catch(sFnd::mnErr& theErr) {    //This catch statement will intercept any error from the Class library
+            printf("ERROR: Motor command failed.\n");  
+            printf("Caught error: addr=%d, err=0x%08x\nmsg=%s\n", theErr.TheAddr, theErr.ErrorCode, theErr.ErrorMsg);
+            return -3;
+        }
+        
+        // Set linear rail brakes as usually enabled
+        // myMgr->Ports(2).BrakeControl.BrakeSetting(0, BRAKE_PREVENT_MOTION);
+
+        cout << "Choose from menu for cable robot motion:\nt - Read from \"bricks.csv\" file for brick positions\nl - Loop through set num of bricks\nb - Loop and wait for Button input\nm - Manual input using w,a,s,d,r,f,v,g\np - Run Point-to-point trajectory\nq - Request current torQue readings\ni - Info: show menu\nn - Prepare to disable motors and exit programme\nr - Return to previous section" << endl;
         do {
-            bool allDone = false, stabilized = false;
-            // time_t now = time(0); time_t timeout = now + UserInput_Sec_Timeout; cmd = 'u'; // default value
-            // while(now < timeout){
-            //     Sleep(50);
-            //     now = time(0);
-            //     if(kbhit()){ cin >> cmd; break; }
-            // }
+            bool waitBtn = false;
             cin >> cmd;
             switch (cmd){
-                case 'i':   // Show menu
-                    cout << "Pick from menu for the next action:\nt - Tighten cables with Torque mode\ny - Loose the cables\nh - Move to Home\n8 - Manually adjust cable lengths\nl - Linear rails motions\nu - Update current position from external file\nr - Reset Rotation to zero\ni - Info: show menu\nn - Move on to Next step\n";
+                case 'i':    // Show menu
+                    cout << "Choose from menu for cable robot motion:\nt - Read from \"bricks.csv\" file for brick positions\nl - Loop through set num of bricks\nb - Loop and wait for Button input\nm - Manual input using w,a,s,d,r,f,v,g\np - Run Point-to-point trajectory\nq - Request current torQue readings\ni - Info: show menu\nn - Prepare to disable motors and exit programme\nr - Return to previous section" << endl;
                     break;
-                case 'y':   // Loosen cables using positive torque
-                    targetTorque = 1;
-                case 't':   // Tighten cables according to torque **Only for 8 motors
-                    cout << "Current target torque = " << targetTorque << endl;
-                    for(INode* n : nodeList){ n->Motion.AccLimit = 200; }
-                    while(!stabilized) {
-                        SendMotorGrp(robot, true);
-                        Sleep(50);
-                        for (int n = 0; n < robot.NodeNum(); n++){
-                            if(nodeList[n]->Motion.TrqCommanded.Value() > targetTorque) { break; }
-                            stabilized = true;
-                        }
-                    } 
-                    for(INode* n : nodeList){
-                        n->Motion.TrqCommanded.Refresh();
-                        cout << n->Motion.TrqCommanded.Value() << "\t";
-                        n->Motion.MoveVelStart(0);
-                        n->Motion.AccLimit = 40000;
-                    }
-                    cout << "\nTorque mode tightening completed" << endl;
-                    targetTorque = robot.TargetTorque();
+                case 't':   // Read brick file, plan trajectory
+                case 'T':
+                    if(!ReadBricksFile()){ continue; } // Read "bricks.csv"
+                    RunBricksTraj(hComm, robot, Ard_char, 0, true);
                     break;
-                // case 's':   // Set zero
-                //     for (int n = 0; n < NodeNum; n++){
-                //         nodeList[n]->Motion.AddToPosition(-nodeList[n]->Motion.PosnMeasured.Value()); // Zeroing the number space around the current Measured Position
-                //     }
-                //     copy(begin(home), end(home), begin(in1)); // copy home array into input array
-                //     cout << "Setting zero completed" << endl;
-                //     cout <<  "Home coordinates: " << in1[0] << ", " << in1[1] << ", " << in1[2] << ", " << in1[3] << ", " << in1[4] << ", " << in1[5] << endl;
-                //
-                //     cout << "Do you want to set current rail position as zero? (k - OK)\n";;
-                //     cin >> cmd;
-                //     if(cmd == 'k'){
-                //         for (int n = NodeNum; n < NodeNum+4; n++){
-                //             nodeList[n]->Motion.AddToPosition(-nodeList[n]->Motion.PosnMeasured.Value());
-                //         }
-                //         cout << "Linear rails are set to zero.\n";
-                //     }
-                //     else{ cout << "Current rail position may not be at zero\n"; }
-                //     break;
-                case 'h':   // Homing for all motors!! Including linear rail
-                    allDone = false;
-                    for (int n = 0; n<nodeList.size(); n++) { 
-                        nodeList[n]->Motion.MoveWentDone();
-                        nodeList[n]->Motion.MovePosnStart(0, true); // absolute position
-                    }
-                    while(!allDone) {
-                        for (INode* n : nodeList) {
-                            if(!n->Motion.MoveIsDone()) { break; }
-                            allDone = true;
-                        }
-                    }
-                    copy(begin(robot.home), end(robot.home), begin(robot.in)); // copy home array into input array
-                    cout << "Homing completed" << endl;
-                    break;
-                case '8':   // Manual cable adjustment
-                    cout << "0 to 7 - motor id to adjust cable length\n8 - move 4 linear rails together\na or d - increase or decrease cable length\nb - Back to previous menu\n";
-                    while(cmd != 'b'){
-                        cin >> cmd;
-                        if('/' < cmd && cmd < robot.NodeNum() + 49){
-                            int id = cmd - 48;
-                            int sCount = robot.ToMotorCmd(-1, step) / 5 ;// = ToMotorCmd(robot, -1, step) / 5;
-                            cout << "Motor "<< cmd <<" selected.\n";
-                            do{
-                                cmd = getch();
-                                switch(cmd){
-                                    case 'a':
-                                        if(id == robot.NodeNum()){ for(int n = robot.NodeNum(); n<robot.NodeNum()+4; n++){ nodeList[n]->Motion.MovePosnStart(sCount); }}
-                                        else { nodeList[id]->Motion.MovePosnStart(sCount); }
-                                        break;
-                                    case 'd':
-                                        if(id == robot.NodeNum()){ for(int n = robot.NodeNum(); n<robot.NodeNum()+4; n++){ nodeList[n]->Motion.MovePosnStart(-sCount); }}
-                                        else { nodeList[id]->Motion.MovePosnStart(-sCount); }
-                                        break;
-                                    case 'i':
-                                        if(id == robot.NodeNum()){
-                                            for(int n = robot.NodeNum(); n<robot.NodeNum()+4; n++){
-                                                nodeList[n]->Motion.PosnMeasured.Refresh();
-                                                cout << (double) nodeList[n]->Motion.PosnMeasured << endl;
-                                            }
-                                            cout << endl;
-                                        }
-                                        else{
-                                            nodeList[id]->Motion.PosnMeasured.Refresh();
-                                            cout << (double) nodeList[id]->Motion.PosnMeasured << endl;
-                                        }
-                                        break;
-                                    case 'h':
-                                        if(id == robot.NodeNum()){ cout << "Homing for linear rails are not implemented here.\n"; break; }
-                                        nodeList[id]->Motion.VelLimit = 300;
-                                        nodeList[id]->Motion.MoveWentDone();
-                                        nodeList[id]->Motion.MovePosnStart(0, true);
-                                        while(!nodeList[id]->Motion.MoveIsDone()){}
-                                        cout << "Individual homing completed.\n";
-                                        nodeList[id]->Motion.VelLimit = 3000;
-                                        break;
-                                }                        
-                                Sleep(100); // do we need this?
-                            }while(cmd =='a'|| cmd =='d' || cmd =='h' || cmd =='i');
-                            cout << "Motor "<< id <<" deselected.\n";
-                        }
-                    }
-                    cout << "Manual adjustment terminated" << endl;
-                    break;
-                case 'r':
-                    cout << "Attenion: robot will rotate to 0,0,0...\n";
-                    {
-                        double point[7] = {0,0,0,0,0,0,3500}; // Default 3500 ms duaration to rotate to 0
-                        copy(robot.in, robot.in+3, begin(point)); // copy x,y,z position
-                        cout << "Goal coordinates: " << point[0] << ", " << point[1] << ", " << point[2] << ", " << point[3] << ", " << point[4] << ", " << point[5] << ", " << point[6] << endl;
-                        if(RunParaBlend(robot, point) < 0) { cout << "Trajectory aborted.\n"; break; }
-                        cout << "Rotation reset completed.\n";      
-                    }
-                    break;
-                // case 'l':   // Linear rail motions
-                //     cout << "0 to 3 - home linear rail individually\n4 - home all 4 linear rails automatically\nb - Back to previous menu\nany other keys - stop the linear rail from current motion\n";
-                //     while(cmd != 'b'){
-                //         cin >> cmd;
-                //         if('/' < cmd && cmd < 52){ // homing individually
-                //             int id = cmd - 48;
-                //             cout << "Homing linear rail #"<< cmd <<".\n";
-                //             HomeLinearRail(id);
-                //         }
-                //         else if(cmd == 52){ // homing 4 all tgt
-                //             for (int i = 0; i < 4 ; i++){
-                //                 HomeLinearRail(i);
-                //             }
-                //             cout << "All linear rails are homed.\n";
-                //         }
-                //     }
-                //     cout << "Linear rail homing terminated\n";
-                //     break; 
-                case 'u':   // Update in1[] and offset[] from csv file
-                    ifstream file ("lastPos.txt"); //"lastPos.txt" or "currentPos.csv"
-                    string temp;
-                    int count = 0;
-                    if(file.is_open()){
-                        try{
-                            while (file >> temp){
-                                if(count > 5) { break; } //{ railOffset = stod(temp); break; } // reading the rail offset, then break while loop
-                                robot.in[count++] = stod(temp); // convert string to double stod()
-                            }
-                            cout << "Completed reading from external file" << endl; //"Completed updating from external pose file"
-                        }
-                        catch(int e){ cout << "Check if currentPos.csv matches the in1 input no." << endl; }
-                        // do{
-                        //     cout << "Current linear rail offset: ";
-                        //     cin >> railOffset; // do we need other constraits? ie 0 <= railOffset < 2
-                        // }while(!cin.good() || railOffset>2);
-                        
-                        robot.PoseToLength(robot.in, robot.out, railOffset); //pose_to_length(in1, out1, railOffset);
-                        for (int n = 0; n < nodeList.size(); n++){
-                            int32_t step = robot.ToMotorCmd(n, robot.out[n]);
-                            nodeList[n]->Motion.PosnMeasured.Refresh();
-                            nodeList[n]->Motion.AddToPosition(-nodeList[n]->Motion.PosnMeasured.Value() + step);
-                        }
-                        cout << "Updating motor counts completed" << endl;
-                        cout << "Current coordinates: "; robot.PrintIn();
-                        cout << "Motor internal counts: ";
-                        for (int id = 0; id < nodeList.size(); id++){
-                            nodeList[id]->Motion.PosnMeasured.Refresh();
-                            cout << (double) nodeList[id]->Motion.PosnMeasured << "\t";
-                        }
-                        cout << endl;
-                        cout << "Linear rail offset: " << railOffset << endl;
-                        
-                        /*now = time(0); timeout = now + UserInput_Sec_Timeout; cout << "!! If no input detected in " << UserInput_Sec_Timeout << " sec, programme will enter next section. !!" << endl;
-                        cmd = 'n'; // default value to move on to next section
-                        while(now < timeout){
-                            Sleep(50);
-                            now = time(0);
-                            if(kbhit()){ cin >> cmd; break; }
-                        }*/
-                    }
-                    break;
-            }
-        } while(cmd != 'n');
-    }
-    catch(sFnd::mnErr& theErr) {    //This catch statement will intercept any error from the Class library
-        printf("ERROR: Motor command failed.\n");  
-        printf("Caught error: addr=%d, err=0x%08x\nmsg=%s\n", theErr.TheAddr, theErr.ErrorCode, theErr.ErrorMsg);
-        return -3;
-    }
-    
-    // Set linear rail brakes as usually enabled
-    // myMgr->Ports(2).BrakeControl.BrakeSetting(0, BRAKE_PREVENT_MOTION);
-
-    cout << "Choose from menu for cable robot motion:\nt - Read from \"bricks.csv\" file for brick positions\nl - Loop through set num of bricks\nb - Loop and wait for Button input\nm - Manual input using w,a,s,d,r,f,v,g\np - Run Point-to-point trajectory\ni - Info: show menu\nn - Prepare to disable motors and exit programme" << endl;
-    do {
-        bool waitBtn = false;
-        // tm *fn; time_t now = time(0); time_t timeout = now + UserInput_Sec_Timeout; cmd = 'b'; // default value for button loop
-        // while(now < timeout){
-        //     Sleep(50);
-        //     now = time(0);
-        //     if(kbhit()){ cin >> cmd; break; }
-        // }
-        cin >> cmd;
-        switch (cmd){
-            case 'i':    // Show menu
-                cout << "Choose from menu for cable robot motion:\nt - Read from \"bricks.csv\" file for brick positions\nl - Loop through set num of bricks\nb - Loop and wait for Button input\nm - Manual input using w,a,s,d,r,f,v,g\np - Run Point-to-point trajectory\ni - Info: show menu\nn - Prepare to disable motors and exit programme" << endl;
-                break;
-            case 't':   // Read brick file, plan trajectory
-            case 'T':
-                if(!ReadBricksFile()){ continue; } // Read "bricks.csv"
-                RunBricksTraj(hComm, robot, Ard_char, 0, true);
-                break;
-            case 'm':   // Manual wasdrf
-            case 'M':
-                cout << "Press 'q' to quit manual input anytime.\n'h' for Homing.\n'x' to adjust increment step size.\n";
-                // nodeList[8]->Port.BrakeControl.BrakeSetting(0, BRAKE_ALLOW_MOTION); // disable enable brake
-                while(cmd != 'q' && cmd != 'Q'){
-                    cmd = getch();
-                    switch(cmd){
-                        case 'I':
-                        case 'i':
-                            Ard_char[1] = 'c';
-                            SendGripperSerial(hComm, Ard_char);
-                            continue;
-                        case 'O':
-                        case 'o':
-                            Ard_char[1] = 'o';
-                            SendGripperSerial(hComm, Ard_char);
-                            continue;
-                        case 'P':
-                        case 'p':
-                            Ard_char[1] = 'd';
-                            cout << "Rotation: ";
-                            cin >> attnStringBuf;
-                            copy(begin(attnStringBuf), begin(attnStringBuf)+4, begin(Ard_char)+3); // Write the first 4 char into the serial array
-                            SendGripperSerial(hComm, Ard_char);
-                            fill(begin(Ard_char)+3, begin(Ard_char)+7, ' '); // Reset the ending number with space char
-                            continue;
-                        case 'W':
-                        case 'w':
-                            robot.in[1] += step;
-                            break;
-                        case 'S':
-                        case 's':
-                            robot.in[1] -= step;
-                            break;
-                        case 'A':
-                        case 'a':
-                            robot.in[0] -= step;
-                            break;
-                        case 'D':
-                        case 'd':
-                            robot.in[0] += step;
-                            break;
-                        case 'R':
-                        case 'r':
-                            robot.in[2] += step;
-                            break;
-                        case 'F':
-                        case 'f':
-                            robot.in[2] -= step;
-                            break;
-                        // case 'G':
-                        // case 'g':
-                        //     railOffset += step/20;
-                        //     if(railOffset > RAIL_UP) { cout << "WARNING! Rail offset beyond upper bound!\n"; railOffset -= step/20; }
-                        //     cout << "Current rail offset: " << railOffset << endl;
-                        //     pose_to_length(in1, out1, railOffset);
-                        //     SendMotorGrp(false, true);
-                        //     continue;
-                        // case 'V':
-                        // case 'v':
-                        //     railOffset -= step/20;
-                        //     if(railOffset < RAIL_DOWN) { cout << "WARNING! Rail offset beyond lower bound!\n"; railOffset += step/20; }
-                        //     cout << "Current rail offset: " << railOffset << endl;
-                        //     pose_to_length(in1, out1, railOffset);
-                        //     SendMotorGrp(false, true);
-                        //     continue;
-                        case 'H':
-                        case 'h':
-                            cout << "Homing...\n"; 
-                            TrjHome(robot);
-                            break;
-                        case 'X':
-                        case 'x':
-                            cout << "Current step size: " << step << "m. Please enter new step size: ";
-                            cin >> step;
-                            if (!cin.good()){ cout << "Invalid input!"; }
-                            else if (abs(step) > 0.1){ cout << "Warning! Step size is too large, may cause vigorious motions.";}
-                            else { cout << "New step size: " << step << endl; break; }
-                            cout << " Step size is now set to 0.01m.\n";
-                            step = 0.01;
-                            break;
-                        case 'C':
-                        case 'c':
-                            cout << "Are you sure to clear warnings from triggered linear rail limit switch? Type \"CLEAR\" to confirm.\n";
-                            {
-                                string reply;
-                                cin >> reply;
-                                if (reply == "CLEAR"){ limitType = 'C'; cout << "Warning dismissed.\n"; }
-                                else { cout << "Warning is not cleared.\n"; }
-                            }
-                            continue;
-                    }
-                    robot.PrintIn();
-                    if(robot.CheckLimits()){
-                        robot.PoseToLength(robot.in, robot.out, railOffset);
-                        robot.PrintOut();
-                        SendMotorGrp(robot);
-                        
-                        Sleep(step*1000);
-                    }
-                    else{
-                        cout << "WARNING: Intended position out of bound!\n";
+                case 'm':   // Manual wasdrf
+                case 'M':
+                    cout << "Press 'q' to quit manual input anytime.\n'h' for Homing.\n'x' to adjust increment step size.\n";
+                    // nodeList[8]->Port.BrakeControl.BrakeSetting(0, BRAKE_ALLOW_MOTION); // disable enable brake
+                    while(cmd != 'q' && cmd != 'Q'){
+                        cmd = getch();
                         switch(cmd){
+                            case 'I':
+                            case 'i':
+                                Ard_char[1] = 'c';
+                                SendGripperSerial(hComm, Ard_char);
+                                continue;
+                            case 'O':
+                            case 'o':
+                                Ard_char[1] = 'o';
+                                SendGripperSerial(hComm, Ard_char);
+                                continue;
+                            case 'P':
+                            case 'p':
+                                Ard_char[1] = 'd';
+                                cout << "Rotation: ";
+                                cin >> attnStringBuf;
+                                copy(begin(attnStringBuf), begin(attnStringBuf)+4, begin(Ard_char)+3); // Write the first 4 char into the serial array
+                                SendGripperSerial(hComm, Ard_char);
+                                fill(begin(Ard_char)+3, begin(Ard_char)+7, ' '); // Reset the ending number with space char
+                                continue;
                             case 'W':
                             case 'w':
-                                robot.in[1] -= step;
+                                robot.in[1] += step;
                                 break;
                             case 'S':
                             case 's':
-                                robot.in[1] += step;
+                                robot.in[1] -= step;
                                 break;
                             case 'A':
                             case 'a':
-                                robot.in[0] += step;
+                                robot.in[0] -= step;
                                 break;
                             case 'D':
                             case 'd':
-                                robot.in[0] -= step;
+                                robot.in[0] += step;
                                 break;
                             case 'R':
                             case 'r':
-                                robot.in[2] -= step;
+                                robot.in[2] += step;
                                 break;
                             case 'F':
                             case 'f':
-                                robot.in[2] += step;
+                                robot.in[2] -= step;
                                 break;
+                            case 'H':
+                            case 'h':
+                                cout << "Homing...\n"; 
+                                TrjHome(robot);
+                                break;
+                            case 'X':
+                            case 'x':
+                                cout << "Current step size: " << step << "m. Please enter new step size: ";
+                                cin >> step;
+                                if (!cin.good()){ cout << "Invalid input!"; }
+                                else if (abs(step) > 0.1){ cout << "Warning! Step size is too large, may cause vigorious motions.";}
+                                else { cout << "New step size: " << step << endl; break; }
+                                cout << " Step size is now set to 0.01m.\n";
+                                step = 0.01;
+                                break;
+                            case 'C':
+                            case 'c':
+                                cout << "Are you sure to clear warnings from triggered linear rail limit switch? Type \"CLEAR\" to confirm.\n";
+                                {
+                                    string reply;
+                                    cin >> reply;
+                                    if (reply == "CLEAR"){ limitType = 'C'; cout << "Warning dismissed.\n"; }
+                                    else { cout << "Warning is not cleared.\n"; }
+                                }
+                                continue;
+                        }
+                        robot.PrintIn();
+                        if(robot.CheckLimits()){
+                            robot.PoseToLength(robot.in, robot.out, railOffset);
+                            robot.PrintOut();
+                            SendMotorGrp(robot);
+                            
+                            Sleep(step*1000);
+                        }
+                        else{
+                            cout << "WARNING: Intended position out of bound!\n";
+                            switch(cmd){
+                                case 'W':
+                                case 'w':
+                                    robot.in[1] -= step;
+                                    break;
+                                case 'S':
+                                case 's':
+                                    robot.in[1] += step;
+                                    break;
+                                case 'A':
+                                case 'a':
+                                    robot.in[0] += step;
+                                    break;
+                                case 'D':
+                                case 'd':
+                                    robot.in[0] -= step;
+                                    break;
+                                case 'R':
+                                case 'r':
+                                    robot.in[2] -= step;
+                                    break;
+                                case 'F':
+                                case 'f':
+                                    robot.in[2] += step;
+                                    break;
+                            }
                         }
                     }
-                }
-                // nodeList[8]->Port.BrakeControl.BrakeSetting(0, BRAKE_PREVENT_MOTION); // enable brake afterwards
-                cout << "Quit manual control\n";
-                break;
-            case 'b':   // loop through set no. of bricks and wait for user Button input to continue
-            case 'B':
-                waitBtn = true;
-            case 'l':   // Read brick file, loop through a set no. of bricks
-            case 'L':
-                {int loopNum = 6; // Define the no. of bricks to loop here!!!
-                // Read input file for traj-gen
-                quitType = 'r';
-                if(!ReadBricksFile()){ continue; } // Read "bricks.csv"
-                cout << "Bricks to loop: " << loopNum << endl;
-                if(brickPos.size()<loopNum){ cout << "Warning! Defined brick file is not long enough for looping.\n"; break; }
-                // int listOffset = brickPos.size() - loopNum;
-                int listOffset = 683 - loopNum; //683 is total no. of brick in the current file
-                brickPos.erase(brickPos.begin(), brickPos.end()-loopNum); // Only need the last elements
-                while(quitType != 'f' && quitType != 'F'){ // if not running the final loop.....
-                    // always reverse from a complete built, then rebuild it
-                    ReverseBricksTraj(robot, listOffset, true);
-                    if(quitType == 'q' || quitType == 'Q' || quitType == 'e'){ break; }
-                    RunBricksTraj(hComm, robot, Ard_char, listOffset, true, waitBtn);
-                    if(quitType == 'q' || quitType == 'Q' || quitType == 'e'){ break; }
-                    loopCount += 1;
-                    // now = time(0); fn = localtime(&now); if(fn->tm_hour >= SleepTime) { break; } // quit loop after sleep time
-                    if(quitType != 'f' && !waitBtn){
-                        cout << "Taking a 3 minute rest~ ^O^\n\n";
-                        Sleep(1000*180);
+                    // nodeList[8]->Port.BrakeControl.BrakeSetting(0, BRAKE_PREVENT_MOTION); // enable brake afterwards
+                    cout << "Quit manual control\n";
+                    break;
+                case 'b':   // loop through set no. of bricks and wait for user Button input to continue
+                case 'B':
+                    waitBtn = true;
+                case 'l':   // Read brick file, loop through a set no. of bricks
+                case 'L':
+                    {int loopNum = 6; // Define the no. of bricks to loop here!!!
+                    // Read input file for traj-gen
+                    quitType = 'r';
+                    if(!ReadBricksFile()){ continue; } // Read "bricks.csv"
+                    cout << "Bricks to loop: " << loopNum << endl;
+                    if(brickPos.size()<loopNum){ cout << "Warning! Defined brick file is not long enough for looping.\n"; break; }
+                    // int listOffset = brickPos.size() - loopNum;
+                    int listOffset = 683 - loopNum; //683 is total no. of brick in the current file
+                    brickPos.erase(brickPos.begin(), brickPos.end()-loopNum); // Only need the last elements
+                    while(quitType != 'f' && quitType != 'F'){ // if not running the final loop.....
+                        // always reverse from a complete built, then rebuild it
+                        ReverseBricksTraj(robot, listOffset, true);
+                        if(quitType == 'q' || quitType == 'Q' || quitType == 'e'){ break; }
+                        RunBricksTraj(hComm, robot, Ard_char, listOffset, true, waitBtn);
+                        if(quitType == 'q' || quitType == 'Q' || quitType == 'e'){ break; }
+                        loopCount += 1;
+                        // now = time(0); fn = localtime(&now); if(fn->tm_hour >= SleepTime) { break; } // quit loop after sleep time
+                        if(quitType != 'f' && !waitBtn){
+                            cout << "Taking a 3 minute rest~ ^O^\n\n";
+                            Sleep(1000*180);
+                        }
                     }
-                }
-                cout << "Quit looping trajectory.\n";}
-                break;
-            case 'p':   // Typical point to point trajectory
-            case 'P':
-                RunTrajPoints(robot);
-                break;
-        }
+                    cout << "Quit looping trajectory.\n";}
+                    break;
+                case 'p':   // Typical point to point trajectory
+                case 'P':
+                    RunTrajPoints(robot);
+                    break;
+                case 'q':   // Request current torque readings
+                case 'Q':
+                    for(int i = 0; i < nodeList.size(); i++){                    
+                        nodeList[i]->Motion.TrqMeasured.Refresh();
+                        cout << "[" << i << "]: " << nodeList[i]->Motion.TrqMeasured.Value() << endl;
+                    }   
+                    break;
+            }
+        } while(cmd != 'n' && cmd != 'r');
     } while(cmd != 'n' && quitType != 'e');
 
     //// Safe system shut down, safe last pos and emegency shut down
@@ -1052,16 +1043,6 @@ void RunTrajPoints(CDPR &r){
     }
 }
 
-/* int32_t ToMotorCmd(CDPR r, int motorID, double length){ // applicable for all 12 motors
-    double scale = r.MotorScale(); //509,295.8179; // 6400 encoder count per revoltion, 25 times gearbox, 50mm spool radias. ie 6400*25/(2*pi*0.05) 
-    if(motorID >= r.NodeNum()) {
-        scale = 38400000; // 38400000; // 6400 encoder count per revoltion, 30 times gearbox, linear rail pitch 5mm. ie 6400*30/0.005 
-        return length * scale;
-    }
-    else if(motorID == -1) { return length * scale; }
-    return (length - r.offset[motorID]) * scale;
-} */
-
 void SendMotorCmd(CDPR &r, int n){
     ofstream myfile;
     // convert to absolute cable length command
@@ -1190,23 +1171,6 @@ void TrjHome(CDPR &r){// !!! Define the task space velocity limit for homing !!!
     }
     cout << "Homing with trajectory completed\n";
 }
-
-/* bool CheckLimits(){
-    if(spcLimit.empty()){
-        ifstream file ("limit.csv"); // Read limit file
-        string temp;
-        if(file.is_open()){
-            while (file >> temp){
-                spcLimit.push_back(stod(temp)); // convert string to double stod()
-            }
-            cout << "Completed reading external limit file" << endl;
-        }
-    }
-    for (int i = 0; i < 3; i++){
-        if(spcLimit[i*2]>in1[i] || in1[i]>spcLimit[i*2+1]){ return false; }
-    }
-    return true;
-}*/
 
 bool ReadBricksFile(){ // Define which file to read here !!!
     ifstream file ("bricks.csv");
