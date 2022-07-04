@@ -9,6 +9,7 @@
 #include <conio.h>
 #include <Windows.h>
 #include "CDPR.h"
+#include "ABBgetVar.h"
 #include "Dependencies\sFoundation20\inc\pubSysCls.h"
 // #include "Dependencies\DynamixelSDK-3.7.31\include\dynamixel_sdk\dynamixel_sdk.h"
 
@@ -75,8 +76,7 @@ int main()
         printf("Caught error: addr=%d, err=0x%08x\nmsg=%s\n", theErr.TheAddr, theErr.ErrorCode, theErr.ErrorMsg);
         return -1;
     }
-    IPort &myPort = myMgr->Ports(2);
-    // pose_to_length(home, offset); // save offset values according to home pose
+    // IPort &myPort = myMgr->Ports(2);
     robot.PoseToLength(robot.home, robot.offset); // save offset values according to home pose
 
     cout << "Motor network available. Pick from menu for the next action:\nt - Tighten cables with Torque mode\ny - Loose the cables\nh - Move to Home\n8 - Manually adjust cable lengths\nl - Linear rails motions\nu - Update current position from external file\nr - Reset Rotation to zero\ng - Gripper functions\ni - Info: show menu\nn - Move on to Next step" << endl;
@@ -618,6 +618,7 @@ int CheckMotorNetwork() {
             theNode.Motion.NodeStopDecelLim = 5000;
             theNode.Motion.VelLimit = 3000;             //700 Set Velocity Limit (RPM)
             theNode.Info.Ex.Parameter(98, 1);           //enable interrupting move
+            theNode.Motion.Adv.TriggerGroup(1);         //Set all nodes trigger group num. as 1
             cout << "AccLimit and VelLimit set." << endl;
 
             nodeList.push_back(&theNode);               // add node to list
@@ -1049,17 +1050,18 @@ void SendMotorCmd(CDPR &r, int n){
     try{
         // int32_t step = ToMotorCmd(n, out1[n]);
         int32_t step = r.ToMotorCmd(n, r.out[n]);
-        nodeList[n]->Motion.MoveWentDone();
-        nodeList[n]->Motion.MovePosnStart(step, true, true); // absolute position
-        float trq = nodeList[n]->Motion.TrqMeasured.Value();
-        if(abs(trq)>r.AbsTorqLmt()){
-            myfile.open("log.txt", ios::app);
-            myfile << "Motor [" << n << "] exceeds torque limit: " << trq;
-            myfile.close();
-            quitType = 'e';
-            cout << "ATTENTION: Motor [" << n << "] exceeds torque limit: " << trq << endl;
-        }
-        nodeList[n]->Motion.Adv.TriggerGroup(1);
+        // nodeList[n]->Motion.MoveWentDone();
+        // nodeList[n]->Motion.MovePosnStart(step, true, true); // absolute position
+        nodeList[n]->Motion.Adv.MovePosnStart(step, true, true); // absolute position, wait for trigger
+        // float trq = nodeList[n]->Motion.TrqMeasured.Value();
+        // if(abs(trq)>r.AbsTorqLmt()){
+        //     myfile.open("log.txt", ios::app);
+        //     myfile << "Motor [" << n << "] exceeds torque limit: " << trq;
+        //     myfile.close();
+        //     quitType = 'e';
+        //     cout << "ATTENTION: Motor [" << n << "] exceeds torque limit: " << trq << endl;
+        // }
+        // nodeList[n]->Motion.Adv.TriggerGroup(1);
 
         if (nodeList[n]->Status.Alerts.Value().isInAlert()) {
             myfile.open("log.txt", ios::app);
@@ -1091,7 +1093,7 @@ void SendMotorTrq(CDPR &r, int n){
 
 void SendMotorGrp(CDPR &r, bool IsTorque, bool IsLinearRail){
     SysManager* myMgr = SysManager::Instance();
-    IPort &myPort = myMgr->Ports(0);
+    IPort &myPort = myMgr->Ports(0); // only if one scHub is used
     void (*func)(CDPR&, int){ SendMotorCmd };
     if(IsTorque){ func = SendMotorTrq; }
     int n = IsLinearRail? 4 : 0; // offset in nodeList
