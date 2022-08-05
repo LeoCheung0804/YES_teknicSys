@@ -23,6 +23,7 @@ int RunParaBlend(CDPR &r, double point[7], bool showAttention = false);
 void RunBricksTraj(HANDLE hComm, CDPR &r, unsigned char* Ard_char, int listOffset, bool showAttention = false, bool waitBtn = false);
 void ReverseBricksTraj(CDPR &r, int listOffset, bool showAttention = false);
 void RunTrajPoints(CDPR &r);
+int RunExternPoints(CDPR &r);
 void SendMotorGrp(CDPR &r, bool IsTorque = false, bool IsLinearRail = false);
 void TrjHome(CDPR &r);
 bool ReadBricksFile();
@@ -299,13 +300,13 @@ int main()
         // Set linear rail brakes as usually enabled
         // myMgr->Ports(2).BrakeControl.BrakeSetting(0, BRAKE_PREVENT_MOTION);
 
-        cout << "Choose from menu for cable robot motion:\nt - Read from \"bricks.csv\" file for brick positions\nl - Loop through set num of bricks\nb - Loop and wait for Button input\nm - Manual input using w,a,s,d,r,f,v,g\np - Run Point-to-point trajectory\nq - Request current torQue readings\ni - Info: show menu\nn - Prepare to disable motors and exit programme\nr - Return to previous section" << endl;
+        cout << "Choose from menu for cable robot motion:\nt - Read from \"bricks.csv\" file for brick positions\nm - Manual input using w,a,s,d,r,f,v,g\np - Run Point-to-point trajectory\ne - Run External trajectory step points\nq - Request current torQue readings\ni - Info: show menu\nn - Prepare to disable motors and exit programme\nr - Return to previous section" << endl;
         do {
             bool waitBtn = false;
             cin >> cmd;
             switch (cmd){
                 case 'i':    // Show menu
-                    cout << "Choose from menu for cable robot motion:\nt - Read from \"bricks.csv\" file for brick positions\nl - Loop through set num of bricks\nb - Loop and wait for Button input\nm - Manual input using w,a,s,d,r,f,v,g\np - Run Point-to-point trajectory\nq - Request current torQue readings\ni - Info: show menu\nn - Prepare to disable motors and exit programme\nr - Return to previous section" << endl;
+                    cout << "Choose from menu for cable robot motion:\nt - Read from \"bricks.csv\" file for brick positions\nm - Manual input using w,a,s,d,r,f,v,g\np - Run Point-to-point trajectory\ne - Run External trajectory step points\nq - Request current torQue readings\ni - Info: show menu\nn - Prepare to disable motors and exit programme\nr - Return to previous section" << endl;
                     break;
                 case 't':   // Read brick file, plan trajectory
                 case 'T':
@@ -429,34 +430,9 @@ int main()
                     // nodeList[8]->Port.BrakeControl.BrakeSetting(0, BRAKE_PREVENT_MOTION); // enable brake afterwards
                     cout << "Quit manual control\n";
                     break;
-                case 'b':   // loop through set no. of bricks and wait for user Button input to continue
-                case 'B':
-                    waitBtn = true;
-                case 'l':   // Read brick file, loop through a set no. of bricks
-                case 'L':
-                    {int loopNum = 6; // Define the no. of bricks to loop here!!!
-                    // Read input file for traj-gen
-                    quitType = 'r';
-                    if(!ReadBricksFile()){ continue; } // Read "bricks.csv"
-                    cout << "Bricks to loop: " << loopNum << endl;
-                    if(brickPos.size()<loopNum){ cout << "Warning! Defined brick file is not long enough for looping.\n"; break; }
-                    // int listOffset = brickPos.size() - loopNum;
-                    int listOffset = 683 - loopNum; //683 is total no. of brick in the current file
-                    brickPos.erase(brickPos.begin(), brickPos.end()-loopNum); // Only need the last elements
-                    while(quitType != 'f' && quitType != 'F'){ // if not running the final loop.....
-                        // always reverse from a complete built, then rebuild it
-                        ReverseBricksTraj(robot, listOffset, true);
-                        if(quitType == 'q' || quitType == 'Q' || quitType == 'e'){ break; }
-                        RunBricksTraj(hComm, robot, Ard_char, listOffset, true, waitBtn);
-                        if(quitType == 'q' || quitType == 'Q' || quitType == 'e'){ break; }
-                        loopCount += 1;
-                        // now = time(0); fn = localtime(&now); if(fn->tm_hour >= SleepTime) { break; } // quit loop after sleep time
-                        if(quitType != 'f' && !waitBtn){
-                            cout << "Taking a 3 minute rest~ ^O^\n\n";
-                            Sleep(1000*180);
-                        }
-                    }
-                    cout << "Quit looping trajectory.\n";}
+                case 'e':   // Use external trajectory step points
+                case 'E':
+                    if(RunExternPoints(robot)){ cout << "Step point trajectory aborted\n"; }
                     break;
                 case 'p':   // Typical point to point trajectory
                 case 'P':
@@ -1044,6 +1020,70 @@ void RunTrajPoints(CDPR &r){
         cout << railOffset << endl;
         cout << "----------Completed brick #" << i + 1 <<"----------" << endl;
     }
+}
+
+int RunExternPoints(CDPR &r){
+    // Read raw points from extern.csv
+    ifstream file ("extern.csv");
+    vector<double> row;
+    string line, word, temp;
+
+    brickPos.clear();
+    if(file.is_open()){
+        while (getline(file, line)){
+            row.clear();
+            stringstream s(line);
+            while (s >> word){
+                row.push_back(stod(word)); // convert string to double stod()
+            }
+            brickPos.push_back(row);
+        }
+        cout << "Completed reading external traj step points input file" << endl;
+    }
+    else{ cout << "Failed to read input file. Please check \"extern.csv\" file." << endl; return -1; }
+    
+    // Go through the given points
+    for (int i = 0; i < brickPos.size(); i++) {
+        auto start = chrono::steady_clock::now();
+        long dur = 0;
+        
+        copy(begin(brickPos[i]), end(brickPos[i]), begin(r.in));   
+        cout << "[" << brickPos.size() - i << "] "; r.PrintIn();
+        
+        r.PoseToLength(r.in, r.out, railOffset);
+        SendMotorGrp(r);
+        if(quitType == 'e'){ // Motor error message?
+            cout << "WARNING! Motor error message received. System will now shut now.\n";
+            return -4;
+        }
+
+        // Write to traking file
+        ofstream myfile;
+        myfile.open ("traking.txt");
+        myfile << r.in[0] << " " << r.in[1] << " " << r.in[2] << " " << r.in[3] << " " << r.in[4] << " " << r.in[5] << endl;
+        myfile << railOffset << endl;
+        myfile.close();
+
+        auto end = chrono::steady_clock::now();
+        dur = chrono::duration_cast<chrono::milliseconds>(end-start).count();
+        
+        double dif = MILLIS_TO_NEXT_FRAME - dur - 1;
+        if(dif > 0) { Sleep(dif); }
+
+        if(kbhit()){ // Emergency quit during trajectory control
+            cout << "\nSystem interrupted!! Do you want to quit the trajectory control?\nq - Quit trajectory\nf - Finish this loop of motion\nr - Resume trajectory\n";
+            cin >> quitType;
+            if(quitType == 'q' || quitType == 'Q'){
+                cout << "Trajectory emergency quit\n";
+                return -2;
+            }
+        }
+        if(limitType != 'C'){
+            cout << "WARNING! Linear rail limits triggered. Please quit the programme and check the system.\n";
+            return -3;
+        }
+    }
+    return 0;
 }
 
 void SendMotorCmd(CDPR &r, int n){
