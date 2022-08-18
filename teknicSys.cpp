@@ -9,18 +9,22 @@
 #include <conio.h>
 #include <Windows.h>
 #include "CDPR.h"
-#include "ABBgetVar.h"
+// #include "ABBgetVar.h"
 #include "Dependencies\sFoundation20\inc\pubSysCls.h"
+#include "Dependencies\TcAdsDll\Include\TcAdsDef.h" // Define Ads Def-s before using API
+#include "Dependencies\TcAdsDll\Include\TcAdsAPI.h"
 // #include "Dependencies\DynamixelSDK-3.7.31\include\dynamixel_sdk\dynamixel_sdk.h"
 
 using namespace std;
 using namespace sFnd;
 
 bool SetSerialParams(HANDLE hComm);
-void SendGripperSerial(HANDLE hComm, unsigned char* Ard_char);
+void SendGripperSerial(HANDLE hComm, unsigned char* Ard_char, bool readTwice = true);
 int CheckMotorNetwork();
+int ConnectRailMotors(AmsAddr *pAddr);
+int RaiseRailTo(HANDLE hComm, CDPR &r, AmsAddr *pAddr, int id, double target);
 int RunParaBlend(CDPR &r, double point[7], bool showAttention = false);
-void RunBricksTraj(HANDLE hComm, CDPR &r, unsigned char* Ard_char, int listOffset, bool showAttention = false, bool waitBtn = false);
+void RunBricksTraj(HANDLE hComm, HANDLE brakeComm, CDPR &r, AmsAddr *pAddr, unsigned char* Ard_char, int listOffset, bool showAttention = false, bool waitBtn = false);
 void ReverseBricksTraj(CDPR &r, int listOffset, bool showAttention = false);
 void RunTrajPoints(CDPR &r);
 int RunExternPoints(CDPR &r);
@@ -31,14 +35,14 @@ void MN_DECL AttentionDetected(const mnAttnReqReg &detected); // this is attenti
 
 vector<string> comHubPorts;
 vector<INode*> nodeList; // create a list for each node
+vector<unsigned long> hdlList; // create list for easy use of handlers, listed in string adsVarNames[]
 vector<vector<double>> brickPos;
 unsigned int portCount;
-char attnStringBuf[512]; // Create a buffer to hold the attentionReg information    
-const double RAIL_UP = 1.25, RAIL_DOWN = 0; // Linear rail upper and lower bound
+const int TwinCat_NUM = 4; // No. of axes listed in TwinCat programme
 double step = 0.01; // in meters, for manual control
 float targetTorque = -4.1; //2.5 in %, -ve for tension, also need to UPDATE in switch case 't'!!!!!!!!!
 const int MILLIS_TO_NEXT_FRAME = 20, UserInput_Sec_Timeout = 15, SleepTime = 21; //35 note the basic calculation time is abt 16ms; sleep-time in 24 hr
-double railOffset = 0.0; // linear rails offset
+// double railOffset = 0.0; // linear rails offset
 char limitType = 'C'; // A for home, B for limits, C for default
 char quitType = 'r'; // q for emergency quit, f for finish traj, e for error msg received, r for resume/default
 int loopCount = 0, abbCount = 0; // log info for loop numbers and error occurs daily
@@ -47,14 +51,16 @@ int loopCount = 0, abbCount = 0; // log info for loop numbers and error occurs d
 
 int main()
 {   
+    // Create robot model
     CDPR robot; // Read model.json and create object
     if(!robot.IsGood()){ return -1; } // quit programme if object creation
     robot.PrintHome();
     targetTorque = robot.TargetTorque();
     
     // Local varia)bles for COM port communication
-    HANDLE hComm; // Handle to the Serial port, https://github.com/xanthium-enterprises/Serial-Programming-Win32API-C
+    HANDLE hComm, nanoComm; // Handle to the Serial port, https://github.com/xanthium-enterprises/Serial-Programming-Win32API-C
     char ComPortName[] = "\\\\.\\COM9"; // Name of the arduino Serial port(May Change) to be opened,
+    char NanoComPortName[] = "\\\\.\\COM23"; // Name of the arduino Serial port(May Change) to be opened,
     unsigned char Ard_char[8] = {'(','o',',',' ',' ',' ',' ',')'};
 
     //// Open serial port for Arduino with bluetooth
@@ -62,6 +68,18 @@ int main()
     if (hComm == INVALID_HANDLE_VALUE){ cout << "Error: " << ComPortName << " cannot be opened.\n"; }
     else { cout << ComPortName << " opened.\n"; }
     if (!SetSerialParams(hComm)) { return -1; }
+    //// Open serial port for nano Arduino for 4 poles brakes
+    nanoComm = CreateFile(NanoComPortName, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+    if (nanoComm == INVALID_HANDLE_VALUE){ cout << "Error: " << NanoComPortName << " cannot be opened.\n"; }
+    else { cout << NanoComPortName << " opened.\n"; }
+    if (!SetSerialParams(nanoComm)) { return -1; }
+    
+    //// Initialize linear rails through Twincat ADS
+    AmsAddr       Addr;
+    PAmsAddr      pAddr = &Addr;
+    long nErr{0};
+    double actPos[TwinCat_NUM]{};
+    if(ConnectRailMotors(pAddr)){ cout << "Failed to connect linear rails. Exit programme.\n"; return -1; };
     
     //// Initiallize cable robot motor network
     SysManager* myMgr = SysManager::Instance();
@@ -85,9 +103,13 @@ int main()
     do {
         try{
             do {
-                bool allDone = false, stabilized = false;
+                bool allDone = false, stabilized = false, busyFlag[TwinCat_NUM]{}, homeFlag[TwinCat_NUM]{}; // default values for bool array are false
                 cin >> cmd;
                 switch (cmd){
+                    case 'x':   // Testing grouds
+                        RaiseRailTo(nanoComm, robot, pAddr, 0, 0.02);
+                        RaiseRailTo(nanoComm, robot, pAddr, 1, 0.06);
+                        break;
                     case 'i':   // Show menu
                         cout << "Pick from menu for the next action:\nt - Tighten cables with Torque mode\ny - Loose the cables\nh - Move to Home\n8 - Manually adjust cable lengths\nl - Linear rails motions\nu - Update current position from external file\nr - Reset Rotation to zero\ng - Gripper functions\ni - Info: show menu\nn - Move on to Next step\n";
                         break;
@@ -113,24 +135,6 @@ int main()
                         cout << "\nTorque mode tightening completed" << endl;
                         targetTorque = robot.TargetTorque();
                         break;
-                    // case 's':   // Set zero
-                    //     for (int n = 0; n < NodeNum; n++){
-                    //         nodeList[n]->Motion.AddToPosition(-nodeList[n]->Motion.PosnMeasured.Value()); // Zeroing the number space around the current Measured Position
-                    //     }
-                    //     copy(begin(home), end(home), begin(in1)); // copy home array into input array
-                    //     cout << "Setting zero completed" << endl;
-                    //     cout <<  "Home coordinates: " << in1[0] << ", " << in1[1] << ", " << in1[2] << ", " << in1[3] << ", " << in1[4] << ", " << in1[5] << endl;
-                    //
-                    //     cout << "Do you want to set current rail position as zero? (k - OK)\n";;
-                    //     cin >> cmd;
-                    //     if(cmd == 'k'){
-                    //         for (int n = NodeNum; n < NodeNum+4; n++){
-                    //             nodeList[n]->Motion.AddToPosition(-nodeList[n]->Motion.PosnMeasured.Value());
-                    //         }
-                    //         cout << "Linear rails are set to zero.\n";
-                    //     }
-                    //     else{ cout << "Current rail position may not be at zero\n"; }
-                    //     break;
                     case 'h':   // Homing for all motors!! Including linear rail
                         allDone = false;
                         for (int n = 0; n<nodeList.size(); n++) { 
@@ -259,35 +263,56 @@ int main()
                         if(file.is_open()){
                             try{
                                 while (file >> temp){
-                                    if(count > 5) { break; } //{ railOffset = stod(temp); break; } // reading the rail offset, then break while loop
-                                    robot.in[count++] = stod(temp); // convert string to double stod()
+                                    if(count < 6){ robot.in[count] = stod(temp); } // convert string to double stod() for the first 6 inputs
+                                    else if(count < 10){ robot.railOffset[count-6] = stod(temp); } // reading the rail offset, then break while loop
+                                    else { break; }
+                                    count++;
                                 }
                                 cout << "Completed reading from external file" << endl; //"Completed updating from external pose file"
                             }
                             catch(int e){ cout << "Check if currentPos.csv matches the in1 input no." << endl; }
-                            // do{
-                            //     cout << "Current linear rail offset: ";
-                            //     cin >> railOffset; // do we need other constraits? ie 0 <= railOffset < 2
-                            // }while(!cin.good() || railOffset>2);
-                            
-                            robot.PoseToLength(robot.in, robot.out, railOffset); //pose_to_length(in1, out1, railOffset);
-                            for (int n = 0; n < nodeList.size(); n++){
-                                int32_t step = robot.ToMotorCmd(n, robot.out[n]);
-                                nodeList[n]->Motion.PosnMeasured.Refresh();
-                                nodeList[n]->Motion.AddToPosition(-nodeList[n]->Motion.PosnMeasured.Value() + step);
+
+                            robot.PoseToLength(robot.in, robot.out, robot.railOffset); //pose_to_length(in1, out1, railOffset);
+                            for (int n = 0; n < nodeList.size() + robot.RailNum(); n++){
+                                double step = robot.ToMotorCmd(n, robot.out[n]);
+                                if (n < nodeList.size()){ // for teknic motors
+                                    nodeList[n]->Motion.PosnMeasured.Refresh();
+                                    nodeList[n]->Motion.AddToPosition(-nodeList[n]->Motion.PosnMeasured.Value() + step);
+                                }
+                                else { // for twincat motors
+                                    nErr = AdsSyncWriteReq(pAddr,ADSIGRP_SYM_VALBYHND,hdlList[0], sizeof(step), &step); // write "MAIN.Axis1_GoalPos"
+                                    if (nErr) { cout << "Error: Rail[" << n-nodeList.size() << "] AdsSyncWriteReq: " << nErr << '\n'; }
+                                    homeFlag[n-nodeList.size()] = true; // signal targeted rail motor for homing
+                                    nErr = AdsSyncWriteReq(pAddr,ADSIGRP_SYM_VALBYHND,hdlList[3], sizeof(homeFlag), &homeFlag[0]); // write "MAIN.bHomeSwitch"
+                                    if (nErr) { cout << "Error: Rail[" << n-nodeList.size() << "] Set postiton Command. AdsSyncWriteReq: " << nErr << '\n'; }
+                                    homeFlag[n-nodeList.size()] = false; // return to false
+                                    busyFlag[n-nodeList.size()] = false;
+                                    while(!busyFlag[n-nodeList.size()]){ // wait for motor busy flag on, ie. update current pos started
+                                        nErr = AdsSyncReadReq(pAddr, ADSIGRP_SYM_VALBYHND, hdlList[4], sizeof(busyFlag), &busyFlag[0]); // read "MAIN.Axis_Home.Busy"
+                                        if (nErr) { cout << "Error: Rail[" << n-nodeList.size() << "] AdsSyncReadReq: " << nErr << '\n'; break; }
+                                    }
+                                    while(busyFlag[n-nodeList.size()]){ // wait for motor busy flag off, ie. completed updated position
+                                        nErr = AdsSyncReadReq(pAddr, ADSIGRP_SYM_VALBYHND, hdlList[4], sizeof(busyFlag), &busyFlag[0]);
+                                        if (nErr) { cout << "Error: Rail[" << n-nodeList.size() << "] AdsSyncReadReq: " << nErr << '\n'; break; }
+                                    }
+                                }
                             }
                             cout << "Updating motor counts completed" << endl;
                             cout << "Current coordinates: "; robot.PrintIn();
+                            cout << "Linear rail offset: "; robot.PrintRail();
                             cout << "Motor internal counts: ";
+                            // for teknic motors
                             for (int id = 0; id < nodeList.size(); id++){
                                 nodeList[id]->Motion.PosnMeasured.Refresh();
                                 cout << (double) nodeList[id]->Motion.PosnMeasured << "\t";
                             }
+                            // for twincat motors
+                            nErr = AdsSyncReadReq(pAddr, ADSIGRP_SYM_VALBYHND, hdlList[2], sizeof(actPos), &actPos[0]); // read "MAIN.actPos"
+                            if (nErr) { cout << "Error: Rail[s] AdsSyncReadReq: " << nErr << '\n'; }
+                            for (int id = 0; id < robot.RailNum(); id++){ cout << actPos[id] << "\t"; }
                             cout << endl;
-                            cout << "Linear rail offset: " << railOffset << endl;
                         }
                         break;
-
                 }
             } while(cmd != 'n');
         }
@@ -311,7 +336,7 @@ int main()
                 case 't':   // Read brick file, plan trajectory
                 case 'T':
                     if(!ReadBricksFile()){ continue; } // Read "bricks.csv"
-                    RunBricksTraj(hComm, robot, Ard_char, 0, true);
+                    RunBricksTraj(hComm, nanoComm, robot, pAddr, Ard_char, 0, true);
                     break;
                 case 'm':   // Manual wasdrf
                 case 'M':
@@ -391,7 +416,7 @@ int main()
                         }
                         robot.PrintIn();
                         if(robot.CheckLimits()){
-                            robot.PoseToLength(robot.in, robot.out, railOffset);
+                            robot.PoseToLength(robot.in, robot.out, robot.railOffset);
                             robot.PrintOut();
                             SendMotorGrp(robot);
                             
@@ -455,11 +480,13 @@ int main()
     ofstream myfile;
     myfile.open ("lastPos.txt");
     myfile << robot.in[0] << " " << robot.in[1] << " " << robot.in[2] << " " << robot.in[3] << " " << robot.in[4] << " " << robot.in[5] << endl;
-    myfile << railOffset << endl;
+    myfile << robot.railOffset[0] << " " << robot.railOffset[1] << " " << robot.railOffset[2] << " " << robot.railOffset[3] << endl;
     for(INode* n : nodeList){
         n->Motion.PosnMeasured.Refresh();
         myfile << n->Motion.PosnMeasured.Value() << " ";
     }
+    AdsSyncReadReq(pAddr, ADSIGRP_SYM_VALBYHND, hdlList[2], sizeof(actPos), &actPos[0]); // read "MAIN.actPos"
+    for(int i = 0; i < robot.RailNum(); i++){ myfile << actPos[i] << " "; }
     myfile.close();
     tm *fn; time_t now = time(0); fn = localtime(&now);
     myfile.open("log.txt", ios::app);
@@ -471,7 +498,23 @@ int main()
     {   // Send 'f' signal to bluetooth gripper for shutting down
         Ard_char[1] = 'f';
         SendGripperSerial(hComm, Ard_char);
-        CloseHandle(hComm); //Close the Serial Port
+        // Send "(4:1)" to brake all rails        
+        Ard_char[1] = '4'; Ard_char[2] = ':'; Ard_char[3] = '1'; Ard_char[4] = ')'; Ard_char[7] = ' ';
+        SendGripperSerial(nanoComm, Ard_char, false); // close brake after motion
+        //Close the Serial Port-s
+        CloseHandle(hComm);
+        CloseHandle(nanoComm);
+    }
+
+    {   // Close ADS communication port, disable power for motors
+        long lHdlVar; bool FALSE_FLAG = false;
+        nErr = AdsSyncReadWriteReq(pAddr, ADSIGRP_SYM_HNDBYNAME, 0x0, sizeof(lHdlVar), &lHdlVar, sizeof("MAIN.power"), "MAIN.power");
+        if (nErr){ cout << "Error: AdsSyncReadWriteReq: " << nErr << '\n'; return nErr; }
+        nErr = AdsSyncWriteReq(pAddr,ADSIGRP_SYM_VALBYHND,lHdlVar, sizeof(FALSE_FLAG), &FALSE_FLAG);
+        if (nErr){ cout << "Error: AdsSyncWriteReq: " << nErr << '\n'; return nErr; }
+        else { cout << "Linear rail motors disabled.\n"; }
+        nErr = AdsSyncWriteReq(pAddr,ADSIGRP_SYM_RELEASEHND,0,sizeof(lHdlVar),&lHdlVar);
+        if ( AdsPortClose() ){ cout << "Error: AdsPortClose: " << nErr << '\n'; }
     }
 
     for(int i = 0; i < nodeList.size(); i++){ //Disable Nodes
@@ -541,11 +584,11 @@ void ReadGripperSerial(HANDLE hComm){
     } 
 }
 
-void SendGripperSerial(HANDLE hComm, unsigned char* Ard_char){
+void SendGripperSerial(HANDLE hComm, unsigned char* Ard_char, bool readTwice){
     DWORD dNoOfBytesWritten = 0;
     if (!(bool)WriteFile(hComm, Ard_char, 8, &dNoOfBytesWritten, NULL)){ cout << "Arduino writing error: " << GetLastError() << endl; }    
     ReadGripperSerial(hComm);
-    ReadGripperSerial(hComm); // Repeat to make sure the feedback is received
+    if (readTwice){ ReadGripperSerial(hComm); }// Repeat to make sure the feedback is received
 }
 
 int CheckMotorNetwork() {
@@ -612,20 +655,59 @@ int CheckMotorNetwork() {
     return 0;
 }
 
-int RaiseRailTo(CDPR &r, double target){ // !!! Define velocity limit !!!
-    cout << "RAil target: " << target << endl;
-    if (target < 0 || target > 1.25) { cout << "WARNING! Intended rail offset is out of bound!\n"; return -2; }
-    nodeList[8]->Port.BrakeControl.BrakeSetting(0, BRAKE_ALLOW_MOTION); // disable brake before motion
+int ConnectRailMotors(AmsAddr *pAddr){
+    long nErr, nPort;
+    unsigned long lHdlVar;
+    bool TRUE_FLAG = true;
+
+    // Open communication port on the ADS router
+    nPort = AdsPortOpen();
+    nErr = AdsGetLocalAddress(pAddr);
+    if (nErr){ cout << "Error: AdsGetLocalAddress: " << nErr << '\n'; return nErr; }
+    pAddr->port = 851; // Port number for Twincat 3
+
+    // Enable power for motors, start state machine
+    nErr = AdsSyncReadWriteReq(pAddr, ADSIGRP_SYM_HNDBYNAME, 0x0, sizeof(lHdlVar), &lHdlVar, sizeof("MAIN.power"), "MAIN.power");
+    if (nErr){ cout << "Error: AdsSyncReadWriteReq: " << nErr << '\n'; return nErr; }
+    nErr = AdsSyncWriteReq(pAddr,ADSIGRP_SYM_VALBYHND,lHdlVar, sizeof(TRUE_FLAG), &TRUE_FLAG);
+    if (nErr){ cout << "Error: AdsSyncWriteReq: " << nErr << '\n'; return nErr; }
+    else { cout << "Linear rail motors enabled.\n"; }
+    nErr = AdsSyncWriteReq(pAddr,ADSIGRP_SYM_RELEASEHND,0,sizeof(lHdlVar),&lHdlVar);
+
+    // Create list of handler by name
+    string adsVarNames[] = {"MAIN.Axis_GoalPos", "MAIN.startMove", "MAIN.actPos", "MAIN.bHomeSwitch", "MAIN.homeBusy"}; // data type: double, bool[], double[], bool[], bool[].
+    for(int i=0; i < *(&adsVarNames+1)-adsVarNames; i++){
+        nErr = AdsSyncReadWriteReq(pAddr, ADSIGRP_SYM_HNDBYNAME, 0x0, sizeof(lHdlVar), &lHdlVar, adsVarNames[i].length(), &adsVarNames[i][0]);
+        if (nErr){ cout << "Error: AdsSyncReadWriteReq: " << nErr << ", in creating handler for " << adsVarNames[i] << "\n"; return nErr; }
+        hdlList.push_back(lHdlVar);
+    }
+    cout << "Completed creating handler list of " << hdlList.size() << endl;
+    return 0;
+}
+
+int RaiseRailTo(HANDLE hComm, CDPR &r, AmsAddr *pAddr, int id, double target){ // id:[0-3] !!! Define velocity limit !!!
+    unsigned char Ard_char[8] = {'(','0',':','0',')',' ',' ',' '};
+    long nErr;
+    double step{}, posNow[TwinCat_NUM]{};
+    bool bArry[TwinCat_NUM]{};
+    bArry[id] = true; // signal target rail to move
+
+    cout << "RAil[" << id << "] target: " << target << endl;
+    if(id > r.RailNum()-1){ cout << "WARNING! Intended rail does not exist!\n"; return -2; }
+    if (target < 0 || target > 2.55) { cout << "WARNING! Intended rail offset is out of bound!\n"; return -2; }
+    Ard_char[1] = '0' + id;
+    SendGripperSerial(hComm, Ard_char, false); // open brake before motion
+
     double velLmt = 0.005; // meters per sec
-    double dura = abs(target - railOffset)/velLmt*1000;// *1000 to change unit to ms
+    double dura = abs(target - r.railOffset[id])/velLmt*1000;// *1000 to change unit to ms
     if(dura <= 200){ return 0; } // Don't run traj for incorrect timing 
-    double a, b, c; // coefficients for cubic spline trajectory
+    static double a, b, c; // coefficients for cubic spline trajectory
     cout << "\nATTENTION: Raise rail function is called. Estimated time: " << dura << "\n";
     
     // Solve coefficients of equations for cubic
-    a = railOffset;
-    b = 3 / (dura * dura) * (target - railOffset); 
-    c = -2 / (dura * dura * dura) * (target - railOffset);
+    a = r.railOffset[id];
+    b = 3 / (dura * dura) * (target - r.railOffset[id]); 
+    c = -2 / (dura * dura * dura) * (target - r.railOffset[id]);
     
     // Run the trajectory till the given time is up
     double t = 0;
@@ -633,13 +715,31 @@ int RaiseRailTo(CDPR &r, double target){ // !!! Define velocity limit !!!
     long dur = 0;
     while (t <= dura){        
         // CUBIC equation, per time step pose
-        railOffset = a + b * t * t + c * t * t * t; // update new rail offset
+        r.railOffset[id] = a + b * t * t + c * t * t * t; // update new rail offset
 
         // get absolute cable lengths and rail positions in meters
-        r.PoseToLength(r.in, r.out, railOffset);
-        r.PrintOut();
+        r.PoseToLength(r.in, r.out, r.railOffset);
+        // r.PrintOut(true);
 
-        SendMotorGrp(r, false, true);
+        // Move individual rail and motor
+        step = r.ToMotorCmd(id+r.NodeNum(), r.out[id+r.NodeNum()]);
+        // nErr = AdsSyncReadReq(pAddr,ADSIGRP_SYM_VALBYHND,hdlList[2], sizeof(posNow), &posNow[0]); // write "MAIN.actPos"
+        // if (nErr) { cout << "Error: Rail[" << id << "] AdsSyncWriteReq: " << nErr << '\n'; }
+        // cout << step << ": " << posNow[id] << ": "; r.PrintOut(true); // debug use 
+        nErr = AdsSyncWriteReq(pAddr,ADSIGRP_SYM_VALBYHND,hdlList[0], sizeof(step), &step); // write "MAIN.Axis_GoalPos"
+        if (nErr) { cout << "Error: Rail[" << id << "] AdsSyncWriteReq: " << nErr << '\n'; }
+        nErr = AdsSyncWriteReq(pAddr,ADSIGRP_SYM_VALBYHND,hdlList[1], sizeof(bArry), &bArry[0]); // write "MAIN.startMove"
+        if (nErr) { cout << "Error: Rail[" << id << "] Start Absolute Move Command. AdsSyncWriteReq: " << nErr << '\n'; }
+
+        step = r.ToMotorCmd(id, r.out[id]);
+        //nodeList[id]->Motion.MovePosnStart(step, true); // absolute position
+
+        // Write to traking file
+        ofstream myfile;
+        myfile.open ("traking.txt");
+        myfile << r.in[0] << " " << r.in[1] << " " << r.in[2] << " " << r.in[3] << " " << r.in[4] << " " << r.in[5] << endl;
+        myfile << r.railOffset[0] << " " << r.railOffset[1] << " " << r.railOffset[2] << " " << r.railOffset[3] << endl;
+        myfile.close();
 
         dur = chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now()-start).count();
         double dif = MILLIS_TO_NEXT_FRAME - dur - 1;
@@ -652,7 +752,8 @@ int RaiseRailTo(CDPR &r, double target){ // !!! Define velocity limit !!!
             cin >> quitType;
             if(quitType == 'q' || quitType == 'Q' || quitType == 'e'){
                 cout << "Trajectory emergency quit\n";
-                nodeList[8]->Port.BrakeControl.BrakeSetting(0, BRAKE_PREVENT_MOTION); // enable brake after
+                Ard_char[1] = '4'; Ard_char[3] = '1';
+                SendGripperSerial(hComm, Ard_char, false); // close all brake
                 return -1;
             }
         }
@@ -661,7 +762,16 @@ int RaiseRailTo(CDPR &r, double target){ // !!! Define velocity limit !!!
             return -3;
         }
     }
-    nodeList[8]->Port.BrakeControl.BrakeSetting(0, BRAKE_PREVENT_MOTION); // enable brake after motion */
+    // Wait for rail motor to reach intented position before enabling brake again
+    while(posNow[id]>step+2 || posNow[id]<step-2){
+        nErr = AdsSyncReadReq(pAddr, ADSIGRP_SYM_VALBYHND, hdlList[2], sizeof(posNow), &posNow[0]); // read "MAIN.AxisList[id].NcToPlc.ActPos"
+        if (nErr) { cout << "Error: Rail[" << id << "] AdsSyncReadReq: " << nErr << '\n'; break; }
+        // cout << posNow[id] << endl;
+    }
+    Sleep(50);
+
+    Ard_char[3] = '1';
+    SendGripperSerial(hComm, Ard_char, false); // close brake after motion
     return 0;
 }
 
@@ -732,7 +842,7 @@ int RunParaBlend(CDPR &r, double point[7], bool showAttention){
         }
         // get absolute cable lengths in meters
         // cout << "IN: "<< in1[0] << " " << in1[1] << " " << in1[2] << " " << in1[3] << " " << in1[4] << " " << in1[5] << endl;
-        r.PoseToLength(r.in, r.out, railOffset);
+        r.PoseToLength(r.in, r.out, r.railOffset);
         // cout << "OUT: "<<  out1[0] << "\t" << out1[1] << "\t" << out1[2] << "\t" << out1[3] << "\t" <<  out1[4] << "\t" << out1[5] << "\t" << out1[6] << "\t" << out1[7] << endl;
         
         SendMotorGrp(r);
@@ -745,7 +855,7 @@ int RunParaBlend(CDPR &r, double point[7], bool showAttention){
         ofstream myfile;
         myfile.open ("traking.txt");
         myfile << r.in[0] << " " << r.in[1] << " " << r.in[2] << " " << r.in[3] << " " << r.in[4] << " " << r.in[5] << endl;
-        myfile << railOffset << endl;
+        myfile << r.railOffset[0] << " " << r.railOffset[1] << " " << r.railOffset[2] << " " << r.railOffset[3] << endl;
         myfile.close();
 
         auto end = chrono::steady_clock::now();
@@ -779,14 +889,14 @@ int RunParaBlend(CDPR &r, double point[7], bool showAttention){
 // }
 
 //void RunBricksTraj(const dynamixel::GroupSyncRead &groupSyncRead, int listOffset, bool showAttention, bool waitBtn){
-void RunBricksTraj(HANDLE hComm, CDPR &r, unsigned char* Ard_char, int listOffset, bool showAttention, bool waitBtn){
+void RunBricksTraj(HANDLE hComm, HANDLE brakeComm, CDPR &r, AmsAddr *pAddr, unsigned char* Ard_char, int listOffset, bool showAttention, bool waitBtn){
     double brickPickUp[7] = {9.923, 6.718, -2.9592, 0, 0, 0.0128, 10}; // !!!! Define the brick pick up point !!!!, the last digit is a dummy number for time duration.
     double safePt[6] = {8.3, 6.72, -2.7, 0, 0, -0.0237}; // a safe area near to the arm // 0.21 safe height from ABB
     double goalPos[7] = {2, 2, 1, 0, 0, 0, 10}; // updated according to brick position
     double velLmt = 0.12; // meters per second //////// -65 deg for pick up //////////9.88 6.71 -2.76 safe height after pick up
     double safeT = 1500; // in ms, time to raise to safety height
     double safeH = 0.12; // meter, safety height from building brick level
-    double currentBrkLvl = railOffset; // meter, check if the rail offset is the same as target BrkLvl
+    double currentBrkLvl = r.railOffset[r.RailNum()-1]; // meter, check if the last rail offset is the same as target BrkLvl
     double dura = 0;
     unsigned char tmp, msg[256];
     DWORD dwEventMask, BytesRead, dNoOfBytesWritten = 0;
@@ -796,11 +906,13 @@ void RunBricksTraj(HANDLE hComm, CDPR &r, unsigned char* Ard_char, int listOffse
     for (int i = 0; i < brickPos.size(); i++) {
         ofstream myfile; int timeout_i = 0;
 
-        // // Check if rails need to be raised
-        // if(ScaleRailLvl(brickPos[i][2] - 0.04) != currentBrkLvl){
-        //     currentBrkLvl = ScaleRailLvl(brickPos[i][2] - 0.0404); // Offset one brick height from building levei, ie 0.0404m
-        //     if(RaiseRailTo(currentBrkLvl) < 0) { cout << "Trajectory aborted.\n"; return; } // raise rail to the building brick level
-        // }
+        // Check if rails need to be raised
+        if(brickPos[i][2] != currentBrkLvl){
+            currentBrkLvl = brickPos[i][2];
+            for(int id = 0; id < r.RailNum(); id++){
+                if(RaiseRailTo(brakeComm, r, pAddr, id, currentBrkLvl) < 0) { cout << "Trajectory aborted.\n"; return; } // raise rail to the building brick level
+            }
+        }
 
         // Wait for button input before builing a brick
         if(waitBtn && quitType != 'f'){
@@ -901,7 +1013,7 @@ void RunBricksTraj(HANDLE hComm, CDPR &r, unsigned char* Ard_char, int listOffse
         if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // return to safe point 
         
         r.PrintIn();
-        cout << railOffset << endl;
+        cout << r.railOffset[0] << " " << r.railOffset[1] << " " << r.railOffset[2] << " " << r.railOffset[3] << endl;
         cout << "----------Completed brick #" << i + 1 + listOffset <<"----------" << endl;
     }
     Ard_char[1] = 'r';
@@ -920,7 +1032,7 @@ void ReverseBricksTraj(CDPR &r, int listOffset, bool showAttention){
     double velLmt = 0.27; // meters per second
     double safeT = 1100; // in ms, time to raise to safety height //1200 ms
     double safeH = 0.08; // meter, safety height from building brick level
-    double currentBrkLvl = railOffset; // meter, check if the rail offset is the same as target BrkLvl
+    double currentBrkLvl = r.railOffset[r.RailNum()-1]; // meter, check if the rail offset is the same as target BrkLvl
     double dura = 0;
 
     ofstream myfile;
@@ -1023,7 +1135,7 @@ void RunTrajPoints(CDPR &r){
         // cout << "brickPos("<< brickPos[i].size()<<"): "<< brickPos[i][0]<<","<< brickPos[i][1]<<","<< brickPos[i][2]<<","<< brickPos[i][3]<<","<< brickPos[i][4]<<","<< brickPos[i][5]<<","<< brickPos[i][6]<<endl;
         if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; }              
         r.PrintIn();
-        cout << railOffset << endl;
+        cout << r.railOffset[0] << " " << r.railOffset[1] << " " << r.railOffset[2] << " " << r.railOffset[3] << endl;
         cout << "----------Completed brick #" << i + 1 <<"----------" << endl;
     }
 }
@@ -1056,7 +1168,7 @@ int RunExternPoints(CDPR &r){
         copy(begin(brickPos[i]), end(brickPos[i]), begin(r.in));   
         cout << "[" << brickPos.size() - i << "] "; r.PrintIn();
         
-        r.PoseToLength(r.in, r.out, railOffset);
+        r.PoseToLength(r.in, r.out, r.railOffset);
         SendMotorGrp(r);
         if(quitType == 'e'){ // Motor error message?
             cout << "WARNING! Motor error message received. System will now shut now.\n";
@@ -1067,7 +1179,7 @@ int RunExternPoints(CDPR &r){
         ofstream myfile;
         myfile.open ("traking.txt");
         myfile << r.in[0] << " " << r.in[1] << " " << r.in[2] << " " << r.in[3] << " " << r.in[4] << " " << r.in[5] << endl;
-        myfile << railOffset << endl;
+        myfile << r.railOffset[0] << " " << r.railOffset[1] << " " << r.railOffset[2] << " " << r.railOffset[3] << endl;
         myfile.close();
 
         auto end = chrono::steady_clock::now();
@@ -1098,18 +1210,7 @@ void SendMotorCmd(CDPR &r, int n){
     try{
         // int32_t step = ToMotorCmd(n, out1[n]);
         int32_t step = r.ToMotorCmd(n, r.out[n]);
-        // nodeList[n]->Motion.MoveWentDone();
-        // nodeList[n]->Motion.MovePosnStart(step, true, true); // absolute position
         nodeList[n]->Motion.Adv.MovePosnStart(step, true, true); // absolute position, wait for trigger
-        // float trq = nodeList[n]->Motion.TrqMeasured.Value();
-        // if(abs(trq)>r.AbsTorqLmt()){
-        //     myfile.open("log.txt", ios::app);
-        //     myfile << "Motor [" << n << "] exceeds torque limit: " << trq;
-        //     myfile.close();
-        //     quitType = 'e';
-        //     cout << "ATTENTION: Motor [" << n << "] exceeds torque limit: " << trq << endl;
-        // }
-        // nodeList[n]->Motion.Adv.TriggerGroup(1);
 
         if (nodeList[n]->Status.Alerts.Value().isInAlert()) {
             myfile.open("log.txt", ios::app);
@@ -1180,7 +1281,7 @@ void TrjHome(CDPR &r){// !!! Define the task space velocity limit for homing !!!
             r.in[j] = a[j] + b[j] * t * t + c[j] * t * t * t;
         }
         r.PrintIn();
-        r.PoseToLength(r.in, r.out, railOffset);
+        r.PoseToLength(r.in, r.out, r.railOffset);
         // cout << "OUT: "<<  out1[0] << " " << out1[1] << " " << out1[2] << " " << out1[3] << endl;
         
         SendMotorGrp(r);
@@ -1189,7 +1290,7 @@ void TrjHome(CDPR &r){// !!! Define the task space velocity limit for homing !!!
         ofstream myfile;
         myfile.open ("traking.txt");
         myfile << r.in[0] << " " << r.in[1] << " " << r.in[2] << " " << r.in[3] << " " << r.in[4] << " " << r.in[5] << endl;
-        myfile << railOffset << endl;
+        myfile << r.railOffset[0] << " " << r.railOffset[1] << " " << r.railOffset[2] << " " << r.railOffset[3] << endl;
         myfile.close();
         
         auto end = chrono::steady_clock::now();
