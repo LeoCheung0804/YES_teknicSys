@@ -38,6 +38,7 @@ vector<INode*> nodeList; // create a list for each node
 vector<unsigned long> hdlList; // create list for easy use of handlers, listed in string adsVarNames[]
 vector<vector<double>> brickPos;
 unsigned int portCount;
+char attnStringBuf[512]; // Create a buffer to hold the attentionReg information    
 const int TwinCat_NUM = 4; // No. of axes listed in TwinCat programme
 double step = 0.01; // in meters, for manual control
 float targetTorque = -4.1; //2.5 in %, -ve for tension, also need to UPDATE in switch case 't'!!!!!!!!!
