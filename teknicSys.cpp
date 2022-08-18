@@ -780,11 +780,11 @@ int RunParaBlend(CDPR &r, double point[7], bool showAttention){
 
 //void RunBricksTraj(const dynamixel::GroupSyncRead &groupSyncRead, int listOffset, bool showAttention, bool waitBtn){
 void RunBricksTraj(HANDLE hComm, CDPR &r, unsigned char* Ard_char, int listOffset, bool showAttention, bool waitBtn){
-    double brickPickUp[7] = {9.897, 6.726, -3.03, 0, 0, 0.0128, 10}; // !!!! Define the brick pick up point !!!!, the last digit is a dummy number for time duration.
+    double brickPickUp[7] = {9.923, 6.718, -2.9592, 0, 0, 0.0128, 10}; // !!!! Define the brick pick up point !!!!, the last digit is a dummy number for time duration.
     double safePt[6] = {8.3, 6.72, -2.7, 0, 0, -0.0237}; // a safe area near to the arm // 0.21 safe height from ABB
     double goalPos[7] = {2, 2, 1, 0, 0, 0, 10}; // updated according to brick position
     double velLmt = 0.12; // meters per second //////// -65 deg for pick up //////////9.88 6.71 -2.76 safe height after pick up
-    double safeT = 1600; // in ms, time to raise to safety height
+    double safeT = 1500; // in ms, time to raise to safety height
     double safeH = 0.12; // meter, safety height from building brick level
     double currentBrkLvl = railOffset; // meter, check if the rail offset is the same as target BrkLvl
     double dura = 0;
@@ -826,8 +826,8 @@ void RunBricksTraj(HANDLE hComm, CDPR &r, unsigned char* Ard_char, int listOffse
         // Go pick up a brick
         if(showAttention) { cout << "Picking up a brick\n"; }
         //// ... inform brick station ... ////
-        Ard_char[1] = 'd'; Ard_char[3] = '2'; Ard_char[4] = '6'; Ard_char[5] = ' '; Ard_char[6] = ' ';
-        SendGripperSerial(hComm, Ard_char); // Rotate gripper // 26 deg at brick pick-up station
+        Ard_char[1] = 'd'; Ard_char[3] = '5'; Ard_char[4] = '7'; Ard_char[5] = ' '; Ard_char[6] = ' ';
+        SendGripperSerial(hComm, Ard_char); // Rotate gripper //57 <- 26 deg at brick pick-up station
         Ard_char[3] = ' '; Ard_char[4] = ' '; // Reset the ending number with space char
         Sleep(50); // short break between bluetooth communication
         Ard_char[1] = 'o';
@@ -857,22 +857,24 @@ void RunBricksTraj(HANDLE hComm, CDPR &r, unsigned char* Ard_char, int listOffse
         if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // raise the brick from robot arm
         if(showAttention) { cout << "Going to building level\n"; }
         Ard_char[1] = 'd';
-        string s = to_string((int)(brickPos[i][4] + 27 - brickPos[i][3]/3.1415965*180)); // +27, constant frame to gripper offset; - yaw rotation in EE
+        string s = to_string((int)(brickPos[i][4] + 58 - brickPos[i][3]/3.1415965*180)); // +58<-+27, constant frame to gripper offset; - yaw rotation in EE
         for(int i=0; i<min(s.size(),4); i++){ Ard_char[i+3]=s[i]; }
         SendGripperSerial(hComm, Ard_char); // Rotate gripper according to brickPos
         copy(safePt, safePt+6, begin(goalPos)); // safe point
         goalPos[6] = sqrt(pow(safePt[0]-r.in[0],2)+pow(safePt[1]-r.in[1],2)+pow(safePt[2]-r.in[2],2))/velLmt*1000; // calculate time
         if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // return to safe point
         goalPos[2] = brickPos[i][2] + r.EEOffset() + safeH; // brick level with safe height
-        goalPos[6] = sqrt(pow(goalPos[0]-r.in[0],2)+pow(goalPos[1]-r.in[1],2)+pow(goalPos[2]-r.in[2],2))/velLmt*1000;
-        if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // raise the brick to building level
+        if(r.in[2] < brickPos[i][2] + r.EEOffset() + safeH){ // if current position is below target brick height, then raise brick first
+            goalPos[6] = (goalPos[2]-r.in[2])/velLmt*1000;
+            if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // raise the brick to building level
+        }
         
         // Go to brick placing position
         if(showAttention) { cout << "Going to brick position\n"; }
         goalPos[0] = brickPos[i][0];
         goalPos[1] = brickPos[i][1];
         goalPos[5] = brickPos[i][3]; // Include yaw angle
-        goalPos[6] = sqrt(pow(goalPos[0]-r.in[0],2)+pow(goalPos[1]-r.in[1],2))/velLmt*1000;
+        goalPos[6] = sqrt(pow(goalPos[0]-r.in[0],2)+pow(goalPos[1]-r.in[1],2)+pow(goalPos[2]-r.in[2],2))/velLmt*1000;
         if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; }
 
         // Place brick
@@ -888,9 +890,13 @@ void RunBricksTraj(HANDLE hComm, CDPR &r, unsigned char* Ard_char, int listOffse
         if(showAttention) { cout << "Going to stand by position\n"; }
         goalPos[2] += safeH;
         if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // leave building level
-        // Ard_char[1] = 'd'; Ard_char[3] = '3'; Ard_char[4] = '0'; Ard_char[5] = ' '; Ard_char[6] = ' ';
-        // SendGripperSerial(hComm, Ard_char); // Rotate gripper // 30 deg at brick pick-up station
         copy(begin(safePt), end(safePt), begin(goalPos)); // safe x,y,z position
+        if(r.in[2] > safePt[2]){ // if current position is above safe point, then return to safe point within lowering z-height
+            goalPos[2] = r.in[2];
+            goalPos[6] = sqrt(pow(goalPos[0]-r.in[0],2)+pow(goalPos[1]-r.in[1],2))/velLmt*1000;
+            if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // raise the brick to building level
+            goalPos[2] = safePt[2];
+        }
         goalPos[6] = sqrt(pow(goalPos[0]-r.in[0],2)+pow(goalPos[1]-r.in[1],2)+pow(goalPos[2]-r.in[2],2))/velLmt*1000;
         if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // return to safe point 
         
