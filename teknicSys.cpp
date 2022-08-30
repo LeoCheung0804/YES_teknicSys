@@ -1341,7 +1341,8 @@ bool ReadBricksFile(){ // Define which file to read here !!!
             // row[2] *= 1.01; // actual scale of bricks
             // row[3] *= -1; // convert Adam's file from anticlockwise to clockwise in gripper
             //row[3] += 90; // convert Adam's file to robot rotation, 90deg offset
-            // if(row[3]>180){ row[3] -= 180; } // convert 360 degs to 180
+            if(row[4]<0){ row[4] += 180; } // convert -ve degs to 180
+            if(row[4]>180){ row[4] -= 180; } // convert 360 degs to 180
             brickPos.push_back(row);
         }
         cout << "Completed reading brick position input file" << endl;

@@ -129,7 +129,6 @@ int32_t CDPR::RailScale(){ return railScale; }
 
 int32_t CDPR::ToMotorCmd(int motorID, double length){
     if(motorID == -1) { return length * cmdScale; }
-    // if(motorID > nodeNum -1)
-    { return (length - this->offset[motorID]) * railScale; } // rail cmd according to scale
-    // return (length - this->offset[motorID]) * cmdScale;
+    if(motorID > nodeNum -1){ return (length - this->offset[motorID]) * railScale; } // rail cmd according to scale
+    return (length - this->offset[motorID]) * cmdScale;
 }
