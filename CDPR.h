@@ -31,6 +31,7 @@ public:
     void PrintOut(bool showRail = false);
     void PrintRail();
     void PrintHome();
+    void UpdateModel();
     void PoseToLength(double pose[], double lengths[], const double rail_offset[4] = defaultRail);
     double EEOffset();
     float TargetTorque();
@@ -46,6 +47,7 @@ public:
     double out[12]{}; // cable lengths in meter //12 assume there are 8 motors + 4 linear rails
     double offset[12]{}; //12 //L0, from "zero position", will be updated by "set home" command
     double railOffset[4]{}; // individual heights or positions of the rails
+    double brickPickUp[6]{}; // position at 5th pole for brick pick up with possible z-rotaion
 };
 
 #endif

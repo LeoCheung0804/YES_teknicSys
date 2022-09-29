@@ -1,5 +1,8 @@
+#define _USE_MATH_DEFINES
+
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -99,7 +102,7 @@ int main()
     // IPort &myPort = myMgr->Ports(2);
     robot.PoseToLength(robot.home, robot.offset); // save offset values according to home pose
 
-    cout << "Motor network available. Pick from menu for the next action:\nt - Tighten cables with Torque mode\ny - Loose the cables\nh - Move to Home\n8 - Manually adjust cable lengths\nl - Linear rails motions\nu - Update current position from external file\nr - Reset Rotation to zero\ng - Gripper functions\ni - Info: show menu\nn - Move on to Next step" << endl;
+    cout << "Motor network available. Pick from menu for the next action:\nt - Tighten cables with Torque mode\ny - Loose the cables\nh - Move to Home\n8 - Manually adjust cable lengths\nl - Linear rails motions\nu - Update current position from external file\nr - Reset Rotation to zero\ng - Gripper functions\nj - Read Json file and update model params\ni - Info: show menu\nn - Move on to Next step" << endl;
     char cmd;
     do {
         try{
@@ -112,7 +115,7 @@ int main()
                         RaiseRailTo(nanoComm, robot, pAddr, 1, 0.06);
                         break;
                     case 'i':   // Show menu
-                        cout << "Pick from menu for the next action:\nt - Tighten cables with Torque mode\ny - Loose the cables\nh - Move to Home\n8 - Manually adjust cable lengths\nl - Linear rails motions\nu - Update current position from external file\nr - Reset Rotation to zero\ng - Gripper functions\ni - Info: show menu\nn - Move on to Next step\n";
+                        cout << "Pick from menu for the next action:\nt - Tighten cables with Torque mode\ny - Loose the cables\nh - Move to Home\n8 - Manually adjust cable lengths\nl - Linear rails motions\nu - Update current position from external file\nr - Reset Rotation to zero\ng - Gripper functions\nj - Read Json file and update model params\ni - Info: show menu\nn - Move on to Next step\n";
                         break;
                     case 'y':   // Loosen cables using positive torque
                         targetTorque = 1;
@@ -238,6 +241,9 @@ int main()
                             }                        
                         }
                         cout << "Gripper testing terminated.\n";
+                        break;
+                    case 'j':
+                        robot.UpdateModel();
                         break;
                     // case 'l':   // Linear rail motions
                     //     cout << "0 to 3 - home linear rail individually\n4 - home all 4 linear rails automatically\nb - Back to previous menu\nany other keys - stop the linear rail from current motion\n";
@@ -777,7 +783,7 @@ int RaiseRailTo(HANDLE hComm, CDPR &r, AmsAddr *pAddr, int id, double target){ /
 }
 
 int RunParaBlend(CDPR &r, double point[7], bool showAttention){
-    float vMax[6] = {.4, .4, .4, 0.8, 0.8, 0.8}; // m/s, define the maximum velocity for each DoF
+    float vMax[6] = {.6, .6, .6, 0.8, 0.8, 0.8}; // m/s, define the maximum velocity for each DoF
     float aMax[6] = {80, 80, 80, 10, 10, 10}; // m/s^2, define the maximum acceleration for each DoF
     static double a[6], b[6], c[6], d[6], e[6], f[6], g[6], tb[6]; // trajectory coefficients
     static double sQ[6], Q[6], o[6];
@@ -891,29 +897,33 @@ int RunParaBlend(CDPR &r, double point[7], bool showAttention){
 
 //void RunBricksTraj(const dynamixel::GroupSyncRead &groupSyncRead, int listOffset, bool showAttention, bool waitBtn){
 void RunBricksTraj(HANDLE hComm, HANDLE brakeComm, CDPR &r, AmsAddr *pAddr, unsigned char* Ard_char, int listOffset, bool showAttention, bool waitBtn){
-    double brickPickUp[7] = {9.923, 6.718, -2.9592, 0, 0, 0.0128, 10}; // !!!! Define the brick pick up point !!!!, the last digit is a dummy number for time duration.
-    double safePt[6] = {8.3, 6.72, -2.7, 0, 0, -0.0237}; // a safe area near to the arm // 0.21 safe height from ABB
+    double brickPickUp[7] = {9.925, 6.709, -2.96625, 0, 0, 0.0148, 10}; // !!!! Define the brick pick up point !!!!, the last digit is a dummy number for time duration.
+    double safePt[6] = {8.24, 6.51, -2.7, 0, 0, -0.0237}; // a safe area near to the arm // 0.21 safe height from ABB
     double goalPos[7] = {2, 2, 1, 0, 0, 0, 10}; // updated according to brick position
-    double velLmt = 0.12; // meters per second //////// -65 deg for pick up //////////9.88 6.71 -2.76 safe height after pick up
+    double velLmt = 0.45; // meters per second
     double safeT = 1500; // in ms, time to raise to safety height
     double safeH = 0.12; // meter, safety height from building brick level
     double currentBrkLvl = r.railOffset[r.RailNum()-1]; // meter, check if the last rail offset is the same as target BrkLvl
+    double lowPole = -2.9; // lowest 5th pole z-value
+    double safeZoneH = 0.4; // height of safe zone from bottom cable to top cable near EE
     double dura = 0;
     unsigned char tmp, msg[256];
     DWORD dwEventMask, BytesRead, dNoOfBytesWritten = 0;
     bool Status;
+
+    if(r.brickPickUp[0] != 0){ copy(r.brickPickUp, r.brickPickUp+6, begin(brickPickUp)); } // Check if robot has its own brick pick-up pose
 
     // Go through the given bricks
     for (int i = 0; i < brickPos.size(); i++) {
         ofstream myfile; int timeout_i = 0;
 
         // Check if rails need to be raised
-        if(brickPos[i][2] != currentBrkLvl){
-            currentBrkLvl = brickPos[i][2];
-            for(int id = 0; id < r.RailNum(); id++){
-                if(RaiseRailTo(brakeComm, r, pAddr, id, currentBrkLvl) < 0) { cout << "Trajectory aborted.\n"; return; } // raise rail to the building brick level
-            }
-        }
+        // if(brickPos[i][2] != currentBrkLvl){
+        //     currentBrkLvl = brickPos[i][2];
+        //     for(int id = 0; id < r.RailNum(); id++){
+        //         if(RaiseRailTo(brakeComm, r, pAddr, id, currentBrkLvl) < 0) { cout << "Trajectory aborted.\n"; return; } // raise rail to the building brick level
+        //     }
+        // }
 
         // Wait for button input before builing a brick
         if(waitBtn && quitType != 'f'){
@@ -939,9 +949,9 @@ void RunBricksTraj(HANDLE hComm, HANDLE brakeComm, CDPR &r, AmsAddr *pAddr, unsi
         // Go pick up a brick
         if(showAttention) { cout << "Picking up a brick\n"; }
         //// ... inform brick station ... ////
-        Ard_char[1] = 'd'; Ard_char[3] = '5'; Ard_char[4] = '7'; Ard_char[5] = ' '; Ard_char[6] = ' ';
-        SendGripperSerial(hComm, Ard_char); // Rotate gripper //57 <- 26 deg at brick pick-up station
-        Ard_char[3] = ' '; Ard_char[4] = ' '; // Reset the ending number with space char
+        Ard_char[1] = 'd'; Ard_char[3] = '9'; Ard_char[4] = '0'; Ard_char[5] = ' '; Ard_char[6] = ' '; // 5th pole it +1.52 deg to site x-axis
+        SendGripperSerial(hComm, Ard_char); // Rotate gripper //163 <- 26 deg at brick pick-up station
+        Ard_char[3] = ' '; Ard_char[4] = ' '; Ard_char[5] = ' '; // Reset the ending number with space char
         Sleep(50); // short break between bluetooth communication
         Ard_char[1] = 'o';
         SendGripperSerial(hComm, Ard_char); // Open gripper
@@ -967,17 +977,41 @@ void RunBricksTraj(HANDLE hComm, HANDLE brakeComm, CDPR &r, AmsAddr *pAddr, unsi
         copy(brickPickUp, brickPickUp+6, begin(goalPos));
         goalPos[2] += 0.14;
         goalPos[6] = safeT;
-        if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // raise the brick from robot arm
+        if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // raise the brick from rail station
         if(showAttention) { cout << "Going to building level\n"; }
         Ard_char[1] = 'd';
-        string s = to_string((int)(brickPos[i][4] + 58 - brickPos[i][3]/3.1415965*180)); // +58<-+27, constant frame to gripper offset; - yaw rotation in EE
+        string s = to_string((int)(brickPos[i][4] + 92.2 - brickPos[i][3]/3.1415965*180)); // <-+27, constant frame to gripper offset; - yaw rotation in EE
         for(int i=0; i<min(s.size(),4); i++){ Ard_char[i+3]=s[i]; }
         SendGripperSerial(hComm, Ard_char); // Rotate gripper according to brickPos
         copy(safePt, safePt+6, begin(goalPos)); // safe point
         goalPos[6] = sqrt(pow(safePt[0]-r.in[0],2)+pow(safePt[1]-r.in[1],2)+pow(safePt[2]-r.in[2],2))/velLmt*1000; // calculate time
         if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // return to safe point
+        if(brickPos[i][1]+2.149848*brickPos[i][0]>25.250178){ // check if target brick pos falls into the region where cables may hit 5th pole
+            if(showAttention){ cout << "Attention: Brick is in mountain region. Caution: may hit 5th pole\n"; }
+            // near road, check if 5th pole posistion need moving
+            if((lowPole-brickPos[i][2])*(lowPole-brickPos[i][2]+safeZoneH)<=0){
+                // Move 5th pole to just above the safe zone
+                // MoveBrkRail(brickPos[i][2]+safeZoneH);
+                goalPos[2] = lowPole; // safe level as 5th pole
+                goalPos[6] = (goalPos[2]-r.in[2])/velLmt*1000;
+                if(showAttention) { cout << "Lowering to pole position??\n"; }
+                if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } 
+            }
+        }
+        else if(brickPos[i][1]-2.271415*brickPos[i][0]<-13.260362){ // check if target brick pos falls into the region where cables may hit 5th pole
+            if(showAttention){ cout << "Attention: Brick is in brick loading region. Caution: may hit 5th pole\n"; }
+            if((lowPole-brickPos[i][2])*(lowPole-brickPos[i][2]+safeZoneH)<=0){
+                // if lowPole < brickPos[i][2]+EeH { move ee to 5th pole height || move 5th above EE safeZone}
+                // else {move 5th pole to ee height}
+                // move to 5th pole height
+                goalPos[2] = lowPole; // safe level as 5th pole
+                goalPos[6] = (goalPos[2]-r.in[2])/velLmt*1000;
+                if(showAttention) { cout << "Lowering to pole position??\n"; }
+                if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } 
+            }
+        }
         goalPos[2] = brickPos[i][2] + r.EEOffset() + safeH; // brick level with safe height
-        if(r.in[2] < brickPos[i][2] + r.EEOffset() + safeH){ // if current position is below target brick height, then raise brick first
+        if(r.in[2] < brickPos[i][2] + r.EEOffset() + safeH){ // if current position is below target brick height, then raise brick first // need this?
             goalPos[6] = (goalPos[2]-r.in[2])/velLmt*1000;
             if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // raise the brick to building level
         }
@@ -1260,7 +1294,7 @@ void SendMotorGrp(CDPR &r, bool IsTorque, bool IsLinearRail){
 }
 
 void TrjHome(CDPR &r){// !!! Define the task space velocity limit for homing !!!
-    double velLmt = 0.08; // 0.1 // unit in meters per sec
+    double velLmt = 0.1; // 0.1 // unit in meters per sec
     double dura = sqrt(pow(r.in[0]-r.home[0],2)+pow(r.in[1]-r.home[1],2)+pow(r.in[2]-r.home[2],2))/velLmt*1000; // *1000 to change unit to ms
     double a[6], b[6], c[6]; // cubic coefficients
     double t = 0;
@@ -1337,12 +1371,12 @@ bool ReadBricksFile(){ // Define which file to read here !!!
             while (s >> word){
                 row.push_back(stod(word)); // convert string to double stod()
             }
-            // for(int i=0; i<3; i++){ row[i] /= 1000; } // convert mm to m unit for xyz
-            // row[2] *= 1.01; // actual scale of bricks
-            // row[3] *= -1; // convert Adam's file from anticlockwise to clockwise in gripper
-            //row[3] += 90; // convert Adam's file to robot rotation, 90deg offset
+            // Convert angles
             if(row[4]<0){ row[4] += 180; } // convert -ve degs to 180
-            if(row[4]>180){ row[4] -= 180; } // convert 360 degs to 180
+            // if(row[4]>180){ row[4] -= 180; } // convert 360 degs to 180
+            // Calculate and add x, y offsets due to rotation mis-alignment
+            row[0] -= 0.0075*sin((21.8 - row[4])*M_PI/180);
+            row[1] -= 0.0075*cos((21.8 - row[4])*M_PI/180);
             brickPos.push_back(row);
         }
         cout << "Completed reading brick position input file" << endl;
