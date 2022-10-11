@@ -31,6 +31,7 @@ void RunBricksTraj(HANDLE hComm, HANDLE brakeComm, CDPR &r, AmsAddr *pAddr, unsi
 void ReverseBricksTraj(CDPR &r, int listOffset, bool showAttention = false);
 void RunTrajPoints(CDPR &r);
 int RunExternPoints(CDPR &r);
+void RecordMotorTrq(CDPR &r);
 void SendMotorGrp(CDPR &r, bool IsTorque = false, bool IsLinearRail = false);
 void TrjHome(CDPR &r);
 bool ReadBricksFile();
@@ -61,9 +62,9 @@ int main()
     robot.PrintHome();
     targetTorque = robot.TargetTorque();
     
-    // Local varia)bles for COM port communication
+    // Local variables for COM port communication
     HANDLE hComm, nanoComm; // Handle to the Serial port, https://github.com/xanthium-enterprises/Serial-Programming-Win32API-C
-    char ComPortName[] = "\\\\.\\COM9"; // Name of the arduino Serial port(May Change) to be opened,
+    char ComPortName[] = "\\\\.\\COM5"; // Name of the arduino Serial port(May Change) to be opened,
     char NanoComPortName[] = "\\\\.\\COM23"; // Name of the arduino Serial port(May Change) to be opened,
     unsigned char Ard_char[8] = {'(','o',',',' ',' ',' ',' ',')'};
 
@@ -475,7 +476,8 @@ int main()
                     for(int i = 0; i < nodeList.size(); i++){                    
                         nodeList[i]->Motion.TrqMeasured.Refresh();
                         cout << "[" << i << "]: " << nodeList[i]->Motion.TrqMeasured.Value() << endl;
-                    }   
+                    }
+                    RecordMotorTrq(robot);
                     break;
             }
         } while(cmd != 'n' && cmd != 'r');
@@ -1195,6 +1197,12 @@ int RunExternPoints(CDPR &r){
     }
     else{ cout << "Failed to read input file. Please check \"extern.csv\" file." << endl; return -1; }
     
+    ofstream myfile;
+    myfile.open("extern_log.csv", ios::app);
+    tm *fn; time_t now = time(0); fn = localtime(&now);
+    myfile <<  fn->tm_mon +1 << "/" << fn->tm_mday << ": " << fn->tm_hour << ":" << fn->tm_min << ":" << fn->tm_sec << "\n";;
+    myfile.close();
+    
     // Go through the given points
     for (int i = 0; i < brickPos.size(); i++) {
         auto start = chrono::steady_clock::now();
@@ -1205,13 +1213,13 @@ int RunExternPoints(CDPR &r){
         
         r.PoseToLength(r.in, r.out, r.railOffset);
         SendMotorGrp(r);
+        RecordMotorTrq(r); // Record measured torque at each command step
         if(quitType == 'e'){ // Motor error message?
             cout << "WARNING! Motor error message received. System will now shut now.\n";
             return -4;
         }
 
         // Write to traking file
-        ofstream myfile;
         myfile.open ("traking.txt");
         myfile << r.in[0] << " " << r.in[1] << " " << r.in[2] << " " << r.in[3] << " " << r.in[4] << " " << r.in[5] << endl;
         myfile << r.railOffset[0] << " " << r.railOffset[1] << " " << r.railOffset[2] << " " << r.railOffset[3] << endl;
@@ -1293,6 +1301,17 @@ void SendMotorGrp(CDPR &r, bool IsTorque, bool IsLinearRail){
     if (quitType!='e'){ myPort.Adv.TriggerMovesInGroup(1); } // Only move all if no error is caugth
 }
 
+void RecordMotorTrq(CDPR &r){ // Record current measured torque for all listed motors
+    ofstream myfile;
+    myfile.open("extern_log.csv", ios::app);
+    for(int i = 0; i < nodeList.size(); i++){                    
+        nodeList[i]->Motion.TrqMeasured.Refresh();
+        myfile << nodeList[i]->Motion.TrqMeasured.Value() << ", " ;
+    }
+    myfile << "\n";
+    myfile.close();
+}
+
 void TrjHome(CDPR &r){// !!! Define the task space velocity limit for homing !!!
     double velLmt = 0.1; // 0.1 // unit in meters per sec
     double dura = sqrt(pow(r.in[0]-r.home[0],2)+pow(r.in[1]-r.home[1],2)+pow(r.in[2]-r.home[2],2))/velLmt*1000; // *1000 to change unit to ms
@@ -1320,6 +1339,7 @@ void TrjHome(CDPR &r){// !!! Define the task space velocity limit for homing !!!
         // cout << "OUT: "<<  out1[0] << " " << out1[1] << " " << out1[2] << " " << out1[3] << endl;
         
         SendMotorGrp(r);
+        RecordMotorTrq(r);
 
         // Write to traking file
         ofstream myfile;
