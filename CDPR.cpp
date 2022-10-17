@@ -93,6 +93,8 @@ void CDPR::UpdateModel(){ // Read model.json file
         this->cmdScale = model.value("toMotorCmdScale", 509295);
         this->railScale = model.value("railCmdScale", 38400000);
         this->pRadius = model.value("pulleyRadius", 0.045);
+        this->tempA = model.value("tempA", 21.8);
+        this->tempD = model.value("tempD", -0.0075);
         // Interate through arrays
         for(int i=0; i<6; i++){
             this->home[i] = model["home"][i];

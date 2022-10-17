@@ -34,7 +34,7 @@ int RunExternPoints(CDPR &r);
 void RecordMotorTrq(CDPR &r);
 void SendMotorGrp(CDPR &r, bool IsTorque = false, bool IsLinearRail = false);
 void TrjHome(CDPR &r);
-bool ReadBricksFile();
+bool ReadBricksFile(CDPR &r);
 void MN_DECL AttentionDetected(const mnAttnReqReg &detected); // this is attention from teknic motors
 
 vector<string> comHubPorts;
@@ -64,7 +64,7 @@ int main()
     
     // Local variables for COM port communication
     HANDLE hComm, nanoComm; // Handle to the Serial port, https://github.com/xanthium-enterprises/Serial-Programming-Win32API-C
-    char ComPortName[] = "\\\\.\\COM5"; // Name of the arduino Serial port(May Change) to be opened,
+    char ComPortName[] = "\\\\.\\COM26"; // Name of the arduino Serial port(May Change) to be opened,
     char NanoComPortName[] = "\\\\.\\COM23"; // Name of the arduino Serial port(May Change) to be opened,
     unsigned char Ard_char[8] = {'(','o',',',' ',' ',' ',' ',')'};
 
@@ -112,8 +112,19 @@ int main()
                 cin >> cmd;
                 switch (cmd){
                     case 'x':   // Testing grouds
-                        RaiseRailTo(nanoComm, robot, pAddr, 0, 0.02);
-                        RaiseRailTo(nanoComm, robot, pAddr, 1, 0.06);
+                        cout << "In testing mode...\n";
+                        while(cmd != 'b'){ 
+                            int railID{0}; double targetH{0};
+                            cout << "Rail ID (0-3): ";
+                            cin >> railID;
+                            cout << "Target height (0-2m): ";
+                            cin >> targetH;
+                            // RaiseRailTo(nanoComm, robot, pAddr, 0, 0.02);
+                            if(RaiseRailTo(nanoComm, robot, pAddr, railID, targetH)){ cout << "Rail trajectory [" << railID << "] aborted\n"; }
+                            cout << "Continue c? Back to main menu b?\n";
+                            cin >> cmd;
+                        }
+                        cout << "Exited testing mode.\n";
                         break;
                     case 'i':   // Show menu
                         cout << "Pick from menu for the next action:\nt - Tighten cables with Torque mode\ny - Loose the cables\nh - Move to Home\n8 - Manually adjust cable lengths\nl - Linear rails motions\nu - Update current position from external file\nr - Reset Rotation to zero\ng - Gripper functions\nj - Read Json file and update model params\ni - Info: show menu\nn - Move on to Next step\n";
@@ -343,7 +354,7 @@ int main()
                     break;
                 case 't':   // Read brick file, plan trajectory
                 case 'T':
-                    if(!ReadBricksFile()){ continue; } // Read "bricks.csv"
+                    if(!ReadBricksFile(robot)){ continue; } // Read "bricks.csv"
                     RunBricksTraj(hComm, nanoComm, robot, pAddr, Ard_char, 0, true);
                     break;
                 case 'm':   // Manual wasdrf
@@ -707,7 +718,7 @@ int RaiseRailTo(HANDLE hComm, CDPR &r, AmsAddr *pAddr, int id, double target){ /
     Ard_char[1] = '0' + id;
     SendGripperSerial(hComm, Ard_char, false); // open brake before motion
 
-    double velLmt = 0.005; // meters per sec
+    double velLmt = 0.01; // meters per sec // measured vel 0.025 ms-1
     double dura = abs(target - r.railOffset[id])/velLmt*1000;// *1000 to change unit to ms
     if(dura <= 200){ return 0; } // Don't run traj for incorrect timing 
     static double a, b, c; // coefficients for cubic spline trajectory
@@ -728,20 +739,17 @@ int RaiseRailTo(HANDLE hComm, CDPR &r, AmsAddr *pAddr, int id, double target){ /
 
         // get absolute cable lengths and rail positions in meters
         r.PoseToLength(r.in, r.out, r.railOffset);
-        // r.PrintOut(true);
+        //r.PrintOut(true);
 
         // Move individual rail and motor
+        step = r.ToMotorCmd(id, r.out[id]);
+        nodeList[id]->Motion.MovePosnStart(step, true); // absolute position
+
         step = r.ToMotorCmd(id+r.NodeNum(), r.out[id+r.NodeNum()]);
-        // nErr = AdsSyncReadReq(pAddr,ADSIGRP_SYM_VALBYHND,hdlList[2], sizeof(posNow), &posNow[0]); // write "MAIN.actPos"
-        // if (nErr) { cout << "Error: Rail[" << id << "] AdsSyncWriteReq: " << nErr << '\n'; }
-        // cout << step << ": " << posNow[id] << ": "; r.PrintOut(true); // debug use 
         nErr = AdsSyncWriteReq(pAddr,ADSIGRP_SYM_VALBYHND,hdlList[0], sizeof(step), &step); // write "MAIN.Axis_GoalPos"
         if (nErr) { cout << "Error: Rail[" << id << "] AdsSyncWriteReq: " << nErr << '\n'; }
         nErr = AdsSyncWriteReq(pAddr,ADSIGRP_SYM_VALBYHND,hdlList[1], sizeof(bArry), &bArry[0]); // write "MAIN.startMove"
         if (nErr) { cout << "Error: Rail[" << id << "] Start Absolute Move Command. AdsSyncWriteReq: " << nErr << '\n'; }
-
-        step = r.ToMotorCmd(id, r.out[id]);
-        //nodeList[id]->Motion.MovePosnStart(step, true); // absolute position
 
         // Write to traking file
         ofstream myfile;
@@ -762,7 +770,7 @@ int RaiseRailTo(HANDLE hComm, CDPR &r, AmsAddr *pAddr, int id, double target){ /
             if(quitType == 'q' || quitType == 'Q' || quitType == 'e'){
                 cout << "Trajectory emergency quit\n";
                 Ard_char[1] = '4'; Ard_char[3] = '1';
-                SendGripperSerial(hComm, Ard_char, false); // close all brake
+                SendGripperSerial(hComm, Ard_char, true); // close all brake
                 return -1;
             }
         }
@@ -778,6 +786,7 @@ int RaiseRailTo(HANDLE hComm, CDPR &r, AmsAddr *pAddr, int id, double target){ /
         // cout << posNow[id] << endl;
     }
     Sleep(50);
+    cout << "Rail traj done .... \n";
 
     Ard_char[3] = '1';
     SendGripperSerial(hComm, Ard_char, false); // close brake after motion
@@ -1378,7 +1387,7 @@ void TrjHome(CDPR &r){// !!! Define the task space velocity limit for homing !!!
     cout << "Homing with trajectory completed\n";
 }
 
-bool ReadBricksFile(){ // Define which file to read here !!!
+bool ReadBricksFile(CDPR &r){ // Define which file to read here !!!
     ifstream file ("bricks.csv");
     vector<double> row;
     string line, word, temp;
@@ -1395,8 +1404,8 @@ bool ReadBricksFile(){ // Define which file to read here !!!
             if(row[4]<0){ row[4] += 180; } // convert -ve degs to 180
             // if(row[4]>180){ row[4] -= 180; } // convert 360 degs to 180
             // Calculate and add x, y offsets due to rotation mis-alignment
-            row[0] -= 0.0075*sin((21.8 - row[4])*M_PI/180);
-            row[1] -= 0.0075*cos((21.8 - row[4])*M_PI/180);
+            row[0] -= r.tempD*sin((r.tempA + row[4])*M_PI/180);
+            row[1] += r.tempD*cos((r.tempA + row[4])*M_PI/180);
             brickPos.push_back(row);
         }
         cout << "Completed reading brick position input file" << endl;

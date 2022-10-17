@@ -41,6 +41,9 @@ public:
     int32_t MotorScale();
     int32_t RailScale();
     int32_t ToMotorCmd(int motorID, double length);
+
+    double tempA{0}; // rotational angel offset
+    double tempD{0}; // rotational distance offset
     
     double home[6]{}; // home posisiton
     double in[6]{}; // end-effector task-space position {x,y,z, alpha, beta, gama}, in meter and radian
