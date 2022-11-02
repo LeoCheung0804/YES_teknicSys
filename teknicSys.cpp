@@ -354,6 +354,7 @@ int main()
                 case 'T':
                     if(!ReadBricksFile(robot)){ continue; } // Read "bricks.csv"
                     RunBricksTraj(hComm, nanoComm, robot, pAddr, Ard_char, 0, true);
+                    bkTrjCount += 1; // Add counter for Brick traj-s
                     break;
                 case 'm':   // Manual wasdrf
                 case 'M':
@@ -479,6 +480,7 @@ int main()
                 case 'p':   // Typical point to point trajectory
                 case 'P':
                     RunTrajPoints(robot);
+                    trjCount += 1; // Add counter for point-to-point traj-s
                     break;
                 case 'q':   // Request current torque readings
                 case 'Q':
