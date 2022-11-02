@@ -50,9 +50,7 @@ const int MILLIS_TO_NEXT_FRAME = 20, UserInput_Sec_Timeout = 15, SleepTime = 21;
 // double railOffset = 0.0; // linear rails offset
 char limitType = 'C'; // A for home, B for limits, C for default
 char quitType = 'r'; // q for emergency quit, f for finish traj, e for error msg received, r for resume/default
-int loopCount = 0, abbCount = 0; // log info for loop numbers and error occurs daily
-
-// bool groupSyncRead = true;
+int bkTrjCount = 0, trjCount = 0; // log info for loop numbers and error occurs daily
 
 int main()
 {   
@@ -510,7 +508,7 @@ int main()
     myfile.close();
     tm *fn; time_t now = time(0); fn = localtime(&now);
     myfile.open("log.txt", ios::app);
-    myfile <<  fn->tm_mon +1 << "/" << fn->tm_mday << ": " << loopCount << " loop runs. ABB error hard-code call: " << abbCount << endl;
+    myfile <<  fn->tm_mon +1 << "/" << fn->tm_mday << ": " << bkTrjCount << " brick built runs; " << trjCount << " traj runs." <<endl;
     myfile.close();
     
     //// List of what-if-s??
@@ -840,12 +838,11 @@ int RunParaBlend(CDPR &r, double point[7], bool showAttention){
         g[i] = -o[i];
     }
     
+    auto start = chrono::steady_clock::now();
+    long dur = 0;
     // Run the trajectory till the given time is up
     double t = 0;
-    while (t <= point[6]){
-        auto start = chrono::steady_clock::now();
-        long dur = 0;
-        
+    while (t <= point[6]){        
         // PARABOLIC BLEND equation, per time step pose
         for (int j = 0; j < 6; j++){
             if (t <= tb[j]){
@@ -895,6 +892,7 @@ int RunParaBlend(CDPR &r, double point[7], bool showAttention){
             cout << "WARNING! Linear rail limits triggered. Please quit the programme and check the system.\n";
             return -3;
         }
+        start = end;
     }
     return 0;
 }
@@ -1182,7 +1180,7 @@ void RunTrajPoints(CDPR &r){
         if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; }              
         r.PrintIn();
         cout << r.railOffset[0] << " " << r.railOffset[1] << " " << r.railOffset[2] << " " << r.railOffset[3] << endl;
-        cout << "----------Completed brick #" << i + 1 <<"----------" << endl;
+        cout << "----------Completed traj point #" << i + 1 <<"----------" << endl;
     }
 }
 
@@ -1212,11 +1210,10 @@ int RunExternPoints(CDPR &r){
     myfile <<  fn->tm_mon +1 << "/" << fn->tm_mday << ": " << fn->tm_hour << ":" << fn->tm_min << ":" << fn->tm_sec << "\n";;
     myfile.close();
     
+    auto start = chrono::steady_clock::now();
+    long dur = 0;
     // Go through the given points
-    for (int i = 0; i < brickPos.size(); i++) {
-        auto start = chrono::steady_clock::now();
-        long dur = 0;
-        
+    for (int i = 0; i < brickPos.size(); i++) {    
         copy(begin(brickPos[i]), end(brickPos[i]), begin(r.in));   
         cout << "[" << brickPos.size() - i << "] "; r.PrintIn();
         
@@ -1252,6 +1249,7 @@ int RunExternPoints(CDPR &r){
             cout << "WARNING! Linear rail limits triggered. Please quit the programme and check the system.\n";
             return -3;
         }
+        start = end;
     }
     return 0;
 }
@@ -1311,14 +1309,29 @@ void SendMotorGrp(CDPR &r, bool IsTorque, bool IsLinearRail){
 }
 
 void RecordMotorTrq(CDPR &r){ // Record current measured torque for all listed motors
+    static auto start = chrono::steady_clock::now();
     ofstream myfile;
     myfile.open("extern_log.csv", ios::app);
-    for(int i = 0; i < nodeList.size(); i++){                    
-        nodeList[i]->Motion.TrqMeasured.Refresh();
-        myfile << nodeList[i]->Motion.TrqMeasured.Value() << ", " ;
+    // for(int i = 0; i < nodeList.size(); i++){
+    //     myfile << nodeList[i]->Motion.TrqMeasured.Value() << ", " ;
+    // }
+
+    double tmp[8]; // array for storing read torque value, while using threading
+    auto readTorqueThread = [&tmp](int i) { tmp[i] = nodeList[i]->Motion.TrqMeasured.Value(); };
+    thread nodeThreads[8];
+    for(int i = 0; i < r.NodeNum(); i++){
+        nodeThreads[i] = thread(readTorqueThread, i); 
     }
-    myfile << "\n";
+    for(int i = 0; i < r.NodeNum(); i++){
+        nodeThreads[i].join();
+    }
+    myfile << tmp[0] << ", " << tmp[1] << ", " << tmp[2] << ", " << tmp[3] << ", " << tmp[4] << ", " << tmp[5] << ", " << tmp[6] << ", " << tmp[7] << ", ";
+    myfile << r.in[0] << ", " << r.in[1] << ", " << r.in[2] << ", " << r.in[3] << ", " << r.in[4] << ", " << r.in[5] << ", ";
+    auto end = chrono::steady_clock::now();
+    long dur = chrono::duration_cast<chrono::milliseconds>(end-start).count();
+    myfile << dur <<"\n";
     myfile.close();
+    start = end;
 }
 
 void TrjHome(CDPR &r){// !!! Define the task space velocity limit for homing !!!
@@ -1335,15 +1348,15 @@ void TrjHome(CDPR &r){// !!! Define the task space velocity limit for homing !!!
         b[i] = 3 / (dura * dura) * (r.home[i] - r.in[i]);
         c[i] = -2 / (dura * dura * dura) * (r.home[i] - r.in[i]);
     }
-    while (t <= dura){
-        auto start = chrono::steady_clock::now();
-        long dur = 0;
-        
+    
+    auto start = chrono::steady_clock::now();
+    long dur = 0;
+    while (t <= dura){  
         // CUBIC equation
         for (int j = 0; j < 6; j++){
             r.in[j] = a[j] + b[j] * t * t + c[j] * t * t * t;
         }
-        r.PrintIn();
+        // r.PrintIn();
         r.PoseToLength(r.in, r.out, r.railOffset);
         // cout << "OUT: "<<  out1[0] << " " << out1[1] << " " << out1[2] << " " << out1[3] << endl;
         
@@ -1383,6 +1396,7 @@ void TrjHome(CDPR &r){// !!! Define the task space velocity limit for homing !!!
             cout << "WARNING! Linear rail limits triggered. Please quit the programme and check the system.\n";
             return;
         }
+        start = end;
     }
     cout << "Homing with trajectory completed\n";
 }
