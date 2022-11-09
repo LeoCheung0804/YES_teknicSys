@@ -33,13 +33,13 @@ public:
     void PrintHome();
     void UpdateModel();
     void PoseToLength(double pose[], double lengths[], const double rail_offset[4] = defaultRail);
-    double EEOffset();
-    float TargetTorque();
-    float AbsTorqLmt();
-    int NodeNum();
-    int RailNum();
-    int32_t MotorScale();
-    int32_t RailScale();
+    double GetEEOffset();
+    float GetTargetTorque();
+    float GetAbsTorqLmt();
+    int GetNodeNum();
+    int GetRailNum();
+    int32_t GetMotorScale();
+    int32_t GetRailScale();
     int32_t ToMotorCmd(int motorID, double length);
 
     double tempA{0}; // rotational angel offset

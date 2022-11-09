@@ -56,9 +56,9 @@ int main()
 {   
     // Create robot model
     CDPR robot; // Read model.json and create object
-    if(!robot.IsGood()){ return -1; } // quit programme if object creation
+    if(!robot.IsGood()){ return -1; } // quit programme if object creation failed
     robot.PrintHome();
-    targetTorque = robot.TargetTorque();
+    targetTorque = robot.GetTargetTorque();
     
     // Local variables for COM port communication
     HANDLE hComm, nanoComm; // Handle to the Serial port, https://github.com/xanthium-enterprises/Serial-Programming-Win32API-C
@@ -102,6 +102,20 @@ int main()
     robot.PoseToLength(robot.home, robot.offset); // save offset values according to home pose
 
     cout << "Motor network available. Pick from menu for the next action:\nt - Tighten cables with Torque mode\ny - Loose the cables\nh - Move to Home\n8 - Manually adjust cable lengths\nl - Linear rails motions\nu - Update current position from external file\nr - Reset Rotation to zero\ng - Gripper functions\nj - Read Json file and update model params\ni - Info: show menu\nn - Move on to Next step" << endl;
+    /*
+    "Motor network available. Pick from menu for the next action:\n
+        t - Tighten cables with Torque mode\n
+        y - Loose the cables\n
+        h - Move to Home\n
+        8 - Manually adjust cable lengths\n
+        l - Linear rails motions\n
+        u - Update current position from external file\n
+        r - Reset Rotation to zero\n
+        g - Gripper functions\n
+        j - Read Json file and update model params\n
+        i - Info: show menu\n
+        n - Move on to Next step"
+    */
     char cmd;
     do {
         try{
@@ -135,7 +149,7 @@ int main()
                         while(!stabilized) {
                             SendMotorGrp(robot, true);
                             Sleep(50);
-                            for (int n = 0; n < robot.NodeNum(); n++){
+                            for (int n = 0; n < robot.GetNodeNum(); n++){
                                 if(nodeList[n]->Motion.TrqCommanded.Value() > targetTorque) { break; }
                                 stabilized = true;
                             }
@@ -147,7 +161,7 @@ int main()
                             n->Motion.AccLimit = 40000;
                         }
                         cout << "\nTorque mode tightening completed" << endl;
-                        targetTorque = robot.TargetTorque();
+                        targetTorque = robot.GetTargetTorque();
                         break;
                     case 'h':   // Homing for all motors!! Including linear rail
                         allDone = false;
@@ -168,7 +182,7 @@ int main()
                         cout << "0 to 7 - motor id to adjust cable length\n8 - move 4 linear rails together\na or d - increase or decrease cable length\nb - Back to previous menu\n";
                         while(cmd != 'b'){
                             cin >> cmd;
-                            if('/' < cmd && cmd < robot.NodeNum() + 49){
+                            if('/' < cmd && cmd < robot.GetNodeNum() + 49){
                                 int id = cmd - 48;
                                 int sCount = robot.ToMotorCmd(-1, step) / 5 ;// = ToMotorCmd(robot, -1, step) / 5;
                                 cout << "Motor "<< cmd <<" selected.\n";
@@ -176,16 +190,16 @@ int main()
                                     cmd = getch();
                                     switch(cmd){
                                         case 'a':
-                                            if(id == robot.NodeNum()){ for(int n = robot.NodeNum(); n<robot.NodeNum()+4; n++){ nodeList[n]->Motion.MovePosnStart(sCount); }}
+                                            if(id == robot.GetNodeNum()){ for(int n = robot.GetNodeNum(); n<robot.GetNodeNum()+4; n++){ nodeList[n]->Motion.MovePosnStart(sCount); }}
                                             else { nodeList[id]->Motion.MovePosnStart(sCount); }
                                             break;
                                         case 'd':
-                                            if(id == robot.NodeNum()){ for(int n = robot.NodeNum(); n<robot.NodeNum()+4; n++){ nodeList[n]->Motion.MovePosnStart(-sCount); }}
+                                            if(id == robot.GetNodeNum()){ for(int n = robot.GetNodeNum(); n<robot.GetNodeNum()+4; n++){ nodeList[n]->Motion.MovePosnStart(-sCount); }}
                                             else { nodeList[id]->Motion.MovePosnStart(-sCount); }
                                             break;
                                         case 'i':
-                                            if(id == robot.NodeNum()){
-                                                for(int n = robot.NodeNum(); n<robot.NodeNum()+4; n++){
+                                            if(id == robot.GetNodeNum()){
+                                                for(int n = robot.GetNodeNum(); n<robot.GetNodeNum()+4; n++){
                                                     nodeList[n]->Motion.PosnMeasured.Refresh();
                                                     cout << (double) nodeList[n]->Motion.PosnMeasured << endl;
                                                 }
@@ -197,7 +211,7 @@ int main()
                                             }
                                             break;
                                         case 'h':
-                                            if(id == robot.NodeNum()){ cout << "Homing for linear rails are not implemented here.\n"; break; }
+                                            if(id == robot.GetNodeNum()){ cout << "Homing for linear rails are not implemented here.\n"; break; }
                                             nodeList[id]->Motion.VelLimit = 300;
                                             nodeList[id]->Motion.MoveWentDone();
                                             nodeList[id]->Motion.MovePosnStart(0, true);
@@ -290,7 +304,7 @@ int main()
                             catch(int e){ cout << "Check if currentPos.csv matches the in1 input no." << endl; }
 
                             robot.PoseToLength(robot.in, robot.out, robot.railOffset); //pose_to_length(in1, out1, railOffset);
-                            for (int n = 0; n < nodeList.size() + robot.RailNum(); n++){
+                            for (int n = 0; n < nodeList.size() + robot.GetRailNum(); n++){
                                 double step = robot.ToMotorCmd(n, robot.out[n]);
                                 if (n < nodeList.size()){ // for teknic motors
                                     nodeList[n]->Motion.PosnMeasured.Refresh();
@@ -326,7 +340,7 @@ int main()
                             // for twincat motors
                             nErr = AdsSyncReadReq(pAddr, ADSIGRP_SYM_VALBYHND, hdlList[2], sizeof(actPos), &actPos[0]); // read "MAIN.actPos"
                             if (nErr) { cout << "Error: Rail[s] AdsSyncReadReq: " << nErr << '\n'; }
-                            for (int id = 0; id < robot.RailNum(); id++){ cout << actPos[id] << "\t"; }
+                            for (int id = 0; id < robot.GetRailNum(); id++){ cout << actPos[id] << "\t"; }
                             cout << endl;
                         }
                         break;
@@ -506,7 +520,7 @@ int main()
         myfile << n->Motion.PosnMeasured.Value() << " ";
     }
     AdsSyncReadReq(pAddr, ADSIGRP_SYM_VALBYHND, hdlList[2], sizeof(actPos), &actPos[0]); // read "MAIN.actPos"
-    for(int i = 0; i < robot.RailNum(); i++){ myfile << actPos[i] << " "; }
+    for(int i = 0; i < robot.GetRailNum(); i++){ myfile << actPos[i] << " "; }
     myfile.close();
     tm *fn; time_t now = time(0); fn = localtime(&now);
     myfile.open("log.txt", ios::app);
@@ -624,7 +638,7 @@ int CheckMotorNetwork() {
         cout << "Unable to locate SC hub port\n";
         return -1;
     }
-    if(portCount==0) { return -1; } // do we need this?
+    //if(portCount==0) { return -1; } // do we need this?
     
     myMgr->PortsOpen(portCount);
     for (int i = 0; i < portCount; i++) { // check no. of nodes in each ports
@@ -632,7 +646,8 @@ int CheckMotorNetwork() {
         // myPort.BrakeControl.BrakeSetting(0, BRAKE_AUTOCONTROL); // do we need this?
         // myPort.BrakeControl.BrakeSetting(1, BRAKE_AUTOCONTROL);
         printf(" Port[%d]: state=%d, nodes=%d\n", myPort.NetNumber(), myPort.OpenState(), myPort.NodeCount());
-    
+
+        // Init nodes
         for (int iNode = 0; iNode < myPort.NodeCount(); iNode++) {
             INode &theNode = myPort.Nodes(iNode);
             theNode.EnableReq(false); //Ensure Node is disabled before loading config file
@@ -687,11 +702,14 @@ int ConnectRailMotors(AmsAddr *pAddr){
     pAddr->port = 851; // Port number for Twincat 3
 
     // Enable power for motors, start state machine
+    // Get handle of the request
     nErr = AdsSyncReadWriteReq(pAddr, ADSIGRP_SYM_HNDBYNAME, 0x0, sizeof(lHdlVar), &lHdlVar, sizeof("MAIN.power"), "MAIN.power");
     if (nErr){ cout << "Error: AdsSyncReadWriteReq: " << nErr << '\n'; return nErr; }
+    // Use the handle to write data
     nErr = AdsSyncWriteReq(pAddr,ADSIGRP_SYM_VALBYHND,lHdlVar, sizeof(TRUE_FLAG), &TRUE_FLAG);
     if (nErr){ cout << "Error: AdsSyncWriteReq: " << nErr << '\n'; return nErr; }
     else { cout << "Linear rail motors enabled.\n"; }
+    // Release the handle
     nErr = AdsSyncWriteReq(pAddr,ADSIGRP_SYM_RELEASEHND,0,sizeof(lHdlVar),&lHdlVar);
 
     // Create list of handler by name
@@ -713,7 +731,7 @@ int RaiseRailTo(HANDLE hComm, CDPR &r, AmsAddr *pAddr, int id, double target){ /
     bArry[id] = true; // signal target rail to move
 
     cout << "RAil[" << id << "] target: " << target << endl;
-    if(id > r.RailNum()-1){ cout << "WARNING! Intended rail does not exist!\n"; return -2; }
+    if(id > r.GetRailNum()-1){ cout << "WARNING! Intended rail does not exist!\n"; return -2; }
     if (target < 0 || target > 2.55) { cout << "WARNING! Intended rail offset is out of bound!\n"; return -2; }
     Ard_char[1] = '0' + id;
     SendGripperSerial(hComm, Ard_char, false); // open brake before motion
@@ -745,7 +763,7 @@ int RaiseRailTo(HANDLE hComm, CDPR &r, AmsAddr *pAddr, int id, double target){ /
         step = r.ToMotorCmd(id, r.out[id]);
         nodeList[id]->Motion.MovePosnStart(step, true); // absolute position
 
-        step = r.ToMotorCmd(id+r.NodeNum(), r.out[id+r.NodeNum()]);
+        step = r.ToMotorCmd(id+r.GetNodeNum(), r.out[id+r.GetNodeNum()]);
         nErr = AdsSyncWriteReq(pAddr,ADSIGRP_SYM_VALBYHND,hdlList[0], sizeof(step), &step); // write "MAIN.Axis_GoalPos"
         if (nErr) { cout << "Error: Rail[" << id << "] AdsSyncWriteReq: " << nErr << '\n'; }
         nErr = AdsSyncWriteReq(pAddr,ADSIGRP_SYM_VALBYHND,hdlList[1], sizeof(bArry), &bArry[0]); // write "MAIN.startMove"
@@ -914,7 +932,7 @@ void RunBricksTraj(HANDLE hComm, HANDLE brakeComm, CDPR &r, AmsAddr *pAddr, unsi
     double velLmt = 0.45; // meters per second
     double safeT = 1500; // in ms, time to raise to safety height
     double safeH = 0.12; // meter, safety height from building brick level
-    double currentBrkLvl = r.railOffset[r.RailNum()-1]; // meter, check if the last rail offset is the same as target BrkLvl
+    double currentBrkLvl = r.railOffset[r.GetRailNum()-1]; // meter, check if the last rail offset is the same as target BrkLvl
     double lowPole = -2.9; // lowest 5th pole z-value
     double safeZoneH = 0.4; // height of safe zone from bottom cable to top cable near EE
     double dura = 0;
@@ -1021,8 +1039,8 @@ void RunBricksTraj(HANDLE hComm, HANDLE brakeComm, CDPR &r, AmsAddr *pAddr, unsi
                 if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } 
             }
         }
-        goalPos[2] = brickPos[i][2] + r.EEOffset() + safeH; // brick level with safe height
-        if(r.in[2] < brickPos[i][2] + r.EEOffset() + safeH){ // if current position is below target brick height, then raise brick first // need this?
+        goalPos[2] = brickPos[i][2] + r.GetEEOffset() + safeH; // brick level with safe height
+        if(r.in[2] < brickPos[i][2] + r.GetEEOffset() + safeH){ // if current position is below target brick height, then raise brick first // need this?
             goalPos[6] = (goalPos[2]-r.in[2])/velLmt*1000;
             if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // raise the brick to building level
         }
@@ -1078,7 +1096,7 @@ void ReverseBricksTraj(CDPR &r, int listOffset, bool showAttention){
     double velLmt = 0.27; // meters per second
     double safeT = 1100; // in ms, time to raise to safety height //1200 ms
     double safeH = 0.08; // meter, safety height from building brick level
-    double currentBrkLvl = r.railOffset[r.RailNum()-1]; // meter, check if the rail offset is the same as target BrkLvl
+    double currentBrkLvl = r.railOffset[r.GetRailNum()-1]; // meter, check if the rail offset is the same as target BrkLvl
     double dura = 0;
 
     ofstream myfile;
@@ -1098,7 +1116,7 @@ void ReverseBricksTraj(CDPR &r, int listOffset, bool showAttention){
         if(showAttention) { cout << "Going to building level\n"; }
         // if(packetHandler->write2ByteTxRx(portHandler, DXL2_ID, ADDR_GOAL_CURRENT, gpOpen, &dxl_error)){ cout << "Error in opening gripper\n"; return; }
         copy(r.in, r.in+2, begin(goalPos));
-        goalPos[2] = brickPos[i][2] + r.EEOffset() + safeH; // brick level
+        goalPos[2] = brickPos[i][2] + r.GetEEOffset() + safeH; // brick level
         goalPos[6] = sqrt(pow(goalPos[2]-r.in[2],2))/velLmt*1000 + 800; // calculate time + hardcode time to smooth out sudden jump
         if(RunParaBlend(r, goalPos) < 0) { cout << "Trajectory aborted.\n"; return; } // raise from current pos to builing level
         
@@ -1300,10 +1318,10 @@ void SendMotorGrp(CDPR &r, bool IsTorque, bool IsLinearRail){
     int n = IsLinearRail? 4 : 0; // offset in nodeList
     
     thread nodeThreads[8];
-    for(int i = 0; i < r.NodeNum(); i++){
+    for(int i = 0; i < r.GetNodeNum(); i++){
         nodeThreads[i] = thread((*func), r, i + n); 
     }
-    for(int i = 0; i < r.NodeNum(); i++){
+    for(int i = 0; i < r.GetNodeNum(); i++){
         nodeThreads[i].join();
     }
     // myPort.Adv.TriggerMovesInGroup(1);
@@ -1321,10 +1339,10 @@ void RecordMotorTrq(CDPR &r){ // Record current measured torque for all listed m
     double tmp[8]; // array for storing read torque value, while using threading
     auto readTorqueThread = [&tmp](int i) { tmp[i] = nodeList[i]->Motion.TrqMeasured.Value(); };
     thread nodeThreads[8];
-    for(int i = 0; i < r.NodeNum(); i++){
+    for(int i = 0; i < r.GetNodeNum(); i++){
         nodeThreads[i] = thread(readTorqueThread, i); 
     }
-    for(int i = 0; i < r.NodeNum(); i++){
+    for(int i = 0; i < r.GetNodeNum(); i++){
         nodeThreads[i].join();
     }
     myfile << tmp[0] << ", " << tmp[1] << ", " << tmp[2] << ", " << tmp[3] << ", " << tmp[4] << ", " << tmp[5] << ", " << tmp[6] << ", " << tmp[7] << ", ";

@@ -82,7 +82,7 @@ void CDPR::UpdateModel(){ // Read model.json file
     try{
         ifstream file("model.json", ifstream::binary);
         file >> model;
-        cout << "Imported model.json: " << model.value("ModelName", "NOT FOUND") << endl;
+        cout << "Importing model.json: " << model.value("ModelName", "NOT FOUND") << endl;
         
         // Initialize parameters
         this->nodeNum = model.value("tekMotorNum", 8); // Default value set in 2nd input
@@ -109,6 +109,7 @@ void CDPR::UpdateModel(){ // Read model.json file
             }
         }
         isValidModel = true;
+        cout << "Imported model.json: " << model.value("ModelName", "NOT FOUND") << endl;
     }
     catch(const exception& e){
         cout << "Error in reading \"model.json\"" << endl;
@@ -160,13 +161,13 @@ void CDPR::PoseToLength(double pose[], double lengths[], const double rail_offse
     copy(rail_offset, rail_offset+4, lengths+nodeNum); // assign array elements after motor numbers as rail lengths // rail_offset default size of 4
 }
 
-double CDPR::EEOffset(){ return endEffOffset; }
-float CDPR::TargetTorque(){ return targetTorque; }
-float CDPR::AbsTorqLmt(){ return absTorqueLmt; }
-int CDPR::NodeNum(){ return nodeNum; }
-int CDPR::RailNum(){ return railNum; }
-int32_t CDPR::MotorScale(){ return cmdScale; }
-int32_t CDPR::RailScale(){ return railScale; }
+double CDPR::GetEEOffset(){ return endEffOffset; }
+float CDPR::GetTargetTorque(){ return targetTorque; }
+float CDPR::GetAbsTorqLmt(){ return absTorqueLmt; }
+int CDPR::GetNodeNum(){ return nodeNum; }
+int CDPR::GetRailNum(){ return railNum; }
+int32_t CDPR::GetMotorScale(){ return cmdScale; }
+int32_t CDPR::GetRailScale(){ return railScale; }
 
 int32_t CDPR::ToMotorCmd(int motorID, double length){
     if(motorID == -1) { return length * cmdScale; }
