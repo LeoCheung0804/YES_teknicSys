@@ -145,11 +145,12 @@ int main()
                         targetTorque = 1;
                     case 't':   // Tighten cables according to torque **Only for 8 motors
                         cout << "Current target torque = " << targetTorque << endl;
+                        // set the acclimit to a small value for tightening the torque
                         for(INode* n : nodeList){ n->Motion.AccLimit = 200; }
                         while(!stabilized) {
                             SendMotorGrp(robot, true);
-                            Sleep(50);
-                            for (int n = 0; n < robot.GetNodeNum(); n++){
+                            Sleep(50); // Wait for it 
+                            for (int n = 0; n < robot.GetNodeNum(); n++){ // check if all motor are stabilized
                                 if(nodeList[n]->Motion.TrqCommanded.Value() > targetTorque) { break; }
                                 stabilized = true;
                             }
@@ -157,7 +158,9 @@ int main()
                         for(INode* n : nodeList){
                             n->Motion.TrqCommanded.Refresh();
                             cout << n->Motion.TrqCommanded.Value() << "\t";
+                            // stop the motor
                             n->Motion.MoveVelStart(0);
+                            // resume the normal acclimit
                             n->Motion.AccLimit = 40000;
                         }
                         cout << "\nTorque mode tightening completed" << endl;
@@ -1302,12 +1305,15 @@ void SendMotorCmd(CDPR &r, int n){
 
 void SendMotorTrq(CDPR &r, int n){
     nodeList[n]->Motion.TrqCommanded.Refresh();
-    float currentTorque = nodeList[n]->Motion.TrqCommanded.Value();
+    // The API cannot set torque directily, but it will give the target torque of current command
+    // So we can send move command and then verify the retured value to adjust the torque
+    float currentTrqCommanded = nodeList[n]->Motion.TrqCommanded.Value();
 
-    if(currentTorque > targetTorque){ nodeList[n]->Motion.MoveVelStart(-300); }
-    else if (currentTorque < targetTorque - 1.8){ nodeList[n]->Motion.MoveVelStart(150); cout << "Too much torque!!\n";}
+    // still question, the output should be need more torque?
+    if(currentTrqCommanded > targetTorque){ nodeList[n]->Motion.MoveVelStart(-300); }
+    else if (currentTrqCommanded < targetTorque - 1.8){ nodeList[n]->Motion.MoveVelStart(150); cout << "Too much torque!!\n";}
     else{ nodeList[n]->Motion.MoveVelStart(-10);}
-    printf("Node[%d], current torque: %f\n", n, currentTorque);
+    printf("Node[%d], current torque: %f\n", n, currentTrqCommanded);
 }
 
 void SendMotorGrp(CDPR &r, bool IsTorque, bool IsLinearRail){
@@ -1315,11 +1321,11 @@ void SendMotorGrp(CDPR &r, bool IsTorque, bool IsLinearRail){
     IPort &myPort = myMgr->Ports(0); // only if one scHub is used
     void (*func)(CDPR&, int){ SendMotorCmd };
     if(IsTorque){ func = SendMotorTrq; }
-    int n = IsLinearRail? 4 : 0; // offset in nodeList
+    int indexOffset = IsLinearRail? 4 : 0; // offset in nodeList
     
     thread nodeThreads[8];
     for(int i = 0; i < r.GetNodeNum(); i++){
-        nodeThreads[i] = thread((*func), r, i + n); 
+        nodeThreads[i] = thread((*func), r, i + indexOffset); 
     }
     for(int i = 0; i < r.GetNodeNum(); i++){
         nodeThreads[i].join();
