@@ -11,40 +11,6 @@ using json = nlohmann::json;
 
 // Constructor, based on the requested model
 CDPR::CDPR(){
-    // Read json file into json object
-    // json model;
-    // try{
-    //     ifstream file("model.json", ifstream::binary);
-    //     file >> model;
-    //     cout << "Imported model.json: " << model.value("ModelName", "NOT FOUND") << endl;
-        
-    //     // Initialize parameters
-    //     this->nodeNum = model.value("tekMotorNum", 8); // Default value set in 2nd input
-    //     this->railNum = model.value("railNum", 4);
-    //     this->absTorqueLmt = model.value("absTorqueLmt", 60);
-    //     this->endEffOffset = model.value("endEffOffset", -0.28);
-    //     this->targetTorque = model.value("targetTorque", -2.5);
-    //     this->cmdScale = model.value("toMotorCmdScale", 509295);
-    //     this->railScale = model.value("railCmdScale", 38400000);
-    //     this->pRadius = model.value("pulleyRadius", 0.045);
-    //     // Interate through arrays
-    //     for(int i=0; i<6; i++){
-    //         this->home[i] = model["home"][i];
-    //         this->limit[i] = (float) model["limit"][i];
-    //     }
-    //     for(int i=0; i<nodeNum; i++){
-    //         frmOutUnitV[i] << 0, 0, model["pulleyZdir"][i];
-    //         for(int j=0; j<3; j++){ // for each xyz coordinates
-    //             this->frmOut[i][j] = model["frameAttachments"][i][j];
-    //             this->endOut[i][j] = model["endEffectorAttachments"][i][j];
-    //         }
-    //     }
-    // }
-    // catch(const exception& e){
-    //     cout << "Error in reading \"model.json\"" << endl;
-    //     cout << e.what() << endl;
-    //     isValidModel = false;
-    // }
     this->UpdateModel();
 }
 
@@ -169,6 +135,10 @@ int CDPR::GetRailNum(){ return railNum; }
 int32_t CDPR::GetMotorScale(){ return cmdScale; }
 int32_t CDPR::GetRailScale(){ return railScale; }
 
+/// @brief get motor command given length,  //need to optimize
+/// @param motorID -1 for absulote, 0~(motor number -1)  for cable robot, (motor number)~(motor number + 4) for rail
+/// @param length 
+/// @return 
 int32_t CDPR::ToMotorCmd(int motorID, double length){
     if(motorID == -1) { return length * cmdScale; }
     if(motorID > nodeNum -1){ return (length - this->offset[motorID]) * railScale; } // rail cmd according to scale

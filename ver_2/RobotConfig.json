@@ -1,0 +1,60 @@
+{
+    "ModelName": "YES",
+    "cableMotorNum": 8,    
+    "railMotorNum": 4,
+    "homePos": {
+        "x": 7.3, 
+        "y": 6.2, 
+        "z": -2.7, 
+        "yaw": 0, 
+        "pitch": 0, 
+        "roll": -0.0344
+    },
+    "endEffectorPosLimit": {
+        "x": -0.1,
+        "y":  11.5, 
+        "z": -0.02, 
+        "yaw":  13.8, 
+        "pitch": -3.75, 
+        "roll": 0.3
+    },
+    "brickPickUpPos": {
+        "x": 9.921,
+        "y":  6.705, 
+        "z": -2.963,
+        "yaw":  0, 
+        "pitch": 0, 
+        "roll": 0.0148
+    },
+    "endEffToGroundOffset": -0.0816,
+    "targetTorque": -4.7,
+    "absTorqueLmt": 85.0,
+    "cableMotorScale": 509295.8179,
+    "railMotorScale": -73885.256197,
+    "pulleyRadius": 0.045, 
+    "rotationalAngleOffset": -36.1289,
+    "rotationalDistanceOffset": 0.013,
+    "pulleyZdir": [-1, -1, -1, -1, 1, 1, 1, 1],
+    "frameAttachments":[
+        [-0.1182, 0.2852, -3.3929],
+        [11.4867, -0.0825, -3.3908],
+        [10.7518, 11.2025, -3.4034],
+        [1.5658, 13.8955, -3.4064],
+        [-0.0190, -0.0288, 0.0544],
+        [11.7885, -0.0267, 0.0261],
+        [10.6545, 11.5086, 0.0415],
+        [1.2375, 13.8490, 0.0592]
+    ],
+    "endEffectorAttachments":[
+        [-0.100, -0.220, 0.100],
+        [0.100, -0.220, 0.100],
+        [0.100, 0.220, 0.100],
+        [-0.100, 0.220, 0.100],
+        [-0.180, -0.220, -0.100],
+        [0.180, -0.220, -0.100],
+        [0.180, 0.220, -0.100],
+        [-0.180, 0.220, -0.100]
+    ],
+    "gripperCommPort": "\\\\.\\COM26",
+    "railBreakCommPort": "\\\\.\\COM23"
+}

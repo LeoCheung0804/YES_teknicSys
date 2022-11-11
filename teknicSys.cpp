@@ -169,7 +169,7 @@ int main()
                     case 'h':   // Homing for all motors!! Including linear rail
                         allDone = false;
                         for (int n = 0; n<nodeList.size(); n++) { 
-                            nodeList[n]->Motion.MoveWentDone();
+                            nodeList[n]->Motion.MoveWentDone(); //Clear the rising edge Move done register
                             nodeList[n]->Motion.MovePosnStart(0, true); // absolute position
                         }
                         while(!allDone) {
@@ -182,25 +182,33 @@ int main()
                         cout << "Homing completed" << endl;
                         break;
                     case '8':   // Manual cable adjustment
-                        cout << "0 to 7 - motor id to adjust cable length\n8 - move 4 linear rails together\na or d - increase or decrease cable length\nb - Back to previous menu\n";
+                        cout << "0 to 7 - motor id to adjust cable length\n8 - move 4 linear rails together\na or d - increase or decrease cable length\ni - Print current position\nh - Move motor to home position.\nb - Back to previous menu\n";
+                        /*
+                        0 to 7 - motor id to adjust cable length
+                        8 - move 4 linear rails together
+                        a or d - increase or decrease cable length
+                        b - Back to previous menu";
+                        i - Print current position.
+                        h - Move motor to home position.
+                        */
                         while(cmd != 'b'){
                             cin >> cmd;
-                            if('/' < cmd && cmd < robot.GetNodeNum() + 49){
-                                int id = cmd - 48;
+                            if('0' <= cmd && cmd <= robot.GetNodeNum() + '0'){ // verify input
+                                int id = cmd - '0' + 1; // get motor id
                                 int sCount = robot.ToMotorCmd(-1, step) / 5 ;// = ToMotorCmd(robot, -1, step) / 5;
                                 cout << "Motor "<< cmd <<" selected.\n";
                                 do{
                                     cmd = getch();
                                     switch(cmd){
-                                        case 'a':
+                                        case 'a': // increase
                                             if(id == robot.GetNodeNum()){ for(int n = robot.GetNodeNum(); n<robot.GetNodeNum()+4; n++){ nodeList[n]->Motion.MovePosnStart(sCount); }}
                                             else { nodeList[id]->Motion.MovePosnStart(sCount); }
                                             break;
-                                        case 'd':
+                                        case 'd': // decrease
                                             if(id == robot.GetNodeNum()){ for(int n = robot.GetNodeNum(); n<robot.GetNodeNum()+4; n++){ nodeList[n]->Motion.MovePosnStart(-sCount); }}
                                             else { nodeList[id]->Motion.MovePosnStart(-sCount); }
                                             break;
-                                        case 'i':
+                                        case 'i': // print current status
                                             if(id == robot.GetNodeNum()){
                                                 for(int n = robot.GetNodeNum(); n<robot.GetNodeNum()+4; n++){
                                                     nodeList[n]->Motion.PosnMeasured.Refresh();
@@ -215,22 +223,24 @@ int main()
                                             break;
                                         case 'h':
                                             if(id == robot.GetNodeNum()){ cout << "Homing for linear rails are not implemented here.\n"; break; }
-                                            nodeList[id]->Motion.VelLimit = 300;
-                                            nodeList[id]->Motion.MoveWentDone();
-                                            nodeList[id]->Motion.MovePosnStart(0, true);
-                                            while(!nodeList[id]->Motion.MoveIsDone()){}
-                                            cout << "Individual homing completed.\n";
-                                            nodeList[id]->Motion.VelLimit = 3000;
-                                            break;
+                                            else { 
+                                                nodeList[id]->Motion.VelLimit = 300;
+                                                nodeList[id]->Motion.MoveWentDone();
+                                                nodeList[id]->Motion.MovePosnStart(0, true);
+                                                while(!nodeList[id]->Motion.MoveIsDone()){} // wait for moving finish // caution: forever loop!!!
+                                                nodeList[id]->Motion.VelLimit = 3000;
+                                                cout << "Individual homing completed.\n";
+                                                break;
+                                            }
                                     }                        
-                                    Sleep(100); // do we need this?
+                                    //Sleep(100); // do we need this? nope
                                 }while(cmd =='a'|| cmd =='d' || cmd =='h' || cmd =='i');
                                 cout << "Motor "<< id <<" deselected.\n";
                             }
                         }
                         cout << "Manual adjustment terminated" << endl;
                         break;
-                    case 'r':
+                    case 'r': // rotate robot
                         cout << "Attenion: robot will rotate to 0,0,0...\n";
                         {
                             double point[7] = {0,0,0,0,0,0,3500}; // Default 3500 ms duaration to rotate to 0
@@ -240,8 +250,15 @@ int main()
                             cout << "Rotation reset completed.\n";      
                         }
                         break;
-                    case 'g':
+                    case 'g': // test gripper
                         cout << "In gripper testing mode:\ni - close gripper\no = open gripper\np - rotate gripper\nb - return to previous menu\n";
+                        /*
+                            In gripper testing mode:
+                            i - close gripper
+                            o = open gripper
+                            p - rotate gripper
+                            b - return to previous menu
+                        */
                         while(cmd != 'b'){
                             cmd = getch();
                             switch(cmd){
@@ -256,12 +273,12 @@ int main()
                                 case 'p':
                                     Ard_char[1] = 'd';
                                     cout << "Rotation: ";
-                                    cin >> attnStringBuf;
+                                    cin >> attnStringBuf; //read rotate angle
                                     copy(begin(attnStringBuf), begin(attnStringBuf)+4, begin(Ard_char)+3); // Write the first 4 char into the serial array
                                     SendGripperSerial(hComm, Ard_char);
                                     fill(begin(Ard_char)+3, begin(Ard_char)+7, ' '); // Reset the ending number with space char
                                     break;
-                                case 'r':
+                                case 'r': //??
                                     Ard_char[1] = 'r';
                                     SendGripperSerial(hComm, Ard_char);
                                     break;
@@ -269,7 +286,7 @@ int main()
                         }
                         cout << "Gripper testing terminated.\n";
                         break;
-                    case 'j':
+                    case 'j': // update model
                         robot.UpdateModel();
                         break;
                     // case 'l':   // Linear rail motions
@@ -290,7 +307,7 @@ int main()
                     //     }
                     //     cout << "Linear rail homing terminated\n";
                     //     break; 
-                    case 'u':   // Update in1[] and offset[] from csv file
+                    case 'u':   // Update in1[] and offset[] from csv file // given robot position, calcuate the cable length, then update the motor count.
                         ifstream file ("lastPos.txt"); //"lastPos.txt" or "currentPos.csv"
                         string temp;
                         int count = 0;
@@ -360,6 +377,17 @@ int main()
         // myMgr->Ports(2).BrakeControl.BrakeSetting(0, BRAKE_PREVENT_MOTION);
 
         cout << "Choose from menu for cable robot motion:\nt - Read from \"bricks.csv\" file for brick positions\nm - Manual input using w,a,s,d,r,f,v,g\np - Run Point-to-point trajectory\ne - Run External trajectory step points\nq - Request current torQue readings\ni - Info: show menu\nn - Prepare to disable motors and exit programme\nr - Return to previous section" << endl;
+        /*
+            Choose from menu for cable robot motion:
+                t - Read from \"bricks.csv\" file for brick positions
+                m - Manual input using w,a,s,d,r,f,v,g
+                p - Run Point-to-point trajectory
+                e - Run External trajectory step points
+                q - Request current torQue readings
+                i - Info: show menu
+                nn - Prepare to disable motors and exit programme
+                r - Return to previous section;
+        */
         do {
             bool waitBtn = false;
             cin >> cmd;
@@ -530,7 +558,7 @@ int main()
     myfile <<  fn->tm_mon +1 << "/" << fn->tm_mday << ": " << bkTrjCount << " brick built runs; " << trjCount << " traj runs." <<endl;
     myfile.close();
     
-    //// List of what-if-s??
+    //// List of what-if-s???
     
     {   // Send 'f' signal to bluetooth gripper for shutting down
         Ard_char[1] = 'f';
@@ -563,6 +591,7 @@ int main()
     return 1;
 }
 
+// set communication port
 bool SetSerialParams(HANDLE hComm){
     // Set parameters for serial port
     DCB dcbSerialParams = { 0 }; // Initializing DCB structure
@@ -601,6 +630,7 @@ bool SetSerialParams(HANDLE hComm){
     return true;
 }
 
+// receive data from gripper
 void ReadGripperSerial(HANDLE hComm){
     DWORD dwEventMask, BytesRead;
     int i{0};
@@ -621,6 +651,7 @@ void ReadGripperSerial(HANDLE hComm){
     } 
 }
 
+// send command to gripper
 void SendGripperSerial(HANDLE hComm, unsigned char* Ard_char, bool readTwice){
     DWORD dNoOfBytesWritten = 0;
     if (!(bool)WriteFile(hComm, Ard_char, 8, &dNoOfBytesWritten, NULL)){ cout << "Arduino writing error: " << GetLastError() << endl; }    
@@ -628,6 +659,7 @@ void SendGripperSerial(HANDLE hComm, unsigned char* Ard_char, bool readTwice){
     if (readTwice){ ReadGripperSerial(hComm); }// Repeat to make sure the feedback is received
 }
 
+// init motors
 int CheckMotorNetwork() {
     SysManager* myMgr = SysManager::Instance();
 
@@ -693,6 +725,7 @@ int CheckMotorNetwork() {
     return 0;
 }
 
+// connect to rail motors
 int ConnectRailMotors(AmsAddr *pAddr){
     long nErr, nPort;
     unsigned long lHdlVar;
@@ -726,6 +759,7 @@ int ConnectRailMotors(AmsAddr *pAddr){
     return 0;
 }
 
+// move rail
 int RaiseRailTo(HANDLE hComm, CDPR &r, AmsAddr *pAddr, int id, double target){ // id:[0-3] !!! Define velocity limit !!!
     unsigned char Ard_char[8] = {'(','0',':','0',')',' ',' ',' '};
     long nErr;
@@ -814,6 +848,7 @@ int RaiseRailTo(HANDLE hComm, CDPR &r, AmsAddr *pAddr, int id, double target){ /
     return 0;
 }
 
+// create blend traj
 int RunParaBlend(CDPR &r, double point[7], bool showAttention){
     float vMax[6] = {.6, .6, .6, 0.8, 0.8, 0.8}; // m/s, define the maximum velocity for each DoF
     float aMax[6] = {80, 80, 80, 10, 10, 10}; // m/s^2, define the maximum acceleration for each DoF
@@ -1362,7 +1397,7 @@ void RecordMotorTrq(CDPR &r){ // Record current measured torque for all listed m
 
 void TrjHome(CDPR &r){// !!! Define the task space velocity limit for homing !!!
     double velLmt = 0.1; // 0.1 // unit in meters per sec
-    double dura = sqrt(pow(r.in[0]-r.home[0],2)+pow(r.in[1]-r.home[1],2)+pow(r.in[2]-r.home[2],2))/velLmt*1000; // *1000 to change unit to ms
+    double dura = sqrt(pow(r.   wein[0]-r.home[0],2)+pow(r.in[1]-r.home[1],2)+pow(r.in[2]-r.home[2],2))/velLmt*1000; // *1000 to change unit to ms
     double a[6], b[6], c[6]; // cubic coefficients
     double t = 0;
     cout << "Expected homing duration: " << dura <<"ms\n";
