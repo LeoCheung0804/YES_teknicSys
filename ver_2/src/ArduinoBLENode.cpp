@@ -5,7 +5,7 @@
 using namespace std;
 class ArduinoBLENode{
 private:
-    char* ComPortName;
+    string ComPortName;
     unsigned char Ard_char[8] = {'(','o',',',' ',' ',' ',' ',')'};
     HANDLE hComm;
     
@@ -48,13 +48,14 @@ private:
         return true;
     }
 public:
-    ArduinoBLENode(char* portName){
+    ArduinoBLENode(string portName){
         this->ComPortName = portName;
     }
 
     // Connect Node
     bool Connect(){
-        hComm = CreateFile(ComPortName, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+        const char* cArray = ComPortName.c_str();
+        hComm = CreateFile(cArray, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
         if (hComm == INVALID_HANDLE_VALUE){ cout << "Error: " << ComPortName << " cannot be opened.\n"; }
         else { cout << ComPortName << " opened.\n"; }
         if (!SetSerialParams(hComm)) { return false; }

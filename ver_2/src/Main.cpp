@@ -16,10 +16,13 @@ int main(){
 
     // Init BLE Nodes
     ArduinoBLENode gripperNode(robot.GetGripperCommPort());
+    gripperNode.Connect();
     ArduinoBLENode RailBreakNode(robot.GetRailBreakCommPort());
+    RailBreakNode.Connect();
 
     // Init Rail Motor Nodes
-    TwincatADSNode railNode();
+    TwincatADSNode railNode(851);
+    //railNode.Connect();
     // Init Cable Motor Nodes
     TeknicNode cableNode(robot.GetCableMotorNum());
 }

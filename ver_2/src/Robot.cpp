@@ -68,10 +68,8 @@ void Robot::UpdateModelFromFile(string filename){ // Read model.json file
         this->pulleyRadius = model.value("pulleyRadius", 0.045);
         this->rotationalAngleOffset = model.value("rotationalAngleOffset", 21.8);
         this->rotationalDistanceOffset = model.value("rotationalDistanceOffset", -0.0075);
-        string gripperCommPort = model.value("gripperCommPort", "\\\\.\\COM26");
-        string railBreakCommPort = model.value("railBreakCommPort", "\\\\.\\COM26");
-        this->gripperCommPort = &gripperCommPort[0];
-        this->railBreakCommPort = &railBreakCommPort[0];
+        this->gripperCommPort = model.value("gripperCommPort", "\\\\.\\COM26");
+        this->railBreakCommPort = model.value("railBreakCommPort", "\\\\.\\COM26");
         string posLabel[] = {"x", "y", "z", "yaw", "pitch", "roll"};
 
         // Interate through arrays
@@ -111,6 +109,8 @@ void Robot::PrintRobotConfig(){
         cout << "Pully Radius\t\t\t" << this->pulleyRadius << endl;
         cout << "Rotational Angle Offset\t\t" << this->rotationalAngleOffset << endl;
         cout << "Rotational Distance Offset\t" << this->rotationalDistanceOffset << endl;
+        cout << "Gripper Comm Port\t\t" << this->gripperCommPort << endl;
+        cout << "Rail Break Comm Port\t\t" << this->railBreakCommPort << endl;
 
         cout << "Home Pos: " << endl;
         for (int i = 0; i < 6; i++){
@@ -174,8 +174,8 @@ float Robot::GetTargetTrq(){ return targetTrq; }
 float Robot::GetAbsTrqLmt(){ return absTrqLmt; }
 int Robot::GetCableMotorNum(){ return cableMotorNum; }
 int Robot::GetRailMotorNum(){ return railMotorNum; }
-char* Robot::GetGripperCommPort(){ return gripperCommPort; }
-char* Robot::GetRailBreakCommPort(){ return railBreakCommPort; }
+string Robot::GetGripperCommPort(){ return gripperCommPort; }
+string Robot::GetRailBreakCommPort(){ return railBreakCommPort; }
 int32_t Robot::GetCableMotorScale(){ return cableMotorScale; }
 int32_t Robot::GetRailMotorScale(){ return railMotorScale; }
 

@@ -10,9 +10,9 @@
                 "/EHsc",
                 "/nologo",
                 "/Fe${fileDirname}\\${fileBasenameNoExtension}.exe",
-                "${file}",
-                "${workspaceFolder}\\src\\Robot.cpp",
-                "${workspaceFolder}\\src\\ArduinoBLENode.cpp"
+                "${workspaceFolder}\\src\\*.cpp",
+                "${workspaceFolder}\\Dependencies\\sFoundation20\\win32\\sFoundation20.lib",
+                "${workspaceFolder}\\Dependencies\\TcAdsDll\\Lib\\TcAdsDll.lib"
             ],
             "options": {
                 "cwd": "${fileDirname}"

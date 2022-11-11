@@ -23,8 +23,8 @@ private:
     Vector3d frmOut[8]; // coordinates of the attachment points on frame at the beginning
     Vector3d endOut[8]; // local coordinates of cable attachment points on end-effector, ie ^er_B
     Vector3d frmOutUnitV[8]; // unit vectors/directions of the fixed cable attachments on frame
-    char* gripperCommPort; // Gripper Communicate Port 
-    char* railBreakCommPort; // Rail Break Communicate Port 
+    string gripperCommPort; // Gripper Communicate Port 
+    string railBreakCommPort; // Rail Break Communicate Port 
     
 public:
     Robot(string robotConfigPath);
@@ -70,10 +70,10 @@ public:
     int GetRailMotorNum();
     /// @brief Get Gripper Comm Port 
     /// @return string
-    char* GetGripperCommPort();
+    string GetGripperCommPort();
     /// @brief Get Rail Break Comm Port
     /// @return string 
-    char* GetRailBreakCommPort();
+    string GetRailBreakCommPort();
     /// @brief Cable motor scale
     /// @return Cable motor scale
     int32_t GetCableMotorScale();
