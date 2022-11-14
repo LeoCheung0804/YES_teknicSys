@@ -27,6 +27,7 @@ private:
     string railBreakCommPort; // Rail Break Communicate Port 
     
 public:
+    Robot();
     Robot(string robotConfigPath);
 
     /// @brief Check whether the robot is valid, ususally used after load the robot config.

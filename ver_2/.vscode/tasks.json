@@ -8,11 +8,11 @@
             "args": [
                 "/Zi",
                 "/EHsc",
-                "/nologo",
-                "/Fe${fileDirname}\\${fileBasenameNoExtension}.exe",
+                "/Fo${workspaceFolder}\\temp\\",
+                "/Fe${workspaceFolder}\\bin\\${fileBasenameNoExtension}.exe",
                 "${workspaceFolder}\\src\\*.cpp",
                 "${workspaceFolder}\\Dependencies\\sFoundation20\\win32\\sFoundation20.lib",
-                "${workspaceFolder}\\Dependencies\\TcAdsDll\\Lib\\TcAdsDll.lib"
+                "${workspaceFolder}\\Dependencies\\TcAdsDll\\Lib\\TcAdsDll.lib",
             ],
             "options": {
                 "cwd": "${fileDirname}"

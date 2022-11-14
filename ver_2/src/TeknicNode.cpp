@@ -1,40 +1,43 @@
+#include "..\include\TeknicNode.h"
 #include <iostream>
-#include <string>
-#include <vector>
-#include "..\Dependencies\sFoundation20\inc\pubSysCls.h"
 
 using namespace std;
-using namespace sFnd;
 
-class TeknicNode{
-private:
-    int motorNumber;
-    unsigned int portCount;
-    vector<string> comHubPorts;
-    vector<INode*> nodeList; // create a list for each node
-    bool CheckMotorNetwork() {
-        SysManager* myMgr = SysManager::Instance();
+TeknicNode::TeknicNode(){
+}
 
-        sFnd::SysManager::FindComHubPorts(comHubPorts);
+TeknicNode::TeknicNode(int nodeNumber){
+    this->nodeNumber = nodeNumber;
+    this->myMgr = SysManager::Instance();
+}
+
+int TeknicNode::SetNodeNumber(int nodeNumber){
+    this->nodeNumber = nodeNumber;
+    return nodeNumber;
+}
+
+bool TeknicNode::Connect(){
+    try{
+        SysManager::FindComHubPorts(comHubPorts);
 
         cout << "Found " <<comHubPorts.size() << " SC Hubs\n";
         for (portCount = 0; portCount < comHubPorts.size(); portCount++) {
             myMgr->ComHubPort(portCount, comHubPorts[portCount].c_str());
         }
         if (portCount < 0) {
-            cout << "Unable to locate SC hub port\n";
+            cout << "Error: Unable to locate SC hub port\n";
             return false;
         }
         if(portCount==0) { return false; } // do we need this?
         
         myMgr->PortsOpen(portCount);
-        int connectedMotor = 0;
+        int connectedNodeNumber = 0;
         for (int i = 0; i < portCount; i++) { // check no. of nodes in each ports
             IPort &myPort = myMgr->Ports(i);
-            connectedMotor += myPort.NodeCount();
+            connectedNodeNumber += myPort.NodeCount();
         }
-        printf("Total %d/%d motor connected.\n", connectedMotor, motorNumber);
-        if(motorNumber != connectedMotor){
+        printf("Total %d/%d motor connected.\n", connectedNodeNumber, nodeNumber);
+        if(nodeNumber != connectedNodeNumber){
             cout << "Error: Connected motor number wrong!" << endl;
             return false;
         }
@@ -85,24 +88,24 @@ private:
         }
         return true;
     }
-public:
-    TeknicNode(int motorNumber){this->motorNumber = motorNumber;}
-    bool Connect(){
-        SysManager* myMgr = SysManager::Instance();
-        // Start the programme, scan motors in network
-        try{
-            if (!CheckMotorNetwork()){
-                cout << "Motor network not available. Exit programme." << endl;
-                return false;
-            }
-            else{
-                return true;
-            }
-        }
-        catch(mnErr& theErr) {    //This catch statement will intercept any error from the Class library
-            printf("Port Failed to open, Check to ensure correct Port number and that ClearView is not using the Port\n");  
-            printf("Caught error: addr=%d, err=0x%08x\nmsg=%s\n", theErr.TheAddr, theErr.ErrorCode, theErr.ErrorMsg);
-            return false;
-        }
+    catch(mnErr& theErr) {    //This catch statement will intercept any error from the Class library
+        printf("Error: Port Failed to open, Check to ensure correct Port number and that ClearView is not using the Port\n");  
+        printf("Caught error: addr=%d, err=0x%08x\nmsg=%s\n", theErr.TheAddr, theErr.ErrorCode, theErr.ErrorMsg);
+        return false;
     }
-};
+}
+
+vector<INode*> TeknicNode::GetNodeList(){
+    return nodeList;
+}
+
+INode* TeknicNode::GetNode(int nodeIndex){
+    if(nodeIndex < nodeNumber)
+        return nodeList[nodeIndex];
+}
+
+bool TeknicNode::Disconnect(){
+    return false;
+}
+
+

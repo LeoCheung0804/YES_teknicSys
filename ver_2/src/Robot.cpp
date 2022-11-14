@@ -5,10 +5,9 @@
 #include <fstream>
 #include <cmath>
 
-using namespace Eigen;
-using namespace std;
 using json = nlohmann::json;
 
+Robot::Robot(){};
 // Constructor, based on the requested model
 Robot::Robot(string robotConfigPath){
     this->UpdateModelFromFile(robotConfigPath);
