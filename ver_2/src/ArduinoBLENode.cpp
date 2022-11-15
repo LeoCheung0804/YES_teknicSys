@@ -1,5 +1,6 @@
 #include "..\include\ArduinoBLENode.h"
 #include <iostream>
+#include <thread>
 
 ArduinoBLENode::ArduinoBLENode(){}
 ArduinoBLENode::ArduinoBLENode(string portName){
@@ -7,11 +8,11 @@ ArduinoBLENode::ArduinoBLENode(string portName){
 }
 
 // set communication port
-bool ArduinoBLENode::SetSerialParams(HANDLE hComm){
+bool ArduinoBLENode::SetSerialParams(){
     // Set parameters for serial port
     DCB dcbSerialParams = { 0 }; // Initializing DCB structure
     dcbSerialParams.DCBlength = sizeof(dcbSerialParams);
-    bool Status = GetCommState(hComm, &dcbSerialParams); // retreives  the current settings
+    bool Status = GetCommState(this->hComm, &dcbSerialParams); // retreives  the current settings
     if (Status == false){ cout << "Error in GetCommState()\n"; return false; }
 
     dcbSerialParams.BaudRate = CBR_57600;// Setting BaudRate
@@ -19,7 +20,7 @@ bool ArduinoBLENode::SetSerialParams(HANDLE hComm){
     dcbSerialParams.StopBits = ONESTOPBIT;// Setting StopBits = 1
     dcbSerialParams.Parity   = NOPARITY;  // Setting Parity = None
 
-    SetCommState(hComm, &dcbSerialParams);
+    SetCommState(this->hComm, &dcbSerialParams);
     if (Status == false){ cout << "Error! in Setting DCB Structure\n"; return false; }
     else{
         printf("   Setting DCB Structure Successful\n");
@@ -38,9 +39,9 @@ bool ArduinoBLENode::SetSerialParams(HANDLE hComm){
     timeouts.WriteTotalTimeoutConstant   = 50;
     timeouts.WriteTotalTimeoutMultiplier = 10;
 
-    if (SetCommTimeouts(hComm, &timeouts) == FALSE){ cout << "Error! in Setting Time Outs\n"; return false; }
+    if (SetCommTimeouts(this->hComm, &timeouts) == FALSE){ cout << "Error! in Setting Time Outs\n"; return false; }
     // Set recieve mask                
-    if (!(bool)SetCommMask(hComm, EV_RXCHAR)){ cout << "Error! in Setting CommMask\n"; }
+    if (!(bool)SetCommMask(this->hComm, EV_RXCHAR)){ cout << "Error! in Setting CommMask\n"; }
     
     return true;
 }
@@ -48,9 +49,49 @@ bool ArduinoBLENode::SetSerialParams(HANDLE hComm){
 // Connect Node
 bool ArduinoBLENode::Connect(){
     const char* cArray = ComPortName.c_str();
-    hComm = CreateFile(cArray, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
-    if (hComm == INVALID_HANDLE_VALUE){ cout << "Error: " << ComPortName << " cannot be opened.\n"; }
+    this->hComm = CreateFile(cArray, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+    if (this->hComm == INVALID_HANDLE_VALUE){ cout << "Error: " << ComPortName << " cannot be opened.\n"; }
     else { cout << ComPortName << " opened.\n"; }
-    if (!SetSerialParams(hComm)) { return false; }
+    if (!SetSerialParams()) { return false; }
     return true;
+}
+string ArduinoBLENode::SendGripperSerial(string Ard_char){
+    char buffer[8] = {};
+    for(int i = 0; i < 8; i++){
+        buffer[i] = Ard_char[i];
+    }
+    DWORD dNoOfBytesWritten = 0;
+    if (!(bool)WriteFile(this->hComm, buffer, 8, &dNoOfBytesWritten, NULL)){ 
+        cout << "Arduino writing error: " << GetLastError() << endl; 
+    }    
+    return ReadGripperSerial();
+    // ReadGripperSerial(); // need this?
+}
+string ArduinoBLENode::ReadGripperSerial(){
+    DWORD dwEventMask, BytesRead;
+    int i{0};
+    char tmp;
+    string msg = "";
+
+    bool Status = WaitCommEvent(this->hComm, &dwEventMask, NULL); // wait till brick is ready from ABB
+    if (Status == false){ cout << "Error in setting WaitCommEvent()\n";} //quitType = 'q'; return; }
+    else {
+        auto start = chrono::steady_clock::now();
+        auto end = chrono::steady_clock::now();
+        while(chrono::duration_cast<chrono::milliseconds>(end-start).count()  < 1000){  
+            ReadFile(this->hComm, &tmp, sizeof(tmp), &BytesRead, NULL);
+            if(BytesRead > 0){
+                msg.push_back(tmp);
+                break;
+            }
+            end = chrono::steady_clock::now();
+        }
+        while(BytesRead > 0){
+            ReadFile(this->hComm, &tmp, sizeof(tmp), &BytesRead, NULL);
+            msg.push_back(tmp);
+            i++;
+        }
+    }
+    return msg;
+
 }

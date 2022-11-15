@@ -2,6 +2,8 @@
 #define GripperController_H
 
 #include "ArduinoBLENode.h"
+#include <string>
+#include <map>
 
 using namespace std;
 class GripperController{
@@ -13,5 +15,8 @@ private:
 public:
     GripperController();
     GripperController(string portName, bool isOnline=true);
+    void Open();
+    void Close();
+    void Rotate(float angle);
 };
 #endif

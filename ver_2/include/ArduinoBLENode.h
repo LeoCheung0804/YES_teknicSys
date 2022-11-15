@@ -8,16 +8,19 @@ using namespace std;
 class ArduinoBLENode{
 private:
     string ComPortName;
-    unsigned char Ard_char[8] = {'(','o',',',' ',' ',' ',' ',')'};
     HANDLE hComm;
+    int readTimeout=1000;
     
     // set communication port
-    bool SetSerialParams(HANDLE hComm);
+    bool SetSerialParams();
 public:
     ArduinoBLENode();
     ArduinoBLENode(string portName);
 
     // Connect Node
     bool Connect();
+
+    string ReadGripperSerial();
+    string SendGripperSerial(string Ard_char);
 };
 #endif

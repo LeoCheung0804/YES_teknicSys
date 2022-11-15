@@ -13,20 +13,34 @@ void PrintOffline(){
     cout << "!!!!!Warning!!!!!Offline Mode. If you see this, tell Galad he sucks. Or go to the source file and change bool isOnline to true then compile again." << endl;
 }
 
-void PrintMainMenu(){
-    cout << "====================== Mode Selection  ======================" << endl;
-    cout << "\t1 - Calibration Mode" << endl;
-    cout << "\t2 - Operation Mode" << endl;
+void PrintGripperControlMenu(){
+    cout << "====================== Gripper Control Menu  ======================" << endl;
+    cout << "\t1 - Close Gripper" << endl;
+    cout << "\t2 - Open Gripper" << endl;
+    cout << "\t3 - Rotate Gripper" << endl;
     cout << "\tq - Exit" << endl;
     cout << "Please Select Mode: ";
 }
 
-void PrintOperationMenu(){
-    cout << "====================== Operation Mode  ======================" << endl;
-    cout << "\t1 - Calibration Mode" << endl;
-    cout << "\t2 - Operation Mode" << endl;
-    cout << "\tq - Exit" << endl;
-    cout << "Please Select Mode: ";
+void GripperControlMode(){    
+    while(true){
+        PrintGripperControlMenu();
+        cin >> userInput;
+        if(userInput == "q"){
+            cout << "Bye" << endl;
+        }else if(userInput == "1"){
+            gripper.Close();
+        }else if(userInput == "2"){
+            gripper.Open();
+        }else if(userInput == "3"){
+            string angle;
+            cout << "Please Enter Target Angle: ";
+            cin >> angle;
+            gripper.Rotate(angle);
+            system("pause");
+            
+        } 
+    }
 }
 
 void PrintCalibrationMenu(){
@@ -100,6 +114,14 @@ void CalibrationMode(){
     }
 }
 
+void PrintOperationMenu(){
+    cout << "====================== Operation Mode  ======================" << endl;
+    cout << "\t1 - Calibration Mode" << endl;
+    cout << "\t2 - Operation Mode" << endl;
+    cout << "\tq - Exit" << endl;
+    cout << "Please Select Mode: ";
+}
+
 void OperationMode(){
     while(true){
         PrintOperationMenu();
@@ -107,6 +129,30 @@ void OperationMode(){
         if(userInput == "q"){ // Quit Calibration Mode
             break;
         }else if(userInput == "1"){
+        }
+    }
+}
+
+void PrintMainMenu(){
+    cout << "====================== Mode Selection  ======================" << endl;
+    cout << "\t1 - Calibration Mode" << endl;
+    cout << "\t2 - Operation Mode" << endl;
+    cout << "\tq - Exit" << endl;
+    cout << "Please Select Mode: ";
+}
+
+void MainMenu(){
+    while(true){
+        PrintMainMenu();
+        cin >> userInput;
+
+        if(userInput == "1"){
+            CalibrationMode();
+        }else if(userInput == "2"){
+            OperationMode();
+        }else if(userInput == "q"){
+            cout << "Bye" << endl;
+            break;
         }
     }
 }
@@ -123,22 +169,6 @@ int main(){
     if(!isOnline)
         PrintOffline();
     cout << "All motors, all breaks and gripper connected success." << endl;
-
-    while(true){
-        PrintMainMenu();
-        cin >> userInput;
-
-        if(userInput == "1"){
-            CalibrationMode();
-        }else if(userInput == "2"){
-            OperationMode();
-        }else if(userInput == "q"){
-            cout << "Bye" << endl;
-            return 0;
-        }
-    }
-    
-    char cmd;
-    
-
+    MainMenu();
+    return 0;
 }
