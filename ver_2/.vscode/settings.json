@@ -82,7 +82,8 @@
         "stop_token": "cpp",
         "xlocbuf": "cpp",
         "xlocmes": "cpp",
-        "alignedvector3": "cpp"
+        "alignedvector3": "cpp",
+        "bvh": "cpp"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }

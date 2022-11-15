@@ -4,21 +4,42 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
+#include <thread>
 
 using json = nlohmann::json;
 
 Robot::Robot(){};
+
 // Constructor, based on the requested model
-Robot::Robot(string robotConfigPath){
+Robot::Robot(string robotConfigPath, bool isOnline){
     this->UpdateModelFromFile(robotConfigPath);
+    this->isOnline = isOnline;
+    this->Init();
+}
+
+bool Robot::Init(){
+
+    // Init BLE Nodes
+    this->gripper = GripperController(this->gripperCommPort, this->isOnline);
+
+    // Init Rail Motor Nodes
+    this->rail = RailController(851, this->railBreakCommPort, this->railMotorNum, this->isOnline);
+    
+    // Init Cable Motor Nodes
+    this->cable = CableController(this->cableMotorNum, this->isOnline);
+
+    return true;
 }
 
 const double Robot::defaultRailOffset[4] = {0, 0, 0, 0}; // default all zeros
 
-bool Robot::IsValid(){ return isValidModel; }
+bool Robot::IsValid(){ 
+    return this->isValidModel; 
+    }
+
 bool Robot::CheckLimits(){
     for (int i = 0; i < 3; i++){
-        if(endEffectorPosLimit[i*2]>endEffectorPos[i] || endEffectorPos[i]>endEffectorPosLimit[i*2+1]){ return false; }
+        if(this->endEffectorPosLimit[i*2]>this->endEffectorPos[i] || this->endEffectorPos[i]>this->endEffectorPosLimit[i*2+1]){ return false; }
     }
     return true;
 }
@@ -35,10 +56,11 @@ void Robot::PrintRailOffset(){ // Print railOffset[]
 
 void Robot::PrintCableLength(){ 
     cout << "Cable Length: ";
-    for(int i = 0; i < cableMotorNum; i++){ cout << cableLength[i] << " "; }
+    vector<double> cableLength = this->EEPoseToCableLength(this->endEffectorPos);
+    for(int i = 0; i < this->cableMotorNum; i++){ cout <<  cableLength[i] << " "; }
     cout << endl;
     cout << "Rail Offset: ";
-    for(int i = cableMotorNum; i < railMotorNum + cableMotorNum; i++){ cout << cableLength[i] << " "; }
+    for(int i = 0; i < this->railMotorNum; i++){ cout << this->railOffset[i] << " "; }
     cout << endl;
 }
 
@@ -85,12 +107,74 @@ void Robot::UpdateModelFromFile(string filename){ // Read model.json file
             }
         }
         isValidModel = true;
-        PrintRobotConfig();
+        Robot::PrintRobotConfig();
     }
     catch(const exception& e){
         cout << "Error in reading " << filename << endl;
         cout << e.what() << endl;
         isValidModel = false;
+    }
+}
+
+void Robot::UpdatePosFromFile(string filename){
+    try{
+        ifstream file (filename); //"lastPos.txt" or "currentPos.csv"
+        string temp;
+        int count = 0;
+        if(file.is_open()){
+            try{
+                while (file >> temp){
+                    if(count < 6){ this->endEffectorPos[count] = stod(temp); } // convert string to double stod() for the first 6 inputs
+                    else if(count < 10){ this->railOffset[count-6] = stod(temp); } // reading the rail offset, then break while loop
+                    else { break; }
+                    count++;
+                }
+                cout << "Completed reading from external file" << endl; //"Completed updating from external pose file"
+            }
+            catch(int e){ cout << "Check if currentPos.csv matches the in1 input no." << endl; }
+            // calibration motors
+            // cable motors
+            vector<double> cableLengthList = this->GetCableLength();
+            for(int index = 0; index < this->cableMotorNum; index++){
+                this->cable.CalibrationMotor(index, this->CableMotorLengthToCmd(index, cableLengthList[index]));
+            }
+            // slider motors
+            for(int index = 0; index < this->railMotorNum; index++){
+                // nErr = AdsSyncWriteReq(pAddr,ADSIGRP_SYM_VALBYHND,hdlList[0], sizeof(step), &step); // write "MAIN.Axis1_GoalPos"
+                // if (nErr) { cout << "Error: Rail[" << index-nodeList.size() << "] AdsSyncWriteReq: " << nErr << '\n'; }
+                // homeFlag[index-nodeList.size()] = true; // signal targeted rail motor for homing
+                // nErr = AdsSyncWriteReq(pAddr,ADSIGRP_SYM_VALBYHND,hdlList[3], sizeof(homeFlag), &homeFlag[0]); // write "MAIN.bHomeSwitch"
+                // if (nErr) { cout << "Error: Rail[" << index-nodeList.size() << "] Set postiton Command. AdsSyncWriteReq: " << nErr << '\n'; }
+                // homeFlag[index-nodeList.size()] = false; // return to false
+                // busyFlag[index-nodeList.size()] = false;
+                // while(!busyFlag[index-nodeList.size()]){ // wait for motor busy flag on, ie. update current pos started
+                //     nErr = AdsSyncReadReq(pAddr, ADSIGRP_SYM_VALBYHND, hdlList[4], sizeof(busyFlag), &busyFlag[0]); // read "MAIN.Axis_Home.Busy"
+                //     if (nErr) { cout << "Error: Rail[" << index-nodeList.size() << "] AdsSyncReadReq: " << nErr << '\n'; break; }
+                // }
+                // while(busyFlag[index-nodeList.size()]){ // wait for motor busy flag off, ie. completed updated position
+                //     nErr = AdsSyncReadReq(pAddr, ADSIGRP_SYM_VALBYHND, hdlList[4], sizeof(busyFlag), &busyFlag[0]);
+                //     if (nErr) { cout << "Error: Rail[" << index-nodeList.size() << "] AdsSyncReadReq: " << nErr << '\n'; break; }
+                // }   
+            }
+            cout << "Updating motor counts completed" << endl;
+            cout << "Current coordinates: "; this->PrintEEPos();
+            cout << "Linear rail offset: "; this->PrintRailOffset();
+            cout << "Motor internal counts: ";
+            // for teknic motors
+            for (int id = 0; id < this->cableMotorNum; id++){
+                cout << this->cable.GetMotorPosMeasured(id) << "\t";
+            }
+            // TODO
+            // for twincat motors
+            // nErr = AdsSyncReadReq(pAddr, ADSIGRP_SYM_VALBYHND, hdlList[2], sizeof(actPos), &actPos[0]); // read "MAIN.actPos"
+            // if (nErr) { cout << "Error: Rail[s] AdsSyncReadReq: " << nErr << '\n'; }
+            // for (int id = 0; id < robot.RailNum(); id++){ cout << actPos[id] << "\t"; }
+            cout << endl;
+        }
+    }
+    catch(const exception& e){
+        cout << "Error in reading " << filename << endl;
+        cout << e.what() << endl;
     }
 }
 
@@ -125,7 +209,8 @@ void Robot::PrintRobotConfig(){
         }
 }
 
-void Robot::EEPoseToCableLength(double eePos[], double railOffset[], double lengths[]){ // given an EE pose, calculate the EE to pulley cable lengths
+vector<double> Robot::EEPoseToCableLength(double eePos[]){ // given an EE pose, calculate the EE to pulley cable lengths
+    vector<double> result;
     // local variables
     Vector3d orB[8]; // vector from frame 0 origin to end effector cable outlet
     Vector3d orA[8]; // vector from frame 0 origin to cable outlet point on rotating pulley
@@ -152,7 +237,7 @@ void Robot::EEPoseToCableLength(double eePos[], double railOffset[], double leng
         Vector3d plNormal = frmOutUnitV[i].cross(orB[i] - frmOut[i]); // normal vector of the plane that the rotating pulley is in
         Vector3d VecC = plNormal.cross(frmOutUnitV[i]); // direction from fixed point towards pulley center
         Vector3d zOffset(0, 0, 0); // set a z offset for frame out for pulleys on linear rails
-        if(i < 4){ zOffset << 0, 0, railOffset[i]; }
+        if(i < 4){ zOffset << 0, 0, this->railOffset[i]; }
         Vector3d orC = VecC/VecC.norm()*pulleyRadius + frmOut[i] + zOffset; // vector from frame 0 origin to rotating pulley center
         double triR = pulleyRadius / (orB[i] - orC).norm(); // triangle ratio??
         orA[i] = orC + triR*triR*(orB[i] - orC) - triR*sqrt(1 - triR*triR)*((plNormal/plNormal.norm()).cross(orB[i] - orC));
@@ -163,27 +248,77 @@ void Robot::EEPoseToCableLength(double eePos[], double railOffset[], double leng
         double l_arc = pulleyRadius * acos(UVecCF.dot(UVecCA));
 
         ///// Sum the total cable length /////
-        lengths[i] = i < 4 ? l_arc + (orA[i] - orB[i]).norm() - railOffset[i] : l_arc + (orA[i] - orB[i]).norm(); // Need to subtract the rail offset for the bottom 4 motors 
+        result.push_back(i < 4 ? l_arc + (orA[i] - orB[i]).norm() - this->railOffset[i] : l_arc + (orA[i] - orB[i]).norm()); // WHY minus railOffset again?
+        // lengths[i] = i < 4 ? l_arc + (orA[i] - orB[i]).norm() - railOffset[i] : l_arc + (orA[i] - orB[i]).norm(); // Need to subtract the rail offset for the bottom 4 motors 
     }
     //copy(railOffset, railOffset+4, lengths+cableMotorNum); // assign array elements after motor numbers as rail lengths // rail_offset default size of 4
+    return result;
+}
+
+vector<double> Robot::EEPoseToCableLength(vector<double> eePosVector){
+    double* eePosArray = &eePosVector[0];
+    return this->EEPoseToCableLength(eePosArray);
 }
 
 double Robot::GetEEToGroundOffset(){ return endEffToGroundOffset; }
+
 float Robot::GetTargetTrq(){ return targetTrq; }
+
 float Robot::GetAbsTrqLmt(){ return absTrqLmt; }
+
 int Robot::GetCableMotorNum(){ return cableMotorNum; }
+
 int Robot::GetRailMotorNum(){ return railMotorNum; }
+
 string Robot::GetGripperCommPort(){ return gripperCommPort; }
+
 string Robot::GetRailBreakCommPort(){ return railBreakCommPort; }
+
 int32_t Robot::GetCableMotorScale(){ return cableMotorScale; }
+
 int32_t Robot::GetRailMotorScale(){ return railMotorScale; }
 
 int32_t Robot::CableMotorLengthToCmdAbsulote(double length){
     return length * cableMotorScale;
 }
+
 int32_t Robot::CableMotorLengthToCmd(int motorID, double length){
     return (length - this->robotOffset[motorID]) * cableMotorScale;
 }
+
 int32_t Robot::RailMotorOffsetToCmd(int motorID, double length){
     return (length - this->robotOffset[motorID]) * railMotorScale; 
+}
+
+vector<double> Robot::GetCableLength(){
+    return this->EEPoseToCableLength(this->endEffectorPos);
+};
+
+vector<int32_t> Robot::EEPoseToCmd(vector<double> eePos){
+    vector<int32_t> result;
+    vector<double> lengthList = this->EEPoseToCableLength(eePos);
+    int index = 0;
+    for(double length : lengthList){
+        //result.push_back(this->CableMotorLengthToCmd(index, length));
+        result.push_back(this->CableMotorLengthToCmdAbsulote(length));
+        index++;
+    }
+    return result;
+}
+
+vector<vector<int32_t>> Robot::PoseTrajToCmdTraj(vector<vector<double>> posTraj){
+    vector<vector<int32_t>> result;
+    for(vector<double> pos : posTraj){
+        result.push_back(this->EEPoseToCmd(pos));
+    }
+    return result;
+}
+
+bool Robot::RunTraj(vector<vector<double>> posTraj){
+    vector<vector<int32_t>> cmdTraj = this->PoseTrajToCmdTraj(posTraj);
+    for(vector<int32_t> frame : cmdTraj){
+        this->cable.MoveAllMotorCmd(frame);
+    }
+    return false;
+
 }

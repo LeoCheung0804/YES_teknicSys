@@ -1,7 +1,4 @@
 #include "..\include\Robot.h"
-#include "ArduinoBLENode.cpp"
-#include "TwincatADSNode.cpp"
-#include "..\include\CableController.h"
 #include "..\include\TrajectoryGenerator.h"
 #include <iostream>
 #include <string>
@@ -11,7 +8,6 @@ float workingTorque = -4.1; // cable working torque. 2.5 in %, -ve for tension, 
 bool isOnline = false;
 string userInput;
 Robot robot;
-CableController cableController;
 
 void PrintOffline(){
     cout << "!!!!!Warning!!!!!Offline Mode. If you see this, tell Galad he sucks. Or go to the source file and change bool isOnline to true then compile again." << endl;
@@ -67,22 +63,38 @@ void CalibrationMode(){
         if(userInput == "q"){ // Quit Calibration Mode
             break;
         }else if(userInput == "1"){ // Tighten Cables
-            cableController.TightenAllCable(robot.GetTargetTrq());
+            robot.cable.TightenAllCable(robot.GetTargetTrq());
             system("pause");
         }else if(userInput == "2"){ // Loose Cables
             cout << "Loose Cables. Not implemented. Tell Galad he sucks." << endl;
             system("pause");
         }else if(userInput == "3"){ // Move All Cable Motors to Home Position
-            cableController.HomeAllCableMotors();
+            robot.cable.HomeAllCableMotors();
             system("pause");
         }else if(userInput == "4"){ // Reset End Effector Rotation to 0,0,0
             double targetPos[6] = {robot.endEffectorPos[0], robot.endEffectorPos[1], robot.endEffectorPos[2], 0, 0,0 };
-            vector<vector<float>> cableTrajectory = GenParaBlendForCableMotor(robot.endEffectorPos, targetPos, 3500, false);
+            vector<vector<double>> cableTrajectory = GenParaBlendForCableMotor(robot.endEffectorPos, targetPos, 3500, false);
+            robot.RunTraj(cableTrajectory);
+            system("pause");
+        }else if(userInput == "5"){ // Control Cable Individual
             
-            for(int i = 0; i <  cableTrajectory.size(); i++){
-                // cableController.MoveToLength
-            }
+        }else if(userInput == "6"){ // Control Linear Rail Motor
 
+        }else if(userInput == "7"){ // Control Gripper
+            
+        }else if(userInput == "8"){ // Update Robot Pos By File
+            string robotPosPath;
+            cout << "Please Enter Robot Position File Path (Default lastPos.txt): ";
+            getchar();
+            getline(cin, robotPosPath);
+            robot.UpdatePosFromFile(robotPosPath  != "" ? robotPosPath : "RobotConfig.json");
+            system("pause");
+        }else if(userInput == "9"){ // Update Robot Config
+            string robotConfigPath;
+            cout << "Please Enter Robot Config File Path (Default RobotConfig.json): ";
+            getchar();
+            getline(cin, robotConfigPath);
+            robot.UpdateModelFromFile(robotConfigPath  != "" ? robotConfigPath : "RobotConfig.json");
             system("pause");
         }
     }
@@ -101,24 +113,12 @@ void OperationMode(){
 
 int main(){
     // Create Robot Model and read the config file
-    robot = Robot("D:\\Galad_ws\\YES_teknicSys\\ver_2\\RobotConfig.json");
+    robot = Robot("D:\\Galad_ws\\YES_teknicSys\\ver_2\\RobotConfig.json", isOnline);
     if(!robot.IsValid()) return -1; // quit if not creationg failed;
     workingTorque = robot.GetTargetTrq();
 
-    // Init BLE Nodes
-    ArduinoBLENode gripperNode(robot.GetGripperCommPort());
-    if(isOnline && !gripperNode.Connect()) { cout << "Failed to connect gripper. Exit programme.\n"; return -1; };
-    ArduinoBLENode RailBreakNode(robot.GetRailBreakCommPort());
-    if(isOnline && !RailBreakNode.Connect()) { cout << "Failed to connect linear rail breaks. Exit programme.\n"; return -1; };
 
-    // Init Rail Motor Nodes
-    TwincatADSNode railNode(851);
-    if(isOnline && !railNode.Connect()) { cout << "Failed to connect linear rail motors. Exit programme.\n"; return -1; };
-    
-    // Init Cable Motor Nodes
-    cableController = CableController(robot.GetCableMotorNum(), isOnline);
-
-    robot.EEPoseToCableLength(robot.homePos, robot.railOffset, robot.cableLength); // save offset values according to home pose
+    robot.EEPoseToCableLength(robot.homePos); // save offset values according to home pose
 
     if(!isOnline)
         PrintOffline();

@@ -2,14 +2,14 @@
 #include <iostream>
 #include <cmath>
 
-vector<vector<float>> GenParaBlendForCableMotor(double start[], double end[], int time, bool showAttention){
+vector<vector<double>> GenParaBlendForCableMotor(double start[], double end[], int time, bool showAttention){
     cout << "Generating parabolic blend trajectory from " ;
     cout << start[0] << ", " << start[1] << ", " << start[2] << ", " << start[3] << ", " << start[4] << ", " << start[5];
     cout << " to ";
     cout << end[0] << ", " << end[1] << ", " << end[2] << ", " << end[3] << ", " << end[4] << ", " << end[5];
     cout << " in " << time << " ms" << endl;
     // cout << sizeof(start) << " " << sizeof(end) << endl;
-    vector<vector<float>> result;
+    vector<vector<double>> result;
     float vMax[6] = {.6, .6, .6, 0.8, 0.8, 0.8}; // m/s, define the maximum velocity for each DoF
     float aMax[6] = {80, 80, 80, 10, 10, 10}; // m/s^2, define the maximum acceleration for each DoF
     static double a[6], b[6], c[6], d[6], e[6], f[6], g[6], tb[6]; // trajectory coefficients
@@ -58,7 +58,7 @@ vector<vector<float>> GenParaBlendForCableMotor(double start[], double end[], in
     int i = 0;
     while (t <= time){        
         // PARABOLIC BLEND equation, per time step pose
-        vector<float> frame;
+        vector<double> frame;
         for (int j = 0; j < 6; j++){
             if (t <= tb[j]){
                 frame.push_back(a[j] + b[j] * t * t);
