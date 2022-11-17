@@ -1,8 +1,11 @@
+#define _USE_MATH_DEFINES
 #include "..\include\TrajectoryGenerator.h"
 #include <iostream>
+#include <sstream>
+#include <fstream>
 #include <cmath>
 
-vector<vector<double>> GenParaBlendForCableMotor(double start[], double end[], int time, bool showAttention){
+vector<vector<double>> GenParaBlendTrajForCableMotor(double start[], double end[], int time, bool showAttention){
     cout << "Generating parabolic blend trajectory from " ;
     cout << start[0] << ", " << start[1] << ", " << start[2] << ", " << start[3] << ", " << start[4] << ", " << start[5];
     cout << " to ";
@@ -80,4 +83,35 @@ vector<vector<double>> GenParaBlendForCableMotor(double start[], double end[], i
     // cout << "total used space: " << sizeof(vector<vector<float>>) + result.capacity() * sizeof(vector<vector<float>>) << endl;
 
     return result;
+}
+
+vector<vector<double>> ReadBrickPosFile(string filename, float tempD, float tempA){
+    ifstream file(filename);
+    vector<vector<double>> result;
+    vector<double> row;
+    string line;
+    string word;
+    string temp;
+
+    if(file.is_open()){
+        while (getline(file, line)){
+            row.clear();
+            stringstream s(line);
+            while (s >> word){
+                row.push_back(stod(word)); // convert string to double stod()
+            }
+            // Convert angles
+            if(row[4]<0){ row[4] += 180; } // convert -ve degs to 180
+            // if(row[4]>180){ row[4] -= 180; } // convert 360 degs to 180
+            // Calculate and add x, y offsets due to rotation mis-alignment
+            row[0] -= tempD*sin((tempA + row[4])*M_PI/180);
+            row[1] += tempD*cos((tempA + row[4])*M_PI/180);
+            result.push_back(row);
+        }
+        cout << "Completed reading brick position input file" << endl;
+        return result;
+    }else{ 
+        cout << "Failed to read input file. Please check the brick trajectory file: " << filename << endl; 
+        return result;
+    };
 }

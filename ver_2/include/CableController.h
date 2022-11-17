@@ -18,9 +18,10 @@ public:
     CableController(int cableNumber, bool isOnline=true);
     void TightenCableByIndex(int index, float targetTrq);
     void TightenAllCable(float targetTrq);
-    void HomeAllCableMotors();
-    void MoveSingleMotorCmd(int index, int32_t cmd);
-    void MoveAllMotorCmd(vector<int32_t> cmdList);
+    void HomeAllMotors();
+    void MoveSingleMotorCmd(int index, int32_t cmd, bool absolute=true);
+    void MoveAllMotorCmd(vector<int32_t> cmdList, bool absolute=true);
+    void MoveAllMotorCmd(int32_t cmd, bool absolute=true);
     bool IsMoveFinished();    
     void CalibrationMotor(int index, int32_t currentCmdPos);
     double GetMotorPosMeasured(int index);

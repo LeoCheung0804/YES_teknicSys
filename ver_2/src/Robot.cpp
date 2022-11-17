@@ -1,6 +1,7 @@
 #include "..\include\Robot.h"
 #include "..\tools\json.hpp"
 #include "..\Dependencies\eigen-3.3.7\Eigen\Dense"
+#include "..\include\TrajectoryGenerator.h"
 #include <iostream>
 #include <fstream>
 #include <cmath>
@@ -50,6 +51,12 @@ void Robot::PrintEEPos(){
     cout << endl;
 }
 
+void Robot::PrintBrickPickUpPos(){ 
+    cout << "Brick Pick Up Pos: ";
+    for(int i = 0; i < 6; i++){ cout << brickPickUpPos[0] << " "; }
+    cout << endl;
+}
+
 void Robot::PrintRailOffset(){ // Print railOffset[]
     cout << "Rail Offset: "<< railOffset[0] << " " << railOffset[1] << " " << railOffset[2] << " " << railOffset[3] << endl;
 }
@@ -91,6 +98,8 @@ void Robot::UpdateModelFromFile(string filename){ // Read model.json file
         this->rotationalDistanceOffset = model.value("rotationalDistanceOffset", -0.0075);
         this->gripperCommPort = model.value("gripperCommPort", "\\\\.\\COM26");
         this->railBreakCommPort = model.value("railBreakCommPort", "\\\\.\\COM26");
+        this->brickPickUpOffset = model.value("brickPickUpOffset", 0.12);
+        this->velLmt = model.value("velLmt", 0.45);
         string posLabel[] = {"x", "y", "z", "yaw", "pitch", "roll"};
 
         // Interate through arrays
@@ -140,21 +149,7 @@ void Robot::UpdatePosFromFile(string filename){
             }
             // slider motors
             for(int index = 0; index < this->railMotorNum; index++){
-                // nErr = AdsSyncWriteReq(pAddr,ADSIGRP_SYM_VALBYHND,hdlList[0], sizeof(step), &step); // write "MAIN.Axis1_GoalPos"
-                // if (nErr) { cout << "Error: Rail[" << index-nodeList.size() << "] AdsSyncWriteReq: " << nErr << '\n'; }
-                // homeFlag[index-nodeList.size()] = true; // signal targeted rail motor for homing
-                // nErr = AdsSyncWriteReq(pAddr,ADSIGRP_SYM_VALBYHND,hdlList[3], sizeof(homeFlag), &homeFlag[0]); // write "MAIN.bHomeSwitch"
-                // if (nErr) { cout << "Error: Rail[" << index-nodeList.size() << "] Set postiton Command. AdsSyncWriteReq: " << nErr << '\n'; }
-                // homeFlag[index-nodeList.size()] = false; // return to false
-                // busyFlag[index-nodeList.size()] = false;
-                // while(!busyFlag[index-nodeList.size()]){ // wait for motor busy flag on, ie. update current pos started
-                //     nErr = AdsSyncReadReq(pAddr, ADSIGRP_SYM_VALBYHND, hdlList[4], sizeof(busyFlag), &busyFlag[0]); // read "MAIN.Axis_Home.Busy"
-                //     if (nErr) { cout << "Error: Rail[" << index-nodeList.size() << "] AdsSyncReadReq: " << nErr << '\n'; break; }
-                // }
-                // while(busyFlag[index-nodeList.size()]){ // wait for motor busy flag off, ie. completed updated position
-                //     nErr = AdsSyncReadReq(pAddr, ADSIGRP_SYM_VALBYHND, hdlList[4], sizeof(busyFlag), &busyFlag[0]);
-                //     if (nErr) { cout << "Error: Rail[" << index-nodeList.size() << "] AdsSyncReadReq: " << nErr << '\n'; break; }
-                // }   
+                this->rail.CalibrationMotor(index, this->RailMotorOffsetToCmd(index, railOffset[index]));
             }
             cout << "Updating motor counts completed" << endl;
             cout << "Current coordinates: "; this->PrintEEPos();
@@ -278,6 +273,8 @@ int32_t Robot::GetCableMotorScale(){ return cableMotorScale; }
 
 int32_t Robot::GetRailMotorScale(){ return railMotorScale; }
 
+float Robot::GetVelLmt(){ return velLmt; }
+
 int32_t Robot::CableMotorLengthToCmdAbsulote(double length){
     return length * cableMotorScale;
 }
@@ -316,9 +313,22 @@ vector<vector<int32_t>> Robot::PoseTrajToCmdTraj(vector<vector<double>> posTraj)
 
 bool Robot::RunTraj(vector<vector<double>> posTraj){
     vector<vector<int32_t>> cmdTraj = this->PoseTrajToCmdTraj(posTraj);
+    int index = 0;
     for(vector<int32_t> frame : cmdTraj){
         this->cable.MoveAllMotorCmd(frame);
+        for(int i = 0; i < 6; i++)
+            this->endEffectorPos[i] = posTraj[index][i];
+        index++;
     }
-    return false;
+    cout << endl;
+    return true;
+}
 
+bool Robot::MoveTo(double dest[], int time, bool showAtten){
+    return this->RunTraj(GenParaBlendTrajForCableMotor(this->endEffectorPos, dest, time, showAtten));
+}
+
+bool Robot::MoveTo(double dest[], bool showAtten){
+    float time = sqrt(pow(dest[0]-this->endEffectorPos[0],2)+pow(dest[1]-endEffectorPos[1],2)+pow(dest[2]-endEffectorPos[2],2))/this->velLmt*1000;
+    return this->RunTraj(GenParaBlendTrajForCableMotor(this->endEffectorPos, dest, time, showAtten));
 }

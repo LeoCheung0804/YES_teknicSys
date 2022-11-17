@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <thread>
+#include <assert.h>
 #include <Windows.h>
 
 CableController::CableController(){}
@@ -13,6 +14,7 @@ CableController::CableController(int cableNumber, bool isOnline){
     this->nodeList = this->node.GetNodeList();
 }
 void CableController::TightenCableByIndex(int index, float targetTrq){
+    assert(index >= 0 && index <= cableNumber);
     cout << "Setting cable: " << index << " torque to: " << targetTrq << endl;
     if(isOnline){
         nodeList[index]->Motion.AccLimit = 200;
@@ -39,6 +41,7 @@ void CableController::TightenCableByIndex(int index, float targetTrq){
     }
     cout << "Set cable " << index << " torque to: " << targetTrq << " finished." << endl;
 }
+
 void CableController::TightenAllCable(float targetTrq){
     cout << "Setting all cable torque to: " << targetTrq << endl;
     if(isOnline){
@@ -79,7 +82,8 @@ void CableController::TightenAllCable(float targetTrq){
     }
     cout << "Set all cable torque to: " << targetTrq << " finished." << endl;
 }
-void CableController::HomeAllCableMotors(){
+
+void CableController::HomeAllMotors(){
     cout << "Moving all cable motors to zero position." << endl;
     if(isOnline){
         bool moving = false;
@@ -97,12 +101,12 @@ void CableController::HomeAllCableMotors(){
     cout << "Move all cable motors to zero position finished." << endl;
 }
 
-void CableController::MoveSingleMotorCmd(int index, int32_t cmd){
+void CableController::MoveSingleMotorCmd(int index, int32_t cmd, bool absolute){
+    assert(index >= 0 && index <= cableNumber);
     if(this->isOnline){
         ofstream myfile;
-        // convert to absolute cable length command
         try{
-            nodeList[index]->Motion.MovePosnStart(cmd, true, true); // absolute position?
+            nodeList[index]->Motion.MovePosnStart(cmd, absolute, true); // absolute position?
             if (nodeList[index]->Status.Alerts.Value().isInAlert()) {
                 myfile.open("log.txt", ios::app);
                 myfile << "Alert from Motor [" << index << "]: "<< nodeList[index]->Status.Alerts.Value().bits <<"\n";
@@ -124,7 +128,7 @@ void CableController::MoveSingleMotorCmd(int index, int32_t cmd){
     }
 }
 
-void CableController::MoveAllMotorCmd(vector<int32_t> cmdList){
+void CableController::MoveAllMotorCmd(vector<int32_t> cmdList, bool absolute){
     
     auto start = chrono::steady_clock::now();
 
@@ -132,7 +136,7 @@ void CableController::MoveAllMotorCmd(vector<int32_t> cmdList){
     cout << "\rMoving To Pos ";
     int index = 0;
     for(int32_t cmd : cmdList){
-        threadList.push_back(thread(&CableController::MoveSingleMotorCmd, this, index, cmd));
+        threadList.push_back(thread(&CableController::MoveSingleMotorCmd, this, index, cmd, absolute));
         cout << " " << cmd ;
         index++;
     }
@@ -146,12 +150,25 @@ void CableController::MoveAllMotorCmd(vector<int32_t> cmdList){
     double dif = this->MILLIS_TO_NEXT_FRAME - chrono::duration_cast<chrono::milliseconds>(end-start).count() - 1;
     if(dif > 0) { Sleep(dif);}
 }
+
+void CableController::MoveAllMotorCmd(int cmd, bool absolute){
+    vector<int32_t> cmdList;
+    for(int i = 0; i < this->cableNumber; i++){ cmdList.push_back(cmd); }
+    this->MoveAllMotorCmd(cmdList, absolute);
+}
+
 bool CableController::IsMoveFinished(){ return isMoveFinished; }
+
 void CableController::CalibrationMotor(int index, int32_t currentCmdPos){
+    assert(index >= 0 && index <= cableNumber);
     nodeList[index]->Motion.PosnMeasured.Refresh();
     nodeList[index]->Motion.AddToPosition(-nodeList[index]->Motion.PosnMeasured.Value() + currentCmdPos);
 }
+
 double CableController::GetMotorPosMeasured(int index){
+    assert(index >= 0 && index <= cableNumber);
     nodeList[index]->Motion.PosnMeasured.Refresh();
     return (double) nodeList[index]->Motion.PosnMeasured.Value();
 }
+
+

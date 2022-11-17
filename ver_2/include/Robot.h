@@ -24,6 +24,8 @@ private:
     float targetTrq = -2.5; // in %, -ve for tension, also need to UPDATE in switch case 't'!!!!!!!!!
     float absTrqLmt = 60.0; // Absolute torque limit, to be checked before commanding 8 motors to move simutaneously in length command
     float endEffectorPosLimit[6]{-0.1, 11.5, -0.02, 13.8, -3.3, 0.3}; // Rough boundaries of the cable robot
+    float velLmt = 0.45;
+    float brickPickUpOffset = 0.21;
     static const double defaultRailOffset[4]; // default rail Position
     Vector3d frmOut[8]; // coordinates of the attachment points on frame at the beginning
     Vector3d endOut[8]; // local coordinates of cable attachment points on end-effector, ie ^er_B
@@ -41,9 +43,12 @@ public:
     double railOffset[4]{}; // individual heights or positions of the rails
     double robotOffset[12]{}; //12 //L0, from "zero position", will be updated by "set home" command
     double brickPickUpPos[6]{}; // position at 5th pole for brick pick up with possible z-rotaion
+    double brickPrePickUpPos[6]{}; // position at 5th pole for brick pick up with possible z-rotaion
     CableController cable;
     RailController rail;
     GripperController gripper;
+
+    int safeT = 1500;
 // Constructor
     Robot();
     Robot(string robotConfigPath, bool isOnline);
@@ -105,6 +110,9 @@ public:
     /// @brief Pint current end effector pos
     void PrintEEPos();
 
+    /// @brief Pint brick pick pos
+    void PrintBrickPickUpPos();
+
     /// @brief Print current rail offset
     void PrintRailOffset();
 
@@ -155,10 +163,14 @@ public:
     /// @brief Rail motor scale
     /// @return Rail motor scale
     int32_t GetRailMotorScale();
+
+    float GetVelLmt();
 // Setter
 
 // Traj
     bool RunTraj (vector<vector<double>> trajectory);
+    bool MoveTo(double dest[], int time, bool showAtten);
+    bool MoveTo(double dest[], bool showAtten);
 };
 
 #endif

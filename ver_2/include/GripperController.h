@@ -12,11 +12,12 @@ private:
     bool isOnline;
     bool isMoveFinished;
     int MILLIS_TO_NEXT_FRAME = 20;
+    string sendStr = "";
 public:
     GripperController();
     GripperController(string portName, bool isOnline=true);
     void Open();
     void Close();
-    void Rotate(float angle);
+    void Rotate(int angle);
 };
 #endif
