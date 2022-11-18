@@ -9,7 +9,7 @@ using namespace std;
 class RailController{
 private:
     TwincatADSNode motorNode;
-    ArduinoBLENode breakNode;
+    ArduinoBLENode brakeNode;
     int railNumber;
     bool isOnline;
     bool isMoveFinished;
@@ -20,11 +20,11 @@ private:
     bool isConnected;
 public:
     RailController(bool isOnline=true);
-    void Connect(int motorPortNumber, int railNumber, string breakPortName);
+    void Connect(int motorPortNumber, int railNumber, string brakePortName);
     void Disconnect();
     bool IsConnected();
-    void OpenBreak(int index);
-    void CloseBreak(int index);
+    void OpenBrake(int index);
+    void CloseBrake(int index);
     void CalibrationMotor(int index, int32_t currentCmdPos);
     void HomeAllMotors();
     void SelectWorkingMotor(int index);

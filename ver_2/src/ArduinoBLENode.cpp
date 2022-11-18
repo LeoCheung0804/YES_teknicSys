@@ -43,11 +43,18 @@ bool ArduinoBLENode::SetSerialParams(){
 }
 
 bool ArduinoBLENode::Connect(string portName){
+    cout << "Connecting to BLE Device on port: " << portName << endl;;
     const char* cArray = portName.c_str();
     this->hComm = CreateFile(cArray, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
-    if (this->hComm == INVALID_HANDLE_VALUE){ cout << "Error: " << portName << " cannot be opened.\n"; }
-    else { cout << portName << " opened.\n"; }
-    if (!SetSerialParams()) { return false; }
+    if (this->hComm == INVALID_HANDLE_VALUE){ 
+        cout << "Error: " << portName << " cannot be opened.\n"; 
+    } else { 
+        cout << portName << " opened.\n"; 
+    }
+    if (!SetSerialParams()) { 
+        return false; 
+    }
+    cout << "Connected to BLE Device on port: " << portName << endl;
     return true;
 }
 

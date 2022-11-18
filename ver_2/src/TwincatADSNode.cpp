@@ -7,7 +7,7 @@ bool TwincatADSNode::Connect(int port){
     unsigned long lHdlVar;
     bool TRUE_FLAG = true;
 
-    cout << "Connecting to Twincat ADS Nodes and get handlers." << endl;
+    cout << "Connecting to Twincat ADS Nodes." << endl;
     // Open communication port on the ADS router
     nPort = AdsPortOpen();
     nErr = AdsGetLocalAddress(pAddr);
@@ -26,21 +26,28 @@ bool TwincatADSNode::Connect(int port){
     nErr = AdsSyncWriteReq(pAddr,ADSIGRP_SYM_RELEASEHND, 0,sizeof(lHdlVar),&lHdlVar);
 
     // Create list of handler by name
-    map<string, unsigned long>::iterator iter;
-    iter = handlers.begin();
-    while(iter != handlers.end()){
-        string handleName = iter->first;
-        nErr = AdsSyncReadWriteReq(pAddr, ADSIGRP_SYM_HNDBYNAME, 0x0, sizeof(lHdlVar), &lHdlVar, handleName.length(), "handleName.tc");
-        if (nErr){ cout << "Error: AdsSyncReadWriteReq: " << nErr << ", in creating handler for " << iter->first << "\n"; return false; }
-        handlers[handleName] = lHdlVar;
-        iter++;
+
+    for(int i=0; i < *(&adsVarNames+1)-adsVarNames; i++){
+        nErr = AdsSyncReadWriteReq(pAddr, ADSIGRP_SYM_HNDBYNAME, 0x0, sizeof(lHdlVar), &lHdlVar, adsVarNames[i].length(), &adsVarNames[i][0]);
+        if (nErr){ cout << "Error: AdsSyncReadWriteReq: " << nErr << ", in creating handler for " << adsVarNames[i] << "\n"; return nErr; }
+        handlers[adsVarNames[i]] = lHdlVar;
     }
     cout << "Completed creating handler list of " << handlers.size() << endl;
     return true;
 }
 
 void TwincatADSNode::Disconnect(){
-    AdsPortClose();
+    long nErr;
+    // Close ADS communication port, disable power for motors
+    long lHdlVar; 
+    bool FALSE_FLAG = false;
+    nErr = AdsSyncReadWriteReq(pAddr, ADSIGRP_SYM_HNDBYNAME, 0x0, sizeof(lHdlVar), &lHdlVar, sizeof("MAIN.power"), "MAIN.power");
+    if (nErr){ cout << "Error: AdsSyncReadWriteReq: " << nErr << '\n'; }
+    nErr = AdsSyncWriteReq(pAddr,ADSIGRP_SYM_VALBYHND,lHdlVar, sizeof(FALSE_FLAG), &FALSE_FLAG);
+    if (nErr){ cout << "Error: AdsSyncWriteReq: " << nErr << '\n'; }
+    else { cout << "Linear rail motors disabled.\n"; }
+    nErr = AdsSyncWriteReq(pAddr,ADSIGRP_SYM_RELEASEHND,0,sizeof(lHdlVar),&lHdlVar);
+    if ( AdsPortClose() ){ cout << "Error: AdsPortClose: " << nErr << '\n'; }
 }
 
 

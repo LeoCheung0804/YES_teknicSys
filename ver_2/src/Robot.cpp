@@ -20,29 +20,45 @@ Robot::Robot(string robotConfigPath){
 
 void Robot::Connect(){
 
+    this->isConnected = true;
     // Init BLE Nodes
     this->gripper = GripperController(this->isOnline);
     this->gripper.Connect(this->gripperCommPort);
 
     // Init Rail Motor Nodes
     this->rail = RailController(this->isOnline);
-    this->rail.Connect(851, this->railMotorNum, this->railBreakCommPort);
+    this->rail.Connect(851, this->railMotorNum, this->railBrakeCommPort);
     
     // Init Cable Motor Nodes
-    this->cable = CableController(this->cableMotorNum, this->cableMotorBrakeNum, this->cableBreakCommPort, this->isOnline);
-    
-    cout << "All motors, all brakes and gripper connected success." << endl;
+    this->cable = CableController(this->isOnline);
+    this->cable.Connect(this->cableMotorNum, this->cableMotorBrakeNum, this->cableBrakeCommPort);
+
+    if(!this->gripper.IsConnected()){
+        cout << "Error: Gripper not connected." << endl;
+        this->isConnected = false;
+    }
+    if(!this->cable.IsConnected()){
+        cout << "Error: Cable motors not connected." << endl;
+        this->isConnected = false;
+    }
+    if(!this->rail.IsConnected()){
+        cout << "Error: Rail motors not connected." << endl;
+        this->isConnected = false;
+    }
 }
 
 void Robot::Disconnect(){
     this->gripper.Disconnect();
-
+    this->cable.Disconnect();
+    this->rail.Disconnect();
+    this->isConnected = false;
 }
-const double Robot::defaultRailOffset[4] = {0, 0, 0, 0}; // default all zeros
 
-bool Robot::IsValid(){ 
-    return this->isValidModel; 
-    }
+bool Robot::IsConnected(){ return this->isConnected; }
+
+bool Robot::IsValid(){ return this->isValidModel; }
+
+const double Robot::defaultRailOffset[4] = {0, 0, 0, 0}; // default all zeros
 
 bool Robot::CheckLimits(){
     for (int i = 0; i < 3; i++){
@@ -89,10 +105,16 @@ void Robot::PrintHomePos(){ // Print home[]
     cout << endl;
 }
 
-void Robot::UpdateModelFromFile(string filename){ // Read model.json file
+void Robot::UpdateModelFromFile(string filename, bool reconnect){ // Read model.json file
+    if(reconnect)
+        this->Disconnect();
     json model;
     try{
         ifstream file(filename, ifstream::binary);
+        if(!file.good()){
+            cout << "Error: File Not Exist. Keep using current config." << endl;
+            return;
+        }
         file >> model;
         cout << "Importing " << filename << ": " << model.value("ModelName", "NOT FOUND") << endl;
         
@@ -110,7 +132,7 @@ void Robot::UpdateModelFromFile(string filename){ // Read model.json file
         this->rotationalAngleOffset = model.value("rotationalAngleOffset", 21.8);
         this->rotationalDistanceOffset = model.value("rotationalDistanceOffset", -0.0075);
         this->gripperCommPort = model.value("gripperCommPort", "\\\\.\\COM26");
-        this->railBreakCommPort = model.value("railBreakCommPort", "\\\\.\\COM26");
+        this->railBrakeCommPort = model.value("railBrakeCommPort", "\\\\.\\COM26");
         this->brickPickUpOffset = model.value("brickPickUpOffset", 0.12);
         this->velLmt = model.value("velLmt", 0.45);
         string posLabel[] = {"x", "y", "z", "yaw", "pitch", "roll"};
@@ -128,22 +150,28 @@ void Robot::UpdateModelFromFile(string filename){ // Read model.json file
                 this->endOut[i][j] = model["endEffectorAttachments"][i][j];
             }
         }
-        
-        Robot::PrintRobotConfig();
         if(!this->isOnline)
             cout << "!!!!!Warning!!!!!Offline Mode. Modify the config file if you want go online" << endl;
+        if(reconnect)
+            this->Connect();
+        this->isValidModel = true;
     }
     catch(const exception& e){
         cout << "Error in reading " << filename << endl;
         cout << e.what() << endl;
         cout << "Error: Cannot read robot config file. Exit..." << endl;
-        exit(-1);
+        this->isValidModel = false;
     }
+    
 }
 
 void Robot::UpdatePosFromFile(string filename){
     try{
         ifstream file (filename); //"lastPos.txt" or "currentPos.csv"
+        if(!file.good()){
+            cout << "Error: File Not Exist. Keep using current pos." << endl;
+            return;
+        }
         string temp;
         int count = 0;
         if(file.is_open()){
@@ -157,19 +185,21 @@ void Robot::UpdatePosFromFile(string filename){
                 cout << "Completed reading from external file" << endl; //"Completed updating from external pose file"
             }
             catch(int e){ cout << "Check if currentPos.csv matches the in1 input no." << endl; }
-            // calibration motors
-            // cable motors
             vector<double> cableLengthList = this->GetCableLength();
+            // calibration motors
             if(this->isOnline){
+                // cable motors
+                cout << "Calibrating Cable Motor" << endl;
                 for(int index = 0; index < this->cableMotorNum; index++){
                     this->cable.CalibrationMotor(index, this->CableMotorLengthToCmd(index, cableLengthList[index]));
                 }
                 // slider motors
+                cout << "Calibrating Rail Motor" << endl;
                 for(int index = 0; index < this->railMotorNum; index++){
                     this->rail.CalibrationMotor(index, this->RailMotorOffsetToCmd(index, railOffset[index]));
-                }
+                } 
+                cout << "Updating motor counts completed" << endl;
             }
-            cout << "Updating motor counts completed" << endl;
             this->PrintEEPos();
             // for teknic motors
             cout << "Cable Motor length / internal counts: " << endl;
@@ -181,6 +211,9 @@ void Robot::UpdatePosFromFile(string filename){
             vector<int> railMotorCmd = this->rail.GetMotorPosMeasured();
             for(int i = 0; i < this->railMotorNum; i++){
                 cout << "\t" << "Rail " << i << ": " << this->railOffset[i] << " / " << railMotorCmd[i]  << "    " << endl;
+            }
+            if(!this->CheckLimits()){
+                cout << "Warning: New Position is beyond robot limit. " << endl;
             }
         }
     }
@@ -204,7 +237,7 @@ void Robot::PrintRobotConfig(){
         cout << "Rotational Angle Offset\t\t" << this->rotationalAngleOffset << endl;
         cout << "Rotational Distance Offset\t" << this->rotationalDistanceOffset << endl;
         cout << "Gripper Comm Port\t\t" << this->gripperCommPort << endl;
-        cout << "Rail Break Comm Port\t\t" << this->railBreakCommPort << endl;
+        cout << "Rail Brake Comm Port\t\t" << this->railBrakeCommPort << endl;
 
         cout << "End Effector Pos Limit: " << endl;
         for(int i = 0; i < 3; i++){
@@ -285,9 +318,9 @@ int Robot::GetRailMotorNum(){ return railMotorNum; }
 
 string Robot::GetGripperCommPort(){ return gripperCommPort; }
 
-string Robot::GetRailBreakCommPort(){ return railBreakCommPort; }
+string Robot::GetRailBrakeCommPort(){ return railBrakeCommPort; }
 
-string Robot::GetCableBreakCommPort(){ return cableBreakCommPort; }
+string Robot::GetCableBrakeCommPort(){ return cableBrakeCommPort; }
 
 int32_t Robot::GetCableMotorScale(){ return cableMotorScale; }
 
@@ -295,7 +328,7 @@ int32_t Robot::GetRailMotorScale(){ return railMotorScale; }
 
 float Robot::GetVelLmt(){ return velLmt; }
 
-int Robot::GetCableMotorBreakNum(){ return cableMotorBrakeNum; }
+int Robot::GetCableMotorBrakeNum(){ return cableMotorBrakeNum; }
 
 int32_t Robot::CableMotorLengthToCmdAbsulote(double length){
     return length * cableMotorScale;

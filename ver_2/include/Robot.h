@@ -14,7 +14,8 @@ using namespace std;
 class Robot{
 private:
     bool isOnline{false};
-    bool isValidModel{true};
+    bool isValidModel{false};
+    bool isConnected{false};
     int cableMotorNum{8}; // !!!!! IMPORTANT !!!!! Put in the number of motors for cables before compiling the programme
     int cableMotorBrakeNum{4}; // !!!!! IMPORTANT !!!!! Put in the number of motors for cables before compiling the programme    
     int railMotorNum{4}; // Typical 4 linear rails
@@ -32,8 +33,8 @@ private:
     Vector3d endOut[8]; // local coordinates of cable attachment points on end-effector, ie ^er_B
     Vector3d frmOutUnitV[8]; // unit vectors/directions of the fixed cable attachments on frame
     string gripperCommPort; // Gripper Communicate Port 
-    string railBreakCommPort; // Rail Break Communicate Port 
-    string cableBreakCommPort; // Rail Break Communicate Port 
+    string railBrakeCommPort; // Rail Brake Communicate Port 
+    string cableBrakeCommPort; // Rail Brake Communicate Port 
     string posLabel[6]{"x", "y", "z", "yaw", "pitch", "roll"}; 
     
 public:
@@ -57,11 +58,12 @@ public:
     Robot(string robotConfigPath);
     void Connect();
     void Disconnect();
+    bool IsConnected();
 
 // Update
     /// @brief Read robot model config from file.
     /// @param filename string. Config file name.
-    void UpdateModelFromFile(string filename);
+    void UpdateModelFromFile(string filename, bool reconnect=false);
 
     /// @brief Read robot Position from csv/txt file
     /// @param filename string. Position file name
@@ -156,13 +158,13 @@ public:
     /// @return string
     string GetGripperCommPort();
 
-    /// @brief Get Rail Break Comm Port
+    /// @brief Get Rail Brake Comm Port
     /// @return string 
-    string GetRailBreakCommPort();
+    string GetRailBrakeCommPort();
 
-    /// @brief Get Cable Break Comm Port
+    /// @brief Get Cable Brake Comm Port
     /// @return string 
-    string GetCableBreakCommPort();
+    string GetCableBrakeCommPort();
 
     /// @brief Cable motor scale
     /// @return Cable motor scale
@@ -174,7 +176,7 @@ public:
 
     float GetVelLmt();
     void SavePosToFile(string filename);
-    int GetCableMotorBreakNum();
+    int GetCableMotorBrakeNum();
     
 // Setter
 

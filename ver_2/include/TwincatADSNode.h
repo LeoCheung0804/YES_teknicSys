@@ -10,15 +10,10 @@ using namespace std;
 class TwincatADSNode{
 private:
     AmsAddr Addr;
+    // data type: double, bool[], double[], bool[], bool[].
+    string adsVarNames[5] = {"MAIN.Axis_GoalPos", "MAIN.startMove", "MAIN.actPos", "MAIN.bHomeSwitch", "MAIN.homeBusy"}; 
 public:
-    map<string, unsigned long> handlers = {
-        {"MAIN.Axis_GoalPos", 0}, // double, 
-        {"MAIN.startMove", 0}, // bool[]
-        {"MAIN.actPos", 0}, // double[] 
-        {"MAIN.bHomeSwitch", 0}, // bool[]
-        {"MAIN.homeBusy", 0} // bool[]
-    };
-    
+    map<string, unsigned long> handlers;
     PAmsAddr pAddr;
     TwincatADSNode();
     TwincatADSNode(int port);

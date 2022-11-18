@@ -3,6 +3,7 @@
 #include "..\include\TrajectoryGenerator.h"
 #include <iostream>
 #include <string>
+#include <fstream>
 #include <Windows.h>
 using namespace std;
 
@@ -80,10 +81,10 @@ void PrintCableControlMenu(int selectedCable){
     cout << "\t7 - Move ALL Cable Absolute (Motor Step)" << endl;
     cout << "\t8 - Move ALL Cable Relative (Cable Length)" << endl;
     cout << "\t9 - Move ALL Cable Absolute (Cable Length)" << endl;
-    cout << "\t10 - Open Selected Cable Break" << endl;
-    cout << "\t11 - Close Selected Cable Break" << endl;
-    cout << "\t12 - Open ALL Cable Break" << endl;
-    cout << "\t13 - Close ALL Cable Break" << endl;
+    cout << "\t10 - Open Selected Cable Brake" << endl;
+    cout << "\t11 - Close Selected Cable Brake" << endl;
+    cout << "\t12 - Open ALL Cable Brake" << endl;
+    cout << "\t13 - Close ALL Cable Brake" << endl;
     cout << "\tq - Back To Pervioue Menu" << endl;
     cout << "Please Select Operation: " << endl;
 }
@@ -255,19 +256,19 @@ void CableControlMode(){
                     }
                 }
             }
-        }else if(userInput == "10"){ // Open Selected Cable Break
-            robot.cable.OpenBreak(selectedCable);
+        }else if(userInput == "10"){ // Open Selected Cable Brake
+            robot.cable.OpenBrake(selectedCable);
             system("pause");
-        }else if(userInput == "11"){ // Close Selected Cable Break
-            robot.cable.CloseBreak(selectedCable);
+        }else if(userInput == "11"){ // Close Selected Cable Brake
+            robot.cable.CloseBrake(selectedCable);
             system("pause");
-        }else if(userInput == "12"){ // Open ALL Cable Break
-            for(int i = 0; i < robot.GetCableMotorBreakNum(); i++)
-                robot.cable.OpenBreak(i);
+        }else if(userInput == "12"){ // Open ALL Cable Brake
+            for(int i = 0; i < robot.GetCableMotorBrakeNum(); i++)
+                robot.cable.OpenBrake(i);
             system("pause");
-        }else if(userInput == "13"){ // Close ALL Cable Break
-            for(int i = 0; i < robot.GetCableMotorBreakNum(); i++)
-                robot.cable.CloseBreak(i);
+        }else if(userInput == "13"){ // Close ALL Cable Brake
+            for(int i = 0; i < robot.GetCableMotorBrakeNum(); i++)
+                robot.cable.CloseBrake(i);
             system("pause");
         }
     }
@@ -286,10 +287,10 @@ void PrintRailControlMenu(int selectedRail){
     cout << "\t7 - Move ALL Rail Absolute (Motor Step)" << endl;
     cout << "\t8 - Move ALL Rail Relative (Rail Length)" << endl;
     cout << "\t9 - Move ALL Rail Absolute (Rail Length)" << endl;
-    cout << "\t10 - Open Selected Rail Break" << endl;
-    cout << "\t11 - Close Selected Rail Break" << endl;
-    cout << "\t12 - Open ALL Rail Break" << endl;
-    cout << "\t13 - Close ALL Rail Break" << endl;
+    cout << "\t10 - Open Selected Rail Brake" << endl;
+    cout << "\t11 - Close Selected Rail Brake" << endl;
+    cout << "\t12 - Open ALL Rail Brake" << endl;
+    cout << "\t13 - Close ALL Rail Brake" << endl;
     cout << "\tq - Back To Pervioue Menu" << endl;
     cout << "Please Select Operation: " << endl;
 }
@@ -466,19 +467,19 @@ void RailControlMode(){
                     }
                 }
             }
-        }else if(userInput == "10"){ // Open Selected Rail Break
-            robot.rail.OpenBreak(selectedRail);
+        }else if(userInput == "10"){ // Open Selected Rail Brake
+            robot.rail.OpenBrake(selectedRail);
             system("pause");
-        }else if(userInput == "11"){ // Close Selected Rail Break
-            robot.rail.CloseBreak(selectedRail);
+        }else if(userInput == "11"){ // Close Selected Rail Brake
+            robot.rail.CloseBrake(selectedRail);
             system("pause");
-        }else if(userInput == "12"){ // Open ALL Rail Break
+        }else if(userInput == "12"){ // Open ALL Rail Brake
             for(int i = 0; i < robot.GetRailMotorNum(); i++)
-                robot.rail.OpenBreak(i);
+                robot.rail.OpenBrake(i);
             system("pause");
-        }else if(userInput == "13"){ // Close ALL Rail Break
+        }else if(userInput == "13"){ // Close ALL Rail Brake
             for(int i = 0; i < robot.GetRailMotorNum(); i++)
-                robot.rail.CloseBreak(i);
+                robot.rail.CloseBrake(i);
             system("pause");
         }
     }
@@ -551,6 +552,13 @@ void CalibrationMode(){
             getchar();
             getline(cin, robotConfigPath);
             robot.UpdateModelFromFile(robotConfigPath  != "" ? robotConfigPath : "RobotConfig.json");
+            while(!robot.IsValid()){
+                cout << "Config file invalid, please use correct config file." << endl;
+                string robotConfigFile;
+                cout << "Please Enter Robot Configuration File Path (Default RobotConfig.json): ";
+                getline(cin, robotConfigFile);
+                robot.UpdateModelFromFile(robotConfigFile != "" ? robotConfigFile : "RobotConfig.json");
+            }
             system("pause");
         }
     }
@@ -848,7 +856,7 @@ void MainMenu(){
         }else if(userInput == "2"){
             OperationMode();
         }else if(userInput == "q"){
-            cout << "Bye" << endl;
+            cout << "Exiting..." << endl;
             break;
         }
     }
@@ -857,20 +865,33 @@ void MainMenu(){
 int main(){
 
     // read robot config file
-    string robotConfigFile;
-    cout << "Please Enter Robot Configuration File Path (Default RobotConfig.json): ";
-    getline(cin, robotConfigFile);
-    robot.UpdateModelFromFile(robotConfigFile != "" ? robotConfigFile : "RobotConfig.json");
+    if(fstream("RobotConfig.json").good()){
+        cout << "RobotConfig.json found. Config robot using RobotConfig.json " << endl;
+        robot.UpdateModelFromFile("RobotConfig.json");
+    }
+    while(!robot.IsValid()){
+        cout << "Config file invalid, please use correct config file." << endl;
+        string robotConfigFile;
+        cout << "Please Enter Robot Configuration File Path (Default RobotConfig.json): ";
+        getline(cin, robotConfigFile);
+        robot.UpdateModelFromFile(robotConfigFile != "" ? robotConfigFile : "RobotConfig.json");
+    }
     system("pause");
 
     // connect to robot
     robot.Connect();
 
-    // start main program
-    MainMenu();
+    if(robot.IsConnected()){
+        cout << "All motors, all brakes and gripper connected success." << endl;
+        // start main program
+        MainMenu();
+    }else{
+        cout << "Robot Init Failed. Exiting..." << endl;
+    }
 
     // disconnect from robot
     robot.Disconnect();
+    cout << "Bye" << endl;
 
     return 0;
 }

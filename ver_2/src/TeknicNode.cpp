@@ -7,6 +7,7 @@ TeknicNode::TeknicNode(){}
 
 bool TeknicNode::Connect(int nodeNumber){
     try{
+        cout << "Connecting to teknic nodes." << endl;
         this->nodeNumber = nodeNumber;
         this->myMgr = SysManager::Instance();
         SysManager::FindComHubPorts(comHubPorts);
@@ -27,7 +28,6 @@ bool TeknicNode::Connect(int nodeNumber){
             IPort &myPort = myMgr->Ports(i);
             connectedNodeNumber += myPort.NodeCount();
         }
-        printf("Total %d/%d motor connected.\n", connectedNodeNumber, nodeNumber);
         if(nodeNumber != connectedNodeNumber){
             cout << "Error: Connected motor number wrong!" << endl;
             return false;
@@ -77,6 +77,7 @@ bool TeknicNode::Connect(int nodeNumber){
                 }
             }
         }
+        cout << "Teknic Nodes Connected (" << connectedNodeNumber << "/" << nodeNumber << ")" << endl;
         return true;
     }
     catch(mnErr& theErr) {    //This catch statement will intercept any error from the Class library

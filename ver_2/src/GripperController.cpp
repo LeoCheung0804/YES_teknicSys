@@ -10,16 +10,18 @@ void GripperController::Connect(string portName){
     if(this->isOnline){
         this->node = ArduinoBLENode();
         if(!this->node.Connect(portName)) { 
-            cout << "Failed to connect gripper. Exit programme.\n"; 
+            cout << "Error: Failed to connect gripper. \n"; 
             this->isConnected = false;
         }
     }
+    cout << "Gripper Controller Online." << endl;
     this->isConnected = true;
 }
 
 void GripperController::Disconnect(){
     if(this->isOnline)
         this->node.Disconnect();
+    cout << "Gripper Controller Offline." << endl;
     this->isConnected = false;
 }
 

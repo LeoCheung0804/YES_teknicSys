@@ -5,18 +5,39 @@
 #include <assert.h>
 #include <Windows.h>
 
-CableController::CableController(){}
+CableController::CableController(bool isOnline){ this ->isOnline = isOnline; }
 
-CableController::CableController(int cableNumber, int brakeNumber, string brakePortName, bool isOnline){
+void CableController::Connect(int cableNumber, int brakeNumber, string brakePortName){
     this->isOnline = isOnline;
     this->cableNumber = cableNumber;
     this->brakeNumber = brakeNumber;
     this->motorNode = TeknicNode();
-    this->breakNode = ArduinoBLENode();
-    if(this->isOnline && !this->motorNode.Connect(cableNumber)) { cout << "Failed to connect cable motors. Exit programme.\n"; exit(-1); };
-    this->nodeList = this->motorNode.GetNodeList();
-    if(this->isOnline && !this->breakNode.Connect(brakePortName)) { cout << "Failed to connect cable motor breaks. Exit programme.\n"; exit(-1); };
+    this->brakeNode = ArduinoBLENode();
+    this->isConnected = true;
+    if(this->isOnline){
+        if(!this->motorNode.Connect(cableNumber)){
+            cout << "Failed to connect cable motors. Exit programme." << endl;
+            this->isConnected = false;
+        }
+        if(!this->brakeNode.Connect(brakePortName)) { 
+            cout << "Failed to connect cable motor brakes. Exit programme.\n"; 
+            this->isConnected = false;
+        };    
+    }
+    cout << "Cable Controller Online." << endl;
 }
+
+void CableController::Disconnect(){
+    
+    if(this->isOnline){
+        this->motorNode.Disconnect();
+        this->brakeNode.Disconnect();
+    }
+    cout << "Cable Controller Offline." << endl;
+    this->isConnected = false;
+}
+
+bool CableController::IsConnected(){ return this->isConnected; }
 
 void CableController::TightenCableByIndex(int index, float targetTrq){
     assert(index >= 0 && index <= cableNumber);
@@ -192,24 +213,24 @@ double CableController::GetMotorTorqueMeasured(int index){
     }
 }
 
-void CableController::OpenBreak(int index){
+void CableController::OpenBrake(int index){
     assert(index >= 0 && index <= this->brakeNumber);
     this->sendStr = "(0:0)   ";
     this->sendStr[3] = ('0' + index);
-    cout << "Sending Command: " << this->sendStr << " to cable breaks" << endl;
+    cout << "Sending Command: " << this->sendStr << " to cable brakes" << endl;
     if(this->isOnline)
-        breakNode.Send(this->sendStr);
+        brakeNode.Send(this->sendStr);
     else
         cout << "Offline mode, skip" << endl;
 }
 
-void CableController::CloseBreak(int index){
+void CableController::CloseBrake(int index){
     assert(index >= 0 && index <= this->brakeNumber);
     this->sendStr = "(1:0)   ";
     this->sendStr[3] = ('0' + index);
-    cout << "Sending Command: " << this->sendStr << " to cable breaks" << endl;
+    cout << "Sending Command: " << this->sendStr << " to cable brakes" << endl;
     if(this->isOnline)
-        breakNode.Send(this->sendStr);
+        brakeNode.Send(this->sendStr);
     else
         cout << "Offline mode, skip." << endl;
 }

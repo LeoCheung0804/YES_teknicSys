@@ -8,59 +8,63 @@ void RailController::Connect(int motorPortNumber, int railNumber, string brakePo
     this->railNumber = railNumber;
     this->bArry = new bool(railNumber);
     this->motorNode = TwincatADSNode();
-    this->breakNode = ArduinoBLENode();
+    this->brakeNode = ArduinoBLENode();
+    this->isConnected = true;
     if(this->isOnline){
         if(!this->motorNode.Connect(motorPortNumber)){ 
-            cout << "Failed to connect linear rail motors. Exit programme.\n"; 
+            cout << "Error: Failed to connect linear rail motors. Exit programme.\n"; 
             this->isConnected = false;
         }
-        if(!this->breakNode.Connect(brakePortName)){
-            cout << "Failed to connect linear rail breaks. Exit programme.\n"; 
+        if(!this->brakeNode.Connect(brakePortName)){
+            cout << "Error: Failed to connect linear rail brakes. Exit programme.\n"; 
             this->isConnected = false;
         }
     }
-    this->isConnected = true;
+    cout << "Rail Controller Online." << endl;
 }
 
 void RailController::Disconnect(){
-    this->motorNode.Disconnect();
-    this->breakNode.Disconnect();
+    if(this->isOnline){
+        this->motorNode.Disconnect();
+        this->brakeNode.Disconnect();
+    }
+    cout << "Rail Controller Offline." << endl;
     this->isConnected = false;
 }
 
 bool RailController::IsConnected(){ return this->isConnected; }
 
-void RailController::OpenBreak(int index){
+void RailController::OpenBrake(int index){
     assert(index >= 0 && index <= railNumber);
     this->sendStr = "(0:0)   ";
     this->sendStr[3] = ('0' + index);
-    cout << "Sending Command: " << this->sendStr << " to breaks" << endl;
+    cout << "Sending Command: " << this->sendStr << " to Brakes" << endl;
     if(this->isOnline)
-        breakNode.Send(this->sendStr);
+        brakeNode.Send(this->sendStr);
     else
         cout << "Offline mode, skip" << endl;
 }
 
-void RailController::CloseBreak(int index){
+void RailController::CloseBrake(int index){
     assert(index >= 0 && index <= railNumber);
     this->sendStr = "(1:0)   ";
     this->sendStr[3] = ('0' + index);
-    cout << "Sending Command: " << this->sendStr << " to breaks" << endl;
+    cout << "Sending Command: " << this->sendStr << " to Brakes" << endl;
     if(this->isOnline)
-        breakNode.Send(this->sendStr);
+        brakeNode.Send(this->sendStr);
     else
         cout << "Offline mode, skip." << endl;
 }
 
 void RailController::HomeAllMotors(){
     for(int index = 0; index < this->railNumber; index++){
-        this->CloseBreak(index);
+        this->CloseBrake(index);
     }
     for(int index = 0; index < this->railNumber; index++){
-        this->OpenBreak(index);
+        this->OpenBrake(index);
         this->SelectWorkingMotor(index);
         this->MoveSelectedMotorCmd(0, true);
-        this->CloseBreak(index);
+        this->CloseBrake(index);
     }
 }
 

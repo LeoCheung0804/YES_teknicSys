@@ -9,17 +9,20 @@ using namespace sFnd;
 class CableController{
 private:
     TeknicNode motorNode;
-    ArduinoBLENode breakNode;
+    ArduinoBLENode brakeNode;
     int cableNumber;
     int brakeNumber;
     vector<INode*> nodeList;
     bool isOnline;
+    bool isConnected;
     bool isMoveFinished;
     int MILLIS_TO_NEXT_FRAME = 20;
     string sendStr;
 public:
-    CableController();
-    CableController(int cableNumber, int brakeNumber, string brakePortName, bool isOnline=true);
+    CableController(bool isOnline=true);
+    void Connect(int cableNumber, int brakeNumber, string brakePortName);
+    void Disconnect();
+    bool IsConnected();
     void TightenCableByIndex(int index, float targetTrq);
     void TightenAllCable(float targetTrq);
     void HomeAllMotors();
@@ -31,7 +34,7 @@ public:
     double GetMotorPosMeasured(int index);
     double GetMotorTorqueMeasured(int index);
     void SavePosToFile(string filename);
-    void OpenBreak(int index);
-    void CloseBreak(int index);
+    void OpenBrake(int index);
+    void CloseBrake(int index);
 };
 #endif
