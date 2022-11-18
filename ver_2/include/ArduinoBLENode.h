@@ -7,7 +7,6 @@
 using namespace std;
 class ArduinoBLENode{
 private:
-    string ComPortName;
     HANDLE hComm;
     int readTimeout=1000;
     
@@ -15,12 +14,11 @@ private:
     bool SetSerialParams();
 public:
     ArduinoBLENode();
-    ArduinoBLENode(string portName);
 
-    // Connect Node
-    bool Connect();
+    bool Connect(string portName);  
+    void Disconnect();
 
-    string ReadGripperSerial();
-    string SendGripperSerial(string Ard_char);
+    string Read();
+    string Send(string Ard_char);
 };
 #endif

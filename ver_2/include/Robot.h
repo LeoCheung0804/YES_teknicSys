@@ -16,6 +16,7 @@ private:
     bool isOnline{false};
     bool isValidModel{true};
     int cableMotorNum{8}; // !!!!! IMPORTANT !!!!! Put in the number of motors for cables before compiling the programme
+    int cableMotorBrakeNum{4}; // !!!!! IMPORTANT !!!!! Put in the number of motors for cables before compiling the programme    
     int railMotorNum{4}; // Typical 4 linear rails
     double endEffToGroundOffset = -0.125; // offset from endeffector to ground, in meters // YES -0.280
     double cableMotorScale = 509295.8179; // 6400 encoder count per revoltion, 25 times gearbox, 50mm spool radias. ie 6400*25/(2*pi*0.05) 
@@ -32,6 +33,8 @@ private:
     Vector3d frmOutUnitV[8]; // unit vectors/directions of the fixed cable attachments on frame
     string gripperCommPort; // Gripper Communicate Port 
     string railBreakCommPort; // Rail Break Communicate Port 
+    string cableBreakCommPort; // Rail Break Communicate Port 
+    string posLabel[6]{"x", "y", "z", "yaw", "pitch", "roll"}; 
     
 public:
     double rotationalAngleOffset{0}; // rotational angel offset
@@ -51,8 +54,9 @@ public:
     int safeT = 1500;
 // Constructor
     Robot();
-    Robot(string robotConfigPath, bool isOnline);
-    bool Init();
+    Robot(string robotConfigPath);
+    void Connect();
+    void Disconnect();
 
 // Update
     /// @brief Read robot model config from file.
@@ -134,7 +138,7 @@ public:
 
     /// @brief Get target torque.
     /// @return float, Target torque.
-    float GetTargetTrq();
+    float GetWorkingTrq();
 
     /// @brief Absolute torque limit
     /// @return float, Absolute torque limit
@@ -156,6 +160,10 @@ public:
     /// @return string 
     string GetRailBreakCommPort();
 
+    /// @brief Get Cable Break Comm Port
+    /// @return string 
+    string GetCableBreakCommPort();
+
     /// @brief Cable motor scale
     /// @return Cable motor scale
     int32_t GetCableMotorScale();
@@ -165,12 +173,16 @@ public:
     int32_t GetRailMotorScale();
 
     float GetVelLmt();
+    void SavePosToFile(string filename);
+    int GetCableMotorBreakNum();
+    
 // Setter
 
 // Traj
-    bool RunTraj (vector<vector<double>> trajectory);
-    bool MoveTo(double dest[], int time, bool showAtten);
-    bool MoveTo(double dest[], bool showAtten);
+    bool RunTraj (vector<vector<double>> trajectory, bool showAtten=true);
+    bool MoveToParaBlend(double dest[], int time, bool showAtten=true);
+    bool MoveToParaBlend(double dest[], bool showAtten=true);
+    bool MoveToLinear(double dest[], int time, bool showAtten=true);
 };
 
 #endif

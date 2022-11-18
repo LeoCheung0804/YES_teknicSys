@@ -13,11 +13,17 @@ private:
     bool isMoveFinished;
     int MILLIS_TO_NEXT_FRAME = 20;
     string sendStr = "";
+    bool isConnected;
 public:
-    GripperController();
-    GripperController(string portName, bool isOnline=true);
+    GripperController(bool isOnline=true);
+
+    void Connect(string portName);
+    void Disconnect();
+    bool IsConnected();
+
     void Open();
     void Close();
     void Rotate(int angle);
+    void Calibrate();
 };
 #endif

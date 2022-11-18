@@ -9,7 +9,6 @@
 using namespace std;
 class TwincatADSNode{
 private:
-    int port;
     //// Initialize linear rails through Twincat ADS
     AmsAddr       Addr;
     double actPos[4]{};
@@ -26,7 +25,7 @@ public:
     PAmsAddr      pAddr = &Addr;
     TwincatADSNode();
     TwincatADSNode(int port);
-    bool Connect();
-    bool Disconnect();
+    bool Connect(int port);
+    void Disconnect();
 };
 #endif

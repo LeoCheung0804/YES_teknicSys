@@ -6,13 +6,18 @@
 #include <Windows.h>
 
 CableController::CableController(){}
-CableController::CableController(int cableNumber, bool isOnline){
+
+CableController::CableController(int cableNumber, int brakeNumber, string brakePortName, bool isOnline){
     this->isOnline = isOnline;
     this->cableNumber = cableNumber;
-    this->node = TeknicNode(cableNumber);
-    if(this->isOnline && !this->node.Connect()) { cout << "Failed to connect cable motor motors. Exit programme.\n"; exit(-1); };
-    this->nodeList = this->node.GetNodeList();
+    this->brakeNumber = brakeNumber;
+    this->motorNode = TeknicNode(cableNumber);
+    this->breakNode = ArduinoBLENode();
+    if(this->isOnline && !this->motorNode.Connect()) { cout << "Failed to connect cable motors. Exit programme.\n"; exit(-1); };
+    this->nodeList = this->motorNode.GetNodeList();
+    if(this->isOnline && !this->breakNode.Connect(brakePortName)) { cout << "Failed to connect cable motor breaks. Exit programme.\n"; exit(-1); };
 }
+
 void CableController::TightenCableByIndex(int index, float targetTrq){
     assert(index >= 0 && index <= cableNumber);
     cout << "Setting cable: " << index << " torque to: " << targetTrq << endl;
@@ -133,11 +138,9 @@ void CableController::MoveAllMotorCmd(vector<int32_t> cmdList, bool absolute){
     auto start = chrono::steady_clock::now();
 
     vector<thread> threadList;
-    cout << "\rMoving To Pos ";
     int index = 0;
     for(int32_t cmd : cmdList){
         threadList.push_back(thread(&CableController::MoveSingleMotorCmd, this, index, cmd, absolute));
-        cout << " " << cmd ;
         index++;
     }
     for(thread &thr : threadList){
@@ -161,14 +164,52 @@ bool CableController::IsMoveFinished(){ return isMoveFinished; }
 
 void CableController::CalibrationMotor(int index, int32_t currentCmdPos){
     assert(index >= 0 && index <= cableNumber);
-    nodeList[index]->Motion.PosnMeasured.Refresh();
-    nodeList[index]->Motion.AddToPosition(-nodeList[index]->Motion.PosnMeasured.Value() + currentCmdPos);
+    if(this->isOnline){
+        nodeList[index]->Motion.PosnMeasured.Refresh();
+        nodeList[index]->Motion.AddToPosition(-nodeList[index]->Motion.PosnMeasured.Value() + currentCmdPos);
+    }else{
+        cout << "Offline mode, skip calibration" << endl;
+    }
 }
 
 double CableController::GetMotorPosMeasured(int index){
     assert(index >= 0 && index <= cableNumber);
-    nodeList[index]->Motion.PosnMeasured.Refresh();
-    return (double) nodeList[index]->Motion.PosnMeasured.Value();
+    if(this->isOnline){
+        nodeList[index]->Motion.PosnMeasured.Refresh();
+        return (double) nodeList[index]->Motion.PosnMeasured.Value();
+    }else{
+        return 0;
+    }
 }
 
+double CableController::GetMotorTorqueMeasured(int index){
+    assert(index >= 0 && index <= cableNumber);
+    if(this->isOnline){
+        nodeList[index]->Motion.TrqMeasured.Refresh();
+        return (double) nodeList[index]->Motion.TrqMeasured.Value();
+    }else{
+        return 0;
+    }
+}
 
+void CableController::OpenBreak(int index){
+    assert(index >= 0 && index <= this->brakeNumber);
+    this->sendStr = "(0:0)   ";
+    this->sendStr[3] = ('0' + index);
+    cout << "Sending Command: " << this->sendStr << " to cable breaks" << endl;
+    if(this->isOnline)
+        breakNode.Send(this->sendStr);
+    else
+        cout << "Offline mode, skip" << endl;
+}
+
+void CableController::CloseBreak(int index){
+    assert(index >= 0 && index <= this->brakeNumber);
+    this->sendStr = "(1:0)   ";
+    this->sendStr[3] = ('0' + index);
+    cout << "Sending Command: " << this->sendStr << " to cable breaks" << endl;
+    if(this->isOnline)
+        breakNode.Send(this->sendStr);
+    else
+        cout << "Offline mode, skip." << endl;
+}

@@ -1,5 +1,6 @@
 {
     "ModelName": "YES",
+    "isOnline": false,
     "cableMotorNum": 8,    
     "railMotorNum": 4,
     "homePos": {

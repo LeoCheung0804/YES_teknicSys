@@ -1,10 +1,8 @@
 #include "..\include\TwincatADSNode.h"
 #include <iostream>
 TwincatADSNode::TwincatADSNode(){}
-TwincatADSNode::TwincatADSNode(int port){ 
-    this->port = port; 
-}
-bool TwincatADSNode::Connect(){
+
+bool TwincatADSNode::Connect(int port){
     long nErr, nPort;
     unsigned long lHdlVar;
     bool TRUE_FLAG = true;
@@ -14,7 +12,7 @@ bool TwincatADSNode::Connect(){
     nPort = AdsPortOpen();
     nErr = AdsGetLocalAddress(pAddr);
     if (nErr){ cout << "Error: AdsGetLocalAddress: " << nErr << '\n'; return false; }
-    pAddr->port = this->port;
+    pAddr->port = port;
 
     // Enable power for motors, start state machine
     // Get handle of the request
@@ -36,6 +34,10 @@ bool TwincatADSNode::Connect(){
     }
     cout << "Completed creating handler list of " << hdlList.size() << endl;
     return true;
+}
+
+void TwincatADSNode::Disconnect(){
+    AdsPortClose();
 }
 
 

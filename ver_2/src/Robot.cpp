@@ -12,26 +12,32 @@ using json = nlohmann::json;
 Robot::Robot(){};
 
 // Constructor, based on the requested model
-Robot::Robot(string robotConfigPath, bool isOnline){
+Robot::Robot(string robotConfigPath){
     this->UpdateModelFromFile(robotConfigPath);
-    this->isOnline = isOnline;
-    this->Init();
+    
+
 }
 
-bool Robot::Init(){
+void Robot::Connect(){
 
     // Init BLE Nodes
-    this->gripper = GripperController(this->gripperCommPort, this->isOnline);
+    this->gripper = GripperController(this->isOnline);
+    this->gripper.Connect(this->gripperCommPort);
 
     // Init Rail Motor Nodes
-    this->rail = RailController(851, this->railBreakCommPort, this->railMotorNum, this->isOnline);
+    this->rail = RailController(this->isOnline);
+    this->rail.Connect(851, this->railMotorNum, this->railBreakCommPort);
     
     // Init Cable Motor Nodes
-    this->cable = CableController(this->cableMotorNum, this->isOnline);
-
-    return true;
+    this->cable = CableController(this->cableMotorNum, this->cableMotorBrakeNum, this->cableBreakCommPort, this->isOnline);
+    
+    cout << "All motors, all brakes and gripper connected success." << endl;
 }
 
+void Robot::Disconnect(){
+    this->gripper.Disconnect();
+
+}
 const double Robot::defaultRailOffset[4] = {0, 0, 0, 0}; // default all zeros
 
 bool Robot::IsValid(){ 
@@ -40,25 +46,31 @@ bool Robot::IsValid(){
 
 bool Robot::CheckLimits(){
     for (int i = 0; i < 3; i++){
-        if(this->endEffectorPosLimit[i*2]>this->endEffectorPos[i] || this->endEffectorPos[i]>this->endEffectorPosLimit[i*2+1]){ return false; }
+        if(this->endEffectorPos[i]<this->endEffectorPosLimit[i*2]) return false;
+        if(this->endEffectorPos[i]>this->endEffectorPosLimit[i*2+1]) return false;
     }
     return true;
 }
 
 void Robot::PrintEEPos(){ 
-    cout << "End Effector Pos: ";
-    for(int i = 0; i < 6; i++){ cout << endEffectorPos[0] << " "; }
-    cout << endl;
+    cout << "Current EE Pos: " << endl;
+    for (int i = 0; i < 6; i++){
+        cout << "\t" << posLabel[i] << ": " << this->endEffectorPos[i] << "    " << endl;
+    }
 }
 
 void Robot::PrintBrickPickUpPos(){ 
     cout << "Brick Pick Up Pos: ";
-    for(int i = 0; i < 6; i++){ cout << brickPickUpPos[0] << " "; }
-    cout << endl;
+    for (int i = 0; i < 6; i++){
+        cout << "\t" << posLabel[i] << ": " << this->brickPickUpPos[0] << "    " << endl;
+    }
 }
 
 void Robot::PrintRailOffset(){ // Print railOffset[]
-    cout << "Rail Offset: "<< railOffset[0] << " " << railOffset[1] << " " << railOffset[2] << " " << railOffset[3] << endl;
+    cout << "Rail Offset: " << endl;
+    for (int i = 0; i < this->railMotorNum; i++){
+        cout << "\t" << "Cable " << i << ": " << this->railOffset[i]  << "    " << endl;
+    }
 }
 
 void Robot::PrintCableLength(){ 
@@ -84,6 +96,7 @@ void Robot::UpdateModelFromFile(string filename){ // Read model.json file
         file >> model;
         cout << "Importing " << filename << ": " << model.value("ModelName", "NOT FOUND") << endl;
         
+        this->isOnline = model.value("isOnline", false);
 
         // Initialize parameters
         this->cableMotorNum = model.value("cableMotorNum", 8); // Default value set in 2nd input
@@ -115,13 +128,16 @@ void Robot::UpdateModelFromFile(string filename){ // Read model.json file
                 this->endOut[i][j] = model["endEffectorAttachments"][i][j];
             }
         }
-        isValidModel = true;
+        
         Robot::PrintRobotConfig();
+        if(!this->isOnline)
+            cout << "!!!!!Warning!!!!!Offline Mode. Modify the config file if you want go online" << endl;
     }
     catch(const exception& e){
         cout << "Error in reading " << filename << endl;
         cout << e.what() << endl;
-        isValidModel = false;
+        cout << "Error: Cannot read robot config file. Exit..." << endl;
+        exit(-1);
     }
 }
 
@@ -144,27 +160,28 @@ void Robot::UpdatePosFromFile(string filename){
             // calibration motors
             // cable motors
             vector<double> cableLengthList = this->GetCableLength();
-            for(int index = 0; index < this->cableMotorNum; index++){
-                this->cable.CalibrationMotor(index, this->CableMotorLengthToCmd(index, cableLengthList[index]));
-            }
-            // slider motors
-            for(int index = 0; index < this->railMotorNum; index++){
-                this->rail.CalibrationMotor(index, this->RailMotorOffsetToCmd(index, railOffset[index]));
+            if(this->isOnline){
+                for(int index = 0; index < this->cableMotorNum; index++){
+                    this->cable.CalibrationMotor(index, this->CableMotorLengthToCmd(index, cableLengthList[index]));
+                }
+                // slider motors
+                for(int index = 0; index < this->railMotorNum; index++){
+                    this->rail.CalibrationMotor(index, this->RailMotorOffsetToCmd(index, railOffset[index]));
+                }
             }
             cout << "Updating motor counts completed" << endl;
-            cout << "Current coordinates: "; this->PrintEEPos();
-            cout << "Linear rail offset: "; this->PrintRailOffset();
-            cout << "Motor internal counts: ";
+            this->PrintEEPos();
             // for teknic motors
-            for (int id = 0; id < this->cableMotorNum; id++){
-                cout << this->cable.GetMotorPosMeasured(id) << "\t";
+            cout << "Cable Motor length / internal counts: " << endl;
+            for (int i = 0; i < this->cableMotorNum; i++){
+                cout << "\t" << "Cable " << i << ": " << cableLengthList[i] << " / " << this->cable.GetMotorPosMeasured(i)  << "    " << endl;
             }
-            // TODO
             // for twincat motors
-            // nErr = AdsSyncReadReq(pAddr, ADSIGRP_SYM_VALBYHND, hdlList[2], sizeof(actPos), &actPos[0]); // read "MAIN.actPos"
-            // if (nErr) { cout << "Error: Rail[s] AdsSyncReadReq: " << nErr << '\n'; }
-            // for (int id = 0; id < robot.RailNum(); id++){ cout << actPos[id] << "\t"; }
-            cout << endl;
+            cout << "Rail Motor length / internal counts: " << endl;
+            vector<int> railMotorCmd = this->rail.GetMotorPosMeasured();
+            for(int i = 0; i < this->railMotorNum; i++){
+                cout << "\t" << "Rail " << i << ": " << this->railOffset[i] << " / " << railMotorCmd[i]  << "    " << endl;
+            }
         }
     }
     catch(const exception& e){
@@ -175,7 +192,6 @@ void Robot::UpdatePosFromFile(string filename){
 
 void Robot::PrintRobotConfig(){
     
-        string posLabel[] = {"x", "y", "z", "yaw", "pitch", "roll"};
         // print to screen
         cout << "Cable Motor Number:\t\t" << this->cableMotorNum << endl;
         cout << "Rail Motor Number:\t\t" << this->railMotorNum << endl;
@@ -190,14 +206,16 @@ void Robot::PrintRobotConfig(){
         cout << "Gripper Comm Port\t\t" << this->gripperCommPort << endl;
         cout << "Rail Break Comm Port\t\t" << this->railBreakCommPort << endl;
 
+        cout << "End Effector Pos Limit: " << endl;
+        for(int i = 0; i < 3; i++){
+            cout << "\t" << posLabel[i] << ": (" << this->endEffectorPosLimit[i*2] << " ~ " << this->endEffectorPosLimit[i*2+1] << ")" << endl;
+        }
+
         cout << "Home Pos: " << endl;
         for (int i = 0; i < 6; i++){
             cout << "\t" << posLabel[i] << ": " << this->homePos[i] << endl;
         }
-        cout << "End Effector Pos Limit: " << endl;
-        for (int i = 0; i < 6; i++){
-            cout << "\t" << posLabel[i] << ": " << this->endEffectorPosLimit[i] << endl;
-        }
+
         cout << "Brick Pick Up Pos: " << endl;
         for (int i = 0; i < 6; i++){
             cout << "\t" << posLabel[i] << ": " << this->brickPickUpPos[i] << endl;
@@ -257,7 +275,7 @@ vector<double> Robot::EEPoseToCableLength(vector<double> eePosVector){
 
 double Robot::GetEEToGroundOffset(){ return endEffToGroundOffset; }
 
-float Robot::GetTargetTrq(){ return targetTrq; }
+float Robot::GetWorkingTrq(){ return targetTrq; }
 
 float Robot::GetAbsTrqLmt(){ return absTrqLmt; }
 
@@ -269,11 +287,15 @@ string Robot::GetGripperCommPort(){ return gripperCommPort; }
 
 string Robot::GetRailBreakCommPort(){ return railBreakCommPort; }
 
+string Robot::GetCableBreakCommPort(){ return cableBreakCommPort; }
+
 int32_t Robot::GetCableMotorScale(){ return cableMotorScale; }
 
 int32_t Robot::GetRailMotorScale(){ return railMotorScale; }
 
 float Robot::GetVelLmt(){ return velLmt; }
+
+int Robot::GetCableMotorBreakNum(){ return cableMotorBrakeNum; }
 
 int32_t Robot::CableMotorLengthToCmdAbsulote(double length){
     return length * cableMotorScale;
@@ -311,24 +333,72 @@ vector<vector<int32_t>> Robot::PoseTrajToCmdTraj(vector<vector<double>> posTraj)
     return result;
 }
 
-bool Robot::RunTraj(vector<vector<double>> posTraj){
+bool Robot::RunTraj(vector<vector<double>> posTraj, bool showAtten){
     vector<vector<int32_t>> cmdTraj = this->PoseTrajToCmdTraj(posTraj);
     int index = 0;
+    if(showAtten){
+        for(int i = 0; i < 16; i++){
+            cout << endl;
+        }
+    }
     for(vector<int32_t> frame : cmdTraj){
         this->cable.MoveAllMotorCmd(frame);
         for(int i = 0; i < 6; i++)
             this->endEffectorPos[i] = posTraj[index][i];
         index++;
+        
+        if(showAtten){
+            printf("\x1b[16A");
+            this->PrintEEPos();
+            cout << "Current Cable Motor Count: " << endl;
+            for (int i = 0; i < this->cableMotorNum; i++){
+                cout << "\tCable " << i << ": " << frame[i] << endl;
+            }
+        }
     }
-    cout << endl;
     return true;
 }
 
-bool Robot::MoveTo(double dest[], int time, bool showAtten){
-    return this->RunTraj(GenParaBlendTrajForCableMotor(this->endEffectorPos, dest, time, showAtten));
+bool Robot::MoveToLinear(double dest[], int time, bool showAtten){
+    return this->RunTraj(GenLinearTrajForCableMotor(this->endEffectorPos, dest, time, showAtten),showAtten);
+};
+
+bool Robot::MoveToParaBlend(double dest[], int time, bool showAtten){
+    return this->RunTraj(GenParaBlendTrajForCableMotor(this->endEffectorPos, dest, time), showAtten);
 }
 
-bool Robot::MoveTo(double dest[], bool showAtten){
+bool Robot::MoveToParaBlend(double dest[], bool showAtten){
     float time = sqrt(pow(dest[0]-this->endEffectorPos[0],2)+pow(dest[1]-endEffectorPos[1],2)+pow(dest[2]-endEffectorPos[2],2))/this->velLmt*1000;
-    return this->RunTraj(GenParaBlendTrajForCableMotor(this->endEffectorPos, dest, time, showAtten));
+    return this->RunTraj(GenParaBlendTrajForCableMotor(this->endEffectorPos, dest, time), showAtten);
+}
+
+void Robot::SavePosToFile(string filename){
+    
+    //// Safe system shut down, safe last pos and emegency shut down
+    // Saving last position before quiting programme
+    cout << "Saving last position to file: "<< filename << endl;
+    ofstream myfile;
+    myfile.open (filename);
+    for(int i = 0; i < 6; i++){
+        myfile <<  this->endEffectorPos[i] << " ";
+    }
+    myfile << endl;
+
+    for(int i = 0; i < this->railMotorNum; i++){
+        myfile <<  this->railOffset[i] << " ";
+    }
+    myfile << endl;
+
+    for(int i = 0; i < this->cableMotorNum; i++){
+        myfile <<  this->cable.GetMotorPosMeasured(i) << " ";
+    }
+
+    vector<int> railMotorCmd = this->rail.GetMotorPosMeasured();
+    for(int i = 0; i < this->railMotorNum; i++){
+        myfile << railMotorCmd[i] << " ";
+    }
+
+    myfile << endl;
+
+    
 }

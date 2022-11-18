@@ -3,11 +3,7 @@
 #include <thread>
 
 ArduinoBLENode::ArduinoBLENode(){}
-ArduinoBLENode::ArduinoBLENode(string portName){
-    this->ComPortName = portName;
-}
 
-// set communication port
 bool ArduinoBLENode::SetSerialParams(){
     // Set parameters for serial port
     DCB dcbSerialParams = { 0 }; // Initializing DCB structure
@@ -46,16 +42,20 @@ bool ArduinoBLENode::SetSerialParams(){
     return true;
 }
 
-// Connect Node
-bool ArduinoBLENode::Connect(){
-    const char* cArray = ComPortName.c_str();
+bool ArduinoBLENode::Connect(string portName){
+    const char* cArray = portName.c_str();
     this->hComm = CreateFile(cArray, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
-    if (this->hComm == INVALID_HANDLE_VALUE){ cout << "Error: " << ComPortName << " cannot be opened.\n"; }
-    else { cout << ComPortName << " opened.\n"; }
+    if (this->hComm == INVALID_HANDLE_VALUE){ cout << "Error: " << portName << " cannot be opened.\n"; }
+    else { cout << portName << " opened.\n"; }
     if (!SetSerialParams()) { return false; }
     return true;
 }
-string ArduinoBLENode::SendGripperSerial(string Ard_char){
+
+void ArduinoBLENode::Disconnect(){
+    this->Send("(z,    )");
+}
+
+string ArduinoBLENode::Send(string Ard_char){
     char buffer[8] = {};
     for(int i = 0; i < 8; i++){
         buffer[i] = Ard_char[i];
@@ -64,10 +64,11 @@ string ArduinoBLENode::SendGripperSerial(string Ard_char){
     if (!(bool)WriteFile(this->hComm, buffer, 8, &dNoOfBytesWritten, NULL)){ 
         cout << "Arduino writing error: " << GetLastError() << endl; 
     }    
-    return ReadGripperSerial();
-    // ReadGripperSerial(); // need this?
+    return Read();
+    // Read(); // need this?
 }
-string ArduinoBLENode::ReadGripperSerial(){
+
+string ArduinoBLENode::Read(){
     DWORD dwEventMask, BytesRead;
     int i{0};
     char tmp;

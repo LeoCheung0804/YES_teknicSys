@@ -102,6 +102,8 @@ vector<INode*> TeknicNode::GetNodeList(){
 INode* TeknicNode::GetNode(int nodeIndex){
     if(nodeIndex < nodeNumber)
         return nodeList[nodeIndex];
+    else
+        return nullptr;
 }
 
 bool TeknicNode::Disconnect(){

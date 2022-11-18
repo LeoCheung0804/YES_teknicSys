@@ -7,7 +7,7 @@ int main(){
     Robot robot("D:\\Galad_ws\\YES_teknicSys\\ver_2\\RobotConfig.json");
     cout << robot.IsValid() << endl;
     cout << robot.GetEEToGroundOffset() << endl;
-    cout << robot.GetTargetTrq() << endl;
+    cout << robot.GetWorkingTrq() << endl;
     cout << robot.GetAbsTrqLmt() << endl;
     cout << robot.GetRailMotorNum() << endl;
     cout << robot.GetCableMotorNum() << endl;

@@ -83,7 +83,8 @@
         "xlocbuf": "cpp",
         "xlocmes": "cpp",
         "alignedvector3": "cpp",
-        "bvh": "cpp"
+        "bvh": "cpp",
+        "arduinoblenode.h": "c"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }

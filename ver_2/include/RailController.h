@@ -3,6 +3,7 @@
 
 #include "TwincatADSNode.h"
 #include "ArduinoBLENode.h"
+#include "vector"
 
 using namespace std;
 class RailController{
@@ -16,14 +17,18 @@ private:
     string sendStr;
     bool *bArry;
     int workingMotor = 0;
+    bool isConnected;
 public:
-    RailController();
-    RailController(int motorPortNumber, string breakPortName, int railNumber, bool isOnline=true);
+    RailController(bool isOnline=true);
+    void Connect(int motorPortNumber, int railNumber, string breakPortName);
+    void Disconnect();
+    bool IsConnected();
     void OpenBreak(int index);
     void CloseBreak(int index);
     void CalibrationMotor(int index, int32_t currentCmdPos);
     void HomeAllMotors();
     void SelectWorkingMotor(int index);
     void MoveSelectedMotorCmd(int32_t cmd, bool absolute=true);
+    vector<int> GetMotorPosMeasured();
 };
 #endif
