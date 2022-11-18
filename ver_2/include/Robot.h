@@ -81,13 +81,23 @@ public:
 // Converter
     /// @brief Give end effector pos and rail offset, get cable length and update the lengths attribute. 
     /// @param eePos double array, Input end effector pos
-    /// @param railOffset double array, Input rail offset. Leave empty will use default offset.
+    /// @param railOffset double array, Input rail offset. 
+    /// @param lengths double array, Output cable length
+    vector<double> EEPoseToCableLength(double eePos[], double railOffset[]);
+
+    /// @brief Give end effector pos and rail offset, get cable length and update the lengths attribute. 
+    /// @param eePos double array, Input end effector pos
+    /// @param railOffset double array, Input rail offset. 
+    /// @param lengths double array, Output cable length
+    vector<double> EEPoseToCableLength(vector<double>, double railOffset[]);
+
+    /// @brief Give end effector pos and rail offset, get cable length and update the lengths attribute. 
+    /// @param eePos double array, Input end effector pos
     /// @param lengths double array, Output cable length
     vector<double> EEPoseToCableLength(double eePos[]);
 
     /// @brief Give end effector pos and rail offset, get cable length and update the lengths attribute. 
     /// @param eePos double vector, Input end effector pos
-    /// @param railOffset double array, Input rail offset. Leave empty will use default offset.
     /// @param lengths double array, Output cable length
     vector<double> EEPoseToCableLength(vector<double> eePos);
 
@@ -109,6 +119,12 @@ public:
     int32_t CableMotorLengthToCmdAbsulote(double length);
 
     vector<int32_t> EEPoseToCmd(vector<double> eePos);
+
+    vector<int32_t> EEPoseToCmd(vector<double> eePos, double railOffset[]);
+
+    vector<int32_t> EEPoseToCmd(double eePos[], double railOffset[]);
+    
+    vector<int32_t> EEPoseToCmd(double eePos[]);
 
     vector<vector<int32_t>> PoseTrajToCmdTraj(vector<vector<double>> trajectory);
     
@@ -185,6 +201,7 @@ public:
     bool MoveToParaBlend(double dest[], int time, bool showAtten=true);
     bool MoveToParaBlend(double dest[], bool showAtten=true);
     bool MoveToLinear(double dest[], int time, bool showAtten=true);
+    void MoveRail(int index, float target, bool absulote);
 };
 
 #endif

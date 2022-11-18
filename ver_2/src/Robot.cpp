@@ -255,7 +255,7 @@ void Robot::PrintRobotConfig(){
         }
 }
 
-vector<double> Robot::EEPoseToCableLength(double eePos[]){ // given an EE pose, calculate the EE to pulley cable lengths
+vector<double> Robot::EEPoseToCableLength(double eePos[], double railOffset[]){ // given an EE pose, calculate the EE to pulley cable lengths
     vector<double> result;
     // local variables
     Vector3d orB[8]; // vector from frame 0 origin to end effector cable outlet
@@ -283,7 +283,7 @@ vector<double> Robot::EEPoseToCableLength(double eePos[]){ // given an EE pose, 
         Vector3d plNormal = frmOutUnitV[i].cross(orB[i] - frmOut[i]); // normal vector of the plane that the rotating pulley is in
         Vector3d VecC = plNormal.cross(frmOutUnitV[i]); // direction from fixed point towards pulley center
         Vector3d zOffset(0, 0, 0); // set a z offset for frame out for pulleys on linear rails
-        if(i < 4){ zOffset << 0, 0, this->railOffset[i]; }
+        if(i < 4){ zOffset << 0, 0, railOffset[i]; }
         Vector3d orC = VecC/VecC.norm()*pulleyRadius + frmOut[i] + zOffset; // vector from frame 0 origin to rotating pulley center
         double triR = pulleyRadius / (orB[i] - orC).norm(); // triangle ratio??
         orA[i] = orC + triR*triR*(orB[i] - orC) - triR*sqrt(1 - triR*triR)*((plNormal/plNormal.norm()).cross(orB[i] - orC));
@@ -294,16 +294,24 @@ vector<double> Robot::EEPoseToCableLength(double eePos[]){ // given an EE pose, 
         double l_arc = pulleyRadius * acos(UVecCF.dot(UVecCA));
 
         ///// Sum the total cable length /////
-        result.push_back(i < 4 ? l_arc + (orA[i] - orB[i]).norm() - this->railOffset[i] : l_arc + (orA[i] - orB[i]).norm()); // WHY minus railOffset again?
+        result.push_back(i < 4 ? l_arc + (orA[i] - orB[i]).norm() - railOffset[i] : l_arc + (orA[i] - orB[i]).norm()); // WHY minus railOffset again?
         // lengths[i] = i < 4 ? l_arc + (orA[i] - orB[i]).norm() - railOffset[i] : l_arc + (orA[i] - orB[i]).norm(); // Need to subtract the rail offset for the bottom 4 motors 
     }
     //copy(railOffset, railOffset+4, lengths+cableMotorNum); // assign array elements after motor numbers as rail lengths // rail_offset default size of 4
     return result;
 }
 
+vector<double> Robot::EEPoseToCableLength(double eePos[]){
+    return this->EEPoseToCableLength(eePos, this->railOffset);
+}
+
 vector<double> Robot::EEPoseToCableLength(vector<double> eePosVector){
+    return this->EEPoseToCableLength(eePosVector, this->railOffset);
+}
+
+vector<double> Robot::EEPoseToCableLength(vector<double> eePosVector, double railOffset[]){
     double* eePosArray = &eePosVector[0];
-    return this->EEPoseToCableLength(eePosArray);
+    return this->EEPoseToCableLength(eePosArray, railOffset);
 }
 
 double Robot::GetEEToGroundOffset(){ return endEffToGroundOffset; }
@@ -347,8 +355,21 @@ vector<double> Robot::GetCableLength(){
 };
 
 vector<int32_t> Robot::EEPoseToCmd(vector<double> eePos){
+    return EEPoseToCmd(eePos, this->railOffset);
+}
+
+vector<int32_t> Robot::EEPoseToCmd(vector<double> eePosVector, double railOffset[]){
+    double* eePosArray = &eePosVector[0];
+    return this->EEPoseToCmd(eePosArray, railOffset);
+}
+
+vector<int32_t> Robot::EEPoseToCmd(double eePos[]){
+    return EEPoseToCmd(eePos, this->railOffset);
+}
+
+vector<int32_t> Robot::EEPoseToCmd(double eePos[], double railOffset[]){
     vector<int32_t> result;
-    vector<double> lengthList = this->EEPoseToCableLength(eePos);
+    vector<double> lengthList = this->EEPoseToCableLength(eePos, railOffset);
     int index = 0;
     for(double length : lengthList){
         //result.push_back(this->CableMotorLengthToCmd(index, length));
@@ -356,7 +377,8 @@ vector<int32_t> Robot::EEPoseToCmd(vector<double> eePos){
         index++;
     }
     return result;
-}
+};
+
 
 vector<vector<int32_t>> Robot::PoseTrajToCmdTraj(vector<vector<double>> posTraj){
     vector<vector<int32_t>> result;
@@ -403,6 +425,66 @@ bool Robot::MoveToParaBlend(double dest[], int time, bool showAtten){
 bool Robot::MoveToParaBlend(double dest[], bool showAtten){
     float time = sqrt(pow(dest[0]-this->endEffectorPos[0],2)+pow(dest[1]-endEffectorPos[1],2)+pow(dest[2]-endEffectorPos[2],2))/this->velLmt*1000;
     return this->RunTraj(GenParaBlendTrajForCableMotor(this->endEffectorPos, dest, time), showAtten);
+}
+
+void Robot::MoveRail(int index, float target, bool absulote){
+    if (target < 0 || target > 2.55) { cout << "WARNING! Intended rail offset is out of bound!" << endl;;}
+    this->cable.OpenBrake(index);
+    this->rail.OpenBrake(index);
+
+    double velLmt = 0.01; // meters per sec // measured vel 0.025 ms-1
+    double dura = abs(target - this->railOffset[index])/velLmt*1000;// *1000 to change unit to ms
+    if(dura <= 200){ return; } // Don't run traj for incorrect timing 
+
+    static double a, b, c; // coefficients for cubic spline trajectory
+    cout << "ATTENTION: Raise rail function is called. Estimated time: " << dura << endl;
+    
+
+    // Solve coefficients of equations for cubic
+    a = this->railOffset[index];
+    b = 3 / (dura * dura) * (target - this->railOffset[index]); 
+    c = -2 / (dura * dura * dura) * (target - this->railOffset[index]);
+    
+    // Generate rail and cable traj.
+    long nErr;
+    double step{};
+    double t = 0;
+    long dur = 0;
+    double railOffset[6] = {0};
+    vector<double> cableLength;
+    vector<vector<int32_t>> cableTraj;
+    vector<int32_t> railTraj;
+    while (t <= dura){        
+        railOffset[index] = a + b * t * t + c * t * t * t; // update new rail offset
+        vector<int32_t> cableFrame = this->EEPoseToCmd(this->endEffectorPos, railOffset);
+        cableTraj.push_back(cableFrame);
+        int32_t railFrame = this->RailMotorOffsetToCmd(index, railOffset[index]);        
+        railTraj.push_back(railFrame);
+        t += MILLIS_TO_NEXT_FRAME;
+    }
+
+    for(int i = 0; i < cableTraj.size(); i++){
+        auto start = chrono::steady_clock::now();
+        rail.SelectWorkingMotor(index);
+        rail.MoveSelectedMotorCmd(railTraj[i]);
+        cable.MoveSingleMotorCmd(index, cableTraj[index][i]);
+        dur = chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now()-start).count();
+        double dif = MILLIS_TO_NEXT_FRAME - dur - 1;
+        if(dif > 0) { Sleep(dif);}
+    }
+
+    // Wait for rail motor to reach intented position before enabling brake again
+    // while(posNow[index]>step+2 || posNow[index]<step-2){
+    //     nErr = AdsSyncReadReq(pAddr, ADSIGRP_SYM_VALBYHND, hdlList[2], sizeof(posNow), &posNow[0]); // read "MAIN.AxisList[index].NcToPlc.ActPos"
+    //     if (nErr) { cout << "Error: Rail[" << id << "] AdsSyncReadReq: " << nErr << '\n'; break; }
+    //     // cout << posNow[index] << endl;
+    // }
+    Sleep(50);
+    cout << "Rail traj done .... \n";
+
+    this->cable.CloseBrake(index);
+    this->rail.CloseBrake(index);
+
 }
 
 void Robot::SavePosToFile(string filename){
