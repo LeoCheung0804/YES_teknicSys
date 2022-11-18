@@ -9,20 +9,17 @@
 using namespace std;
 class TwincatADSNode{
 private:
-    //// Initialize linear rails through Twincat ADS
-    AmsAddr       Addr;
-    double actPos[4]{};
+    AmsAddr Addr;
 public:
-    string adsVarNames[5] = {"MAIN.Axis_GoalPos", "MAIN.startMove", "MAIN.actPos", "MAIN.bHomeSwitch", "MAIN.homeBusy"}; // data type: double, bool[], double[], bool[], bool[].
-    vector<unsigned long> hdlList; // create list for easy use of handlers, listed in string adsVarNames[]
-    map<string, unsigned long> handles = {
-        {"MAIN.Axis_GoalPos", 0},
-        {"MAIN.startMove", 0},
-        {"MAIN.actPos", 0},
-        {"MAIN.bHomeSwitch", 0},
-        {"MAIN.homeBusy", 0}
+    map<string, unsigned long> handlers = {
+        {"MAIN.Axis_GoalPos", 0}, // double, 
+        {"MAIN.startMove", 0}, // bool[]
+        {"MAIN.actPos", 0}, // double[] 
+        {"MAIN.bHomeSwitch", 0}, // bool[]
+        {"MAIN.homeBusy", 0} // bool[]
     };
-    PAmsAddr      pAddr = &Addr;
+    
+    PAmsAddr pAddr;
     TwincatADSNode();
     TwincatADSNode(int port);
     bool Connect(int port);

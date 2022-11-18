@@ -11,9 +11,9 @@ CableController::CableController(int cableNumber, int brakeNumber, string brakeP
     this->isOnline = isOnline;
     this->cableNumber = cableNumber;
     this->brakeNumber = brakeNumber;
-    this->motorNode = TeknicNode(cableNumber);
+    this->motorNode = TeknicNode();
     this->breakNode = ArduinoBLENode();
-    if(this->isOnline && !this->motorNode.Connect()) { cout << "Failed to connect cable motors. Exit programme.\n"; exit(-1); };
+    if(this->isOnline && !this->motorNode.Connect(cableNumber)) { cout << "Failed to connect cable motors. Exit programme.\n"; exit(-1); };
     this->nodeList = this->motorNode.GetNodeList();
     if(this->isOnline && !this->breakNode.Connect(brakePortName)) { cout << "Failed to connect cable motor breaks. Exit programme.\n"; exit(-1); };
 }

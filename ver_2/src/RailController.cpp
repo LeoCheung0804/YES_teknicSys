@@ -73,9 +73,9 @@ void RailController::SelectWorkingMotor(int index){
 void RailController::MoveSelectedMotorCmd(int32_t cmd, bool absolute){
     if(this->isOnline){
         long nErr;
-        nErr = AdsSyncWriteReq(this->motorNode.pAddr,ADSIGRP_SYM_VALBYHND,this->motorNode.handles["MAIN.Axis_GoalPos"], sizeof(cmd), &cmd); // write "MAIN.Axis_GoalPos"
+        nErr = AdsSyncWriteReq(this->motorNode.pAddr,ADSIGRP_SYM_VALBYHND,this->motorNode.handlers["MAIN.Axis_GoalPos"], sizeof(cmd), &cmd); // write "MAIN.Axis_GoalPos"
         if (nErr) { cout << "Error: Rail[" << this->workingMotor << "] AdsSyncWriteReq: " << nErr << '\n'; }
-        nErr = AdsSyncWriteReq(this->motorNode.pAddr,ADSIGRP_SYM_VALBYHND,this->motorNode.handles["MAIN.startMove"], sizeof(this->bArry), &this->bArry[0]); // write "MAIN.startMove"
+        nErr = AdsSyncWriteReq(this->motorNode.pAddr,ADSIGRP_SYM_VALBYHND,this->motorNode.handlers["MAIN.startMove"], sizeof(this->bArry), &this->bArry[0]); // write "MAIN.startMove"
         if (nErr) { cout << "Error: Rail[" << this->workingMotor << "] Start Absolute Move Command. AdsSyncWriteReq: " << nErr << '\n'; }
     }
 }
@@ -89,19 +89,19 @@ void RailController::CalibrationMotor(int index, int32_t currentCmdPos){
         busyFlag[i] = false;
         homeFlag[i] = false;
     }
-    nErr = AdsSyncWriteReq(this->motorNode.pAddr,ADSIGRP_SYM_VALBYHND,this->motorNode.handles["MAIN.Axis1_GoalPos"], sizeof(currentCmdPos), &currentCmdPos); // write "MAIN.Axis1_GoalPos"
+    nErr = AdsSyncWriteReq(this->motorNode.pAddr,ADSIGRP_SYM_VALBYHND,this->motorNode.handlers["MAIN.Axis1_GoalPos"], sizeof(currentCmdPos), &currentCmdPos); // write "MAIN.Axis1_GoalPos"
     if (nErr) { cout << "Error: Rail[" << index << "] AdsSyncWriteReq: " << nErr << '\n'; }
     homeFlag[index] = true; // signal targeted rail motor for homing
-    nErr = AdsSyncWriteReq(this->motorNode.pAddr,ADSIGRP_SYM_VALBYHND,this->motorNode.handles["MAIN.bHomeSwitch"], sizeof(homeFlag), &homeFlag[0]); // write "MAIN.bHomeSwitch"
+    nErr = AdsSyncWriteReq(this->motorNode.pAddr,ADSIGRP_SYM_VALBYHND,this->motorNode.handlers["MAIN.bHomeSwitch"], sizeof(homeFlag), &homeFlag[0]); // write "MAIN.bHomeSwitch"
     if (nErr) { cout << "Error: Rail[" << index << "] Set postiton Command. AdsSyncWriteReq: " << nErr << '\n'; }
     homeFlag[index] = false; // return to false
     busyFlag[index] = false;
     while(!busyFlag[index]){ // wait for motor busy flag on, ie. update current pos started
-        nErr = AdsSyncReadReq(this->motorNode.pAddr, ADSIGRP_SYM_VALBYHND, this->motorNode.handles["MAIN.Axis_Home.Busy"], sizeof(busyFlag), &busyFlag[0]); // read "MAIN.Axis_Home.Busy"
+        nErr = AdsSyncReadReq(this->motorNode.pAddr, ADSIGRP_SYM_VALBYHND, this->motorNode.handlers["MAIN.Axis_Home.Busy"], sizeof(busyFlag), &busyFlag[0]); // read "MAIN.Axis_Home.Busy"
         if (nErr) { cout << "Error: Rail[" << index << "] AdsSyncReadReq: " << nErr << '\n'; break; }
     }
     while(busyFlag[index]){ // wait for motor busy flag off, ie. completed updated position
-        nErr = AdsSyncReadReq(this->motorNode.pAddr, ADSIGRP_SYM_VALBYHND, this->motorNode.handles["MAIN.Axis_Home.Busy"], sizeof(busyFlag), &busyFlag[0]);
+        nErr = AdsSyncReadReq(this->motorNode.pAddr, ADSIGRP_SYM_VALBYHND, this->motorNode.handlers["MAIN.Axis_Home.Busy"], sizeof(busyFlag), &busyFlag[0]);
         if (nErr) { cout << "Error: Rail[" << index << "] AdsSyncReadReq: " << nErr << '\n'; break; }
     }
 }
@@ -110,7 +110,7 @@ vector<int> RailController::GetMotorPosMeasured(){
     if(this->isOnline){
         long nErr;
         bool *actPos = new bool(this->railNumber);
-        nErr = AdsSyncReadReq(this->motorNode.pAddr, ADSIGRP_SYM_VALBYHND, this->motorNode.handles["MAIN.actPos"], sizeof(actPos), &actPos[0]); // read "MAIN.actPos"
+        nErr = AdsSyncReadReq(this->motorNode.pAddr, ADSIGRP_SYM_VALBYHND, this->motorNode.handlers["MAIN.actPos"], sizeof(actPos), &actPos[0]); // read "MAIN.actPos"
         
         vector<int> result(actPos, actPos + sizeof(actPos) / sizeof(actPos[0]));
         if (nErr) { cout << "Error: Rail AdsSyncReadReq: " << nErr << '\n';  return result;}

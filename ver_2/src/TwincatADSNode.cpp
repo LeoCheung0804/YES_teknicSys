@@ -26,13 +26,16 @@ bool TwincatADSNode::Connect(int port){
     nErr = AdsSyncWriteReq(pAddr,ADSIGRP_SYM_RELEASEHND, 0,sizeof(lHdlVar),&lHdlVar);
 
     // Create list of handler by name
-    for(int i=0; i < *(&adsVarNames+1)-adsVarNames; i++){
-        nErr = AdsSyncReadWriteReq(pAddr, ADSIGRP_SYM_HNDBYNAME, 0x0, sizeof(lHdlVar), &lHdlVar, adsVarNames[i].length(), &adsVarNames[i][0]);
-        if (nErr){ cout << "Error: AdsSyncReadWriteReq: " << nErr << ", in creating handler for " << adsVarNames[i] << "\n"; return false; }
-        hdlList.push_back(lHdlVar);
-        handles[adsVarNames[i]] = lHdlVar;
+    map<string, unsigned long>::iterator iter;
+    iter = handlers.begin();
+    while(iter != handlers.end()){
+        string handleName = iter->first;
+        nErr = AdsSyncReadWriteReq(pAddr, ADSIGRP_SYM_HNDBYNAME, 0x0, sizeof(lHdlVar), &lHdlVar, handleName.length(), "handleName.tc");
+        if (nErr){ cout << "Error: AdsSyncReadWriteReq: " << nErr << ", in creating handler for " << iter->first << "\n"; return false; }
+        handlers[handleName] = lHdlVar;
+        iter++;
     }
-    cout << "Completed creating handler list of " << hdlList.size() << endl;
+    cout << "Completed creating handler list of " << handlers.size() << endl;
     return true;
 }
 

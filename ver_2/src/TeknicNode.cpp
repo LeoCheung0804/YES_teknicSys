@@ -3,21 +3,12 @@
 
 using namespace std;
 
-TeknicNode::TeknicNode(){
-}
+TeknicNode::TeknicNode(){}
 
-TeknicNode::TeknicNode(int nodeNumber){
-    this->nodeNumber = nodeNumber;
-    this->myMgr = SysManager::Instance();
-}
-
-int TeknicNode::SetNodeNumber(int nodeNumber){
-    this->nodeNumber = nodeNumber;
-    return nodeNumber;
-}
-
-bool TeknicNode::Connect(){
+bool TeknicNode::Connect(int nodeNumber){
     try{
+        this->nodeNumber = nodeNumber;
+        this->myMgr = SysManager::Instance();
         SysManager::FindComHubPorts(comHubPorts);
 
         cout << "Found " <<comHubPorts.size() << " SC Hubs\n";
@@ -95,6 +86,14 @@ bool TeknicNode::Connect(){
     }
 }
 
+void TeknicNode::Disconnect(){  
+    for(int i = 0; i < nodeNumber; i++){ //Disable Nodes
+        nodeList[i]->EnableReq(false);
+    }
+    nodeList.clear();
+    myMgr->PortsClose(); // Close down the ports
+}
+
 vector<INode*> TeknicNode::GetNodeList(){
     return nodeList;
 }
@@ -104,10 +103,6 @@ INode* TeknicNode::GetNode(int nodeIndex){
         return nodeList[nodeIndex];
     else
         return nullptr;
-}
-
-bool TeknicNode::Disconnect(){
-    return false;
 }
 
 
