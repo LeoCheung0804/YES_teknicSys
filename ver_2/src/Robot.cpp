@@ -6,6 +6,7 @@
 #include <fstream>
 #include <cmath>
 #include <thread>
+#include <conio.h>
 
 using json = nlohmann::json;
 
@@ -71,7 +72,7 @@ bool Robot::CheckLimits(){
 void Robot::PrintEEPos(){ 
     cout << "Current EE Pos: " << endl;
     for (int i = 0; i < 6; i++){
-        cout << "\t" << posLabel[i] << ": " << this->endEffectorPos[i] << "    " << endl;
+        cout << "\t" << posLabel[i] << ": " << this->endEffectorPos[i] << "                   " << endl;
     }
 }
 
@@ -379,6 +380,37 @@ vector<int32_t> Robot::EEPoseToCmd(double eePos[], double railOffset[]){
     return result;
 };
 
+bool Robot::eBrake(bool cableBrake, bool railBrake){
+    if(!useEBrake) return true;
+    if(kbhit()){ // Emergency quit during trajectory control
+        if(cableBrake)
+            this->cable.CloseAllBrake();
+        if(railBrake)
+            this->rail.CloseAllBrake();
+        string userInput;
+        while(true){
+            cout << endl;
+            cout << "================================== STOP MENU ==================================" << endl;
+            cout << "System interrupted!! Do you want to quit the trajectory control?" << endl;
+            cout << "\t1 - Quit trajectory" << endl;
+            cout << "\t2 - Resume trajectory" << endl;
+            cout << "Please Select Operation: " << endl;
+            cin >> userInput;
+            if(userInput == "1"){
+                cout << "Trajectory emergency quit." << endl;
+                return false;
+            }else if(userInput == "2"){
+                if(cableBrake)
+                    this->cable.OpenAllBrake();
+                if(railBrake)
+                    this->rail.OpenAllBrake();
+                cout << "Trajectory Resume." << endl;
+                return true;
+            }
+        }
+    }
+    return true;
+};
 
 vector<vector<int32_t>> Robot::PoseTrajToCmdTraj(vector<vector<double>> posTraj){
     vector<vector<int32_t>> result;
@@ -388,7 +420,7 @@ vector<vector<int32_t>> Robot::PoseTrajToCmdTraj(vector<vector<double>> posTraj)
     return result;
 }
 
-bool Robot::RunTraj(vector<vector<double>> posTraj, bool showAtten){
+bool Robot::RunCableTraj(vector<vector<double>> posTraj, bool showAtten){
     vector<vector<int32_t>> cmdTraj = this->PoseTrajToCmdTraj(posTraj);
     int index = 0;
     if(showAtten){
@@ -397,6 +429,7 @@ bool Robot::RunTraj(vector<vector<double>> posTraj, bool showAtten){
         }
     }
     for(vector<int32_t> frame : cmdTraj){
+        if(!this->eBrake(true, false)) return false;
         this->cable.MoveAllMotorCmd(frame);
         for(int i = 0; i < 6; i++)
             this->endEffectorPos[i] = posTraj[index][i];
@@ -414,17 +447,20 @@ bool Robot::RunTraj(vector<vector<double>> posTraj, bool showAtten){
     return true;
 }
 
-bool Robot::MoveToLinear(double dest[], int time, bool showAtten){
-    return this->RunTraj(GenLinearTrajForCableMotor(this->endEffectorPos, dest, time, showAtten),showAtten);
+bool Robot::MoveToLinear(double dest[], int time, bool showAtten, bool useEBrake){
+    if(!useEBrake) this->useEBrake = false;
+    bool result = this->RunCableTraj(GenLinearTrajForCableMotor(this->endEffectorPos, dest, time, showAtten),showAtten);
+    this->useEBrake = true;
+    return result;
 };
 
 bool Robot::MoveToParaBlend(double dest[], int time, bool showAtten){
-    return this->RunTraj(GenParaBlendTrajForCableMotor(this->endEffectorPos, dest, time), showAtten);
+    return this->RunCableTraj(GenParaBlendTrajForCableMotor(this->endEffectorPos, dest, time), showAtten);
 }
 
 bool Robot::MoveToParaBlend(double dest[], bool showAtten){
     float time = sqrt(pow(dest[0]-this->endEffectorPos[0],2)+pow(dest[1]-endEffectorPos[1],2)+pow(dest[2]-endEffectorPos[2],2))/this->velLmt*1000;
-    return this->RunTraj(GenParaBlendTrajForCableMotor(this->endEffectorPos, dest, time), showAtten);
+    return this->RunCableTraj(GenParaBlendTrajForCableMotor(this->endEffectorPos, dest, time), showAtten);
 }
 
 void Robot::MoveRail(int index, float target, bool absulote){
@@ -438,7 +474,7 @@ void Robot::MoveRail(int index, float target, bool absulote){
 
     static double a, b, c; // coefficients for cubic spline trajectory
     cout << "ATTENTION: Raise rail function is called. Estimated time: " << dura << endl;
-    
+    cout << "Generating raise rail trajectory..." << endl;
 
     // Solve coefficients of equations for cubic
     a = this->railOffset[index];
@@ -463,7 +499,9 @@ void Robot::MoveRail(int index, float target, bool absulote){
         t += MILLIS_TO_NEXT_FRAME;
     }
 
+    cout << "Raise rail trajectory Generated" << endl;
     for(int i = 0; i < cableTraj.size(); i++){
+        if(!this->eBrake(true, true)) return;
         auto start = chrono::steady_clock::now();
         rail.SelectWorkingMotor(index);
         rail.MoveSelectedMotorCmd(railTraj[i]);

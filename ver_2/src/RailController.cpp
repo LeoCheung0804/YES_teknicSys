@@ -7,6 +7,7 @@ RailController::RailController(bool isOnline){ this->isOnline = isOnline; }
 void RailController::Connect(int motorPortNumber, int railNumber, string brakePortName){
     this->railNumber = railNumber;
     this->bArry = new bool(railNumber);
+    this->brakeOnFlags = new bool(railNumber);
     this->motorNode = TwincatADSNode();
     this->brakeNode = ArduinoBLENode();
     this->isConnected = true;
@@ -20,10 +21,12 @@ void RailController::Connect(int motorPortNumber, int railNumber, string brakePo
             this->isConnected = false;
         }
     }
+    this->CloseAllBrake();
     cout << "Rail Controller Online." << endl;
 }
 
 void RailController::Disconnect(){
+    this->CloseAllBrake();
     if(this->isOnline){
         this->motorNode.Disconnect();
         this->brakeNode.Disconnect();
@@ -38,34 +41,43 @@ void RailController::OpenBrake(int index){
     assert(index >= 0 && index <= railNumber);
     this->sendStr = "(0:0)   ";
     this->sendStr[3] = ('0' + index);
-    cout << "Sending Command: " << this->sendStr << " to Brakes" << endl;
+    // cout << "Sending Command: " << this->sendStr << " to Brakes" << endl;
     if(this->isOnline)
         brakeNode.Send(this->sendStr);
-    else
-        cout << "Offline mode, skip" << endl;
+    this->brakeOnFlags[index] = false;
+    cout << "Rail Brake " << index << " Opened." << endl;
 }
 
 void RailController::CloseBrake(int index){
     assert(index >= 0 && index <= railNumber);
     this->sendStr = "(1:0)   ";
     this->sendStr[3] = ('0' + index);
-    cout << "Sending Command: " << this->sendStr << " to Brakes" << endl;
+    // cout << "Sending Command: " << this->sendStr << " to Brakes" << endl;
     if(this->isOnline)
         brakeNode.Send(this->sendStr);
-    else
-        cout << "Offline mode, skip." << endl;
+    this->brakeOnFlags[index] = true;
+    cout << "Rail Brake " << index << " Closed." << endl;
 }
 
-void RailController::HomeAllMotors(){
-    for(int index = 0; index < this->railNumber; index++){
-        this->CloseBrake(index);
+void RailController::OpenAllBrake(){
+    for(int i = 0; i < railNumber; i++){
+        this->OpenBrake(i);
     }
+};
+
+void RailController::CloseAllBrake(){
+    for(int i = 0; i < railNumber; i++){
+        this->CloseBrake(i);
+    }
+};
+
+void RailController::HomeAllMotors(){
+    this->OpenAllBrake();
     for(int index = 0; index < this->railNumber; index++){
-        this->OpenBrake(index);
         this->SelectWorkingMotor(index);
         this->MoveSelectedMotorCmd(0, true);
-        this->CloseBrake(index);
     }
+    this->CloseAllBrake();
 }
 
 void RailController::SelectWorkingMotor(int index){
@@ -75,6 +87,7 @@ void RailController::SelectWorkingMotor(int index){
 }
 
 void RailController::MoveSelectedMotorCmd(int32_t cmd, bool absolute){
+    assert(!this->brakeOnFlags[workingMotor]);
     if(this->isOnline){
         long nErr;
         nErr = AdsSyncWriteReq(this->motorNode.pAddr,ADSIGRP_SYM_VALBYHND,this->motorNode.handlers["MAIN.Axis_GoalPos"], sizeof(cmd), &cmd); // write "MAIN.Axis_GoalPos"

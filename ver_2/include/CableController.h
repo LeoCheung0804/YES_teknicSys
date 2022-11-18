@@ -16,6 +16,7 @@ private:
     bool isOnline;
     bool isConnected;
     bool isMoveFinished;
+    bool* brakeOnFlags;
     int MILLIS_TO_NEXT_FRAME = 20;
     string sendStr;
 public:
@@ -36,5 +37,7 @@ public:
     void SavePosToFile(string filename);
     void OpenBrake(int index);
     void CloseBrake(int index);
+    void OpenAllBrake();
+    void CloseAllBrake();
 };
 #endif

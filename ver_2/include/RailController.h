@@ -16,6 +16,7 @@ private:
     int MILLIS_TO_NEXT_FRAME = 20;
     string sendStr;
     bool *bArry;
+    bool* brakeOnFlags;
     int workingMotor = 0;
     bool isConnected;
 public:
@@ -25,6 +26,8 @@ public:
     bool IsConnected();
     void OpenBrake(int index);
     void CloseBrake(int index);
+    void OpenAllBrake();
+    void CloseAllBrake();
     void CalibrationMotor(int index, int32_t currentCmdPos);
     void HomeAllMotors();
     void SelectWorkingMotor(int index);

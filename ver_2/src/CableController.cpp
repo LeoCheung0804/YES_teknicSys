@@ -14,6 +14,7 @@ void CableController::Connect(int cableNumber, int brakeNumber, string brakePort
     this->motorNode = TeknicNode();
     this->brakeNode = ArduinoBLENode();
     this->isConnected = true;
+    this->brakeOnFlags = new bool(brakeNumber);
     if(this->isOnline){
         if(!this->motorNode.Connect(cableNumber)){
             cout << "Failed to connect cable motors. Exit programme." << endl;
@@ -24,11 +25,12 @@ void CableController::Connect(int cableNumber, int brakeNumber, string brakePort
             this->isConnected = false;
         };    
     }
+    this->CloseAllBrake();
     cout << "Cable Controller Online." << endl;
 }
 
 void CableController::Disconnect(){
-    
+    this->CloseAllBrake();
     if(this->isOnline){
         this->motorNode.Disconnect();
         this->brakeNode.Disconnect();
@@ -42,6 +44,7 @@ bool CableController::IsConnected(){ return this->isConnected; }
 void CableController::TightenCableByIndex(int index, float targetTrq){
     assert(index >= 0 && index <= cableNumber);
     cout << "Setting cable: " << index << " torque to: " << targetTrq << endl;
+    this->OpenAllBrake();
     if(isOnline){
         nodeList[index]->Motion.AccLimit = 200;
         // get current trq
@@ -65,11 +68,14 @@ void CableController::TightenCableByIndex(int index, float targetTrq){
         nodeList[index]->Motion.NodeStop(STOP_TYPE_ABRUPT);
         nodeList[index]->Motion.AccLimit = 40000;
     }
+    this->CloseAllBrake();
     cout << "Set cable " << index << " torque to: " << targetTrq << " finished." << endl;
+    
 }
 
 void CableController::TightenAllCable(float targetTrq){
     cout << "Setting all cable torque to: " << targetTrq << endl;
+    this->OpenAllBrake();
     if(isOnline){
         bool moving = false;
         for(INode* node : nodeList){
@@ -106,11 +112,13 @@ void CableController::TightenAllCable(float targetTrq){
             }
         }
     }
+    this->CloseAllBrake();
     cout << "Set all cable torque to: " << targetTrq << " finished." << endl;
 }
 
 void CableController::HomeAllMotors(){
     cout << "Moving all cable motors to zero position." << endl;
+    this->OpenAllBrake();
     if(isOnline){
         bool moving = false;
         for(INode* node : nodeList){
@@ -124,11 +132,13 @@ void CableController::HomeAllMotors(){
             }
         }
     }
+    this->CloseAllBrake();
     cout << "Move all cable motors to zero position finished." << endl;
 }
 
 void CableController::MoveSingleMotorCmd(int index, int32_t cmd, bool absolute){
     assert(index >= 0 && index <= cableNumber);
+    assert(!this->brakeOnFlags[index/2]);
     if(this->isOnline){
         ofstream myfile;
         try{
@@ -217,20 +227,32 @@ void CableController::OpenBrake(int index){
     assert(index >= 0 && index <= this->brakeNumber);
     this->sendStr = "(0:0)   ";
     this->sendStr[3] = ('0' + index);
-    cout << "Sending Command: " << this->sendStr << " to cable brakes" << endl;
+    // cout << "Sending Command: " << this->sendStr << " to cable brakes" << endl;
     if(this->isOnline)
         brakeNode.Send(this->sendStr);
-    else
-        cout << "Offline mode, skip" << endl;
+    this->brakeOnFlags[index] = false;
+    cout << "Cable Brake " << index << " Opened." << endl;
 }
 
 void CableController::CloseBrake(int index){
     assert(index >= 0 && index <= this->brakeNumber);
     this->sendStr = "(1:0)   ";
     this->sendStr[3] = ('0' + index);
-    cout << "Sending Command: " << this->sendStr << " to cable brakes" << endl;
+    // cout << "Sending Command: " << this->sendStr << " to cable brakes" << endl;
     if(this->isOnline)
         brakeNode.Send(this->sendStr);
-    else
-        cout << "Offline mode, skip." << endl;
+    this->brakeOnFlags[index] = true;
+    cout << "Cable Brake " << index << " Closed." << endl;
+}
+
+void CableController::OpenAllBrake(){
+    for(int i = 0; i < this->brakeNumber; i++){
+            this->OpenBrake(i);
+        }
+}
+
+void CableController::CloseAllBrake(){
+    for(int i = 0; i < this->brakeNumber; i++){
+            this->CloseBrake(i);
+        }
 }

@@ -39,23 +39,27 @@ vector<vector<double>> GenLinearTrajForCableMotor(double start[], double end[], 
 }
 
 vector<vector<double>> GenParaBlendTrajForCableMotor(double start[], double end[], int time, bool printLog){
+    vector<vector<double>> result;
+    if(time <= 200){ 
+        cout << "Time too short, traj won't run" << endl;
+        return result; 
+    } // Don't run traj for incorrect timing 
+
     if(printLog){
-        cout << "Generating parabolic blend trajectory from " ;
-        cout << start[0] << ", " << start[1] << ", " << start[2] << ", " << start[3] << ", " << start[4] << ", " << start[5];
-        cout << " to ";
-        cout << end[0] << ", " << end[1] << ", " << end[2] << ", " << end[3] << ", " << end[4] << ", " << end[5];
-        cout << " in " << time << " ms" << endl;
+        cout << "Generating parabolic blend trajectory." << endl;
+        cout << "From: " << endl;
+        cout << "\t" << start[0] << ", " << start[1] << ", " << start[2] << ", " << start[3] << ", " << start[4] << ", " << start[5] << endl;
+        cout << " To: " << endl;
+        cout << "\t" << end[0] << ", " << end[1] << ", " << end[2] << ", " << end[3] << ", " << end[4] << ", " << end[5] << endl;
+        cout << " In " << time << " ms" << endl;
     }
     // cout << sizeof(start) << " " << sizeof(end) << endl;
-    vector<vector<double>> result;
     float vMax[6] = {.6, .6, .6, 0.8, 0.8, 0.8}; // m/s, define the maximum velocity for each DoF
     float aMax[6] = {80, 80, 80, 10, 10, 10}; // m/s^2, define the maximum acceleration for each DoF
     static double a[6], b[6], c[6], d[6], e[6], f[6], g[6], tb[6]; // trajectory coefficients
     static double sQ[6], Q[6], o[6];
     double unitV = sqrt(pow(end[0]-start[0],2)+pow(end[1]-start[1],2)+pow(end[2]-start[2],2)); // the root to divide by to get unit vector
-    if(printLog)
-        cout << "Destination: " <<end[0]<<", "<<end[1]<<", "<<end[2]<<"; "<<end[5]<< " Will run for " << time << "ms...\n";
-    if(time <= 200){ return result; } // Don't run traj for incorrect timing 
+    
 
     // Solve parabolic blend coefficients for each DoF
     for(int i = 0; i < 6; i++){

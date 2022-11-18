@@ -29,24 +29,21 @@ bool GripperController::IsConnected(){ return this->isConnected; }
 
 void GripperController::Open(){
     this->sendStr = "(o,    )";
-    cout << "Sending Command: " << sendStr << " to gripper" << endl;
+    // cout << "Sending Command: " << sendStr << " to gripper" << endl;
     if(this->isOnline)
         node.Send(this->sendStr);
-    else
-        cout << "Offline mode, skip" << endl;
+    cout << "Gripper Opened. " << endl;
 }
 
 void GripperController::Close(){
     this->sendStr = "(c,    )";
-    cout << "Sending Command: " << sendStr << " to gripper" << endl;
+    // cout << "Sending Command: " << sendStr << " to gripper" << endl;
     if(this->isOnline)
         node.Send(this->sendStr);
-    else
-        cout << "Offline mode, skip" << endl;
+    cout << "Gripper Closed. " << endl;
 }
 
 void GripperController::Rotate(int angle){
-    cout << "Rotate Gripper to: " << angle << endl;
     // assert(angle >= -180 && angle <= 180);
     this->sendStr = "(r,";
     this->sendStr += to_string(angle);
@@ -54,11 +51,10 @@ void GripperController::Rotate(int angle){
         this->sendStr += ' ';
     }
     this->sendStr += ")";
-    cout << "Sending Command: " << this->sendStr << " to gripper" << endl;
+    // cout << "Sending Command: " << this->sendStr << " to gripper" << endl;
     if(this->isOnline)
         node.Send(this->sendStr);
-    else
-        cout << "Offline mode, skip" << endl;
+    cout << "Gripper Rotated to: " << angle << endl;
 }
 
 void GripperController::Calibrate(){

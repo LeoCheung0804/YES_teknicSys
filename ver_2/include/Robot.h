@@ -36,7 +36,8 @@ private:
     string railBrakeCommPort; // Rail Brake Communicate Port 
     string cableBrakeCommPort; // Rail Brake Communicate Port 
     string posLabel[6]{"x", "y", "z", "yaw", "pitch", "roll"}; 
-    
+    bool useEBrake{true};
+    bool eBrake(bool cableBrake, bool railBrake);
 public:
     double rotationalAngleOffset{0}; // rotational angel offset
     double rotationalDistanceOffset{0}; // rotational distance offset
@@ -193,14 +194,15 @@ public:
     float GetVelLmt();
     void SavePosToFile(string filename);
     int GetCableMotorBrakeNum();
+
     
 // Setter
 
 // Traj
-    bool RunTraj (vector<vector<double>> trajectory, bool showAtten=true);
+    bool RunCableTraj (vector<vector<double>> trajectory, bool showAtten=true);
     bool MoveToParaBlend(double dest[], int time, bool showAtten=true);
     bool MoveToParaBlend(double dest[], bool showAtten=true);
-    bool MoveToLinear(double dest[], int time, bool showAtten=true);
+    bool MoveToLinear(double dest[], int time, bool showAtten=true, bool useEBrake=true);
     void MoveRail(int index, float target, bool absulote);
 };
 

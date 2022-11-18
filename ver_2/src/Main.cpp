@@ -71,6 +71,7 @@ void GripperControlMode(){
 
 void PrintCableMotorControlMenu(int selectedCable){
     cout << "====================== Cable Motor Control Mode  ======================" << endl;
+    cout << "Beware that there is no soft emergency stop in this mode. " << endl;
     cout << "Current Selected Cable: " << selectedCable << endl;
     cout << "\t1 - Select Cable" << endl;
     cout << "\t2 - Move Selected Cable Relative (Motor Step)" << endl;
@@ -111,8 +112,7 @@ void CableMotorControlMode(){
                 }
             }
             system("pause");
-        }
-        else if(userInput == "2"){ // Move Selected Cable Relative By Motor Step
+        }else if(userInput == "2"){ // Move Selected Cable Relative By Motor Step
             while(true){
                 cout << "Move Selected Cable Relative By Motor Step" << endl;
                 cout << "Please Enter Step (enter q to exit): ";
@@ -277,6 +277,7 @@ void CableMotorControlMode(){
 
 void PrintRailMotorControlMenu(int selectedRailMotor){
     cout << "====================== Rail Motor Control Mode  ======================" << endl;
+    cout << "Beware that there is no soft emergency stop in this mode. " << endl;
     cout << "Current Selected Rail: " << selectedRailMotor << endl;
     cout << "\t1 - Select Rail" << endl;
     cout << "\t2 - Move Selected Rail Relative (Motor Step)" << endl;
@@ -318,8 +319,7 @@ void RailMotorControlMode(){
                 }
             }
             system("pause");
-        }
-        else if(userInput == "2"){ // Move Selected Rail Relative By Motor Step
+        }else if(userInput == "2"){ // Move Selected Rail Relative By Motor Step
             while(true){
                 cout << "Move Selected Rail Relative By Motor Step" << endl;
                 cout << "Please Enter Step (enter q to exit): ";
@@ -505,17 +505,6 @@ void RailMotorControlMode(){
 void PrintCalibrationMenu(){
 
     cout << "====================== Calibration Mode  ======================" << endl;
-    // cout << "\tt - Tighten cables with Torque mode" << endl;
-    // cout << "\ty - Loose the cables" << endl;
-    // cout << "\th - Move to Home" << endl;
-    // cout << "\t8 - Manually adjust cable lengths" << endl;
-    // cout << "\tl - Linear rails motions" << endl;
-    // cout << "\tu - Update current position from external file" << endl;
-    // cout << "\tr - Reset Rotation to zero" << endl;
-    // cout << "\tg - Gripper functions" << endl;
-    // cout << "\tj - Read Json file and update model params" << endl;
-    // cout << "\ti - Info: show menu" << endl;
-    // cout << "\tn - Move on to Next step" << endl;
     cout << "\t1 - Tighten Cables" << endl;
     cout << "\t2 - Loose Cables" << endl;
     cout << "\t3 - Set All Motors to Home Position" << endl;
@@ -547,12 +536,18 @@ void CalibrationMode(){
             system("pause");
         }else if(userInput == "4"){ // Reset End Effector Rotation to 0,0,0
             double targetPos[6] = {robot.endEffectorPos[0], robot.endEffectorPos[1], robot.endEffectorPos[2], 0, 0,0 };
+            robot.cable.OpenAllBrake();
             robot.MoveToParaBlend(targetPos, 3500, false);
+            robot.cable.CloseAllBrake();
             system("pause");
         }else if(userInput == "5"){ // Control Cable Individual
+            robot.cable.OpenAllBrake();
             CableMotorControlMode();
+            robot.cable.CloseAllBrake();
         }else if(userInput == "6"){ // Control Linear Rail Motor
+            robot.cable.OpenAllBrake();
             RailMotorControlMode();
+            robot.cable.CloseAllBrake();
         }else if(userInput == "7"){ // Control Gripper
             GripperControlMode();
         }else if(userInput == "8"){ // Update Robot Pos By File
@@ -582,18 +577,19 @@ void CalibrationMode(){
 
 void PrintRobotPosControlMenu(){
     cout << "====================== Robot Pos Control Mode  ======================" << endl;
+    cout << "Beware that there is no soft emergency stop in this mode. " << endl;
     cout << "\tw - Move the robot on +x direction." << endl;
     cout << "\ta - Move the robot on +y direction." << endl;
     cout << "\ts - Move the robot on -x direction." << endl;
     cout << "\td - Move the robot on -y direction." << endl;
     cout << "\tr - Move the robot on +z direction." << endl;
     cout << "\tf - Move the robot on -z direction." << endl;
-    cout << "\tq - Exit" << endl;
+    cout << "\tq - Exit Robot Pos Control Mode." << endl;
+    cout << "=====================================================================" << endl;
 }
 
 void RobotPosControlMode(){
     PrintRobotPosControlMenu();
-    cout << "=====================================================================" << endl;
     robot.PrintEEPos();
     double goalPos[6] = {0};
     int sleepTime = 120;
@@ -608,7 +604,7 @@ void RobotPosControlMode(){
         {
             copy(robot.endEffectorPos, robot.endEffectorPos + 6, goalPos);
             goalPos[0] += 0.01;
-            robot.MoveToLinear(goalPos, moveTime, false);
+            robot.MoveToLinear(goalPos, moveTime, false, false);
             
             printf("\x1b[7A"); // eepos 7 + press key 1
             robot.PrintEEPos();
@@ -617,7 +613,7 @@ void RobotPosControlMode(){
         {
             copy(robot.endEffectorPos, robot.endEffectorPos + 6, goalPos);
             goalPos[0] -= 0.01;
-            robot.MoveToLinear(goalPos, moveTime, false);
+            robot.MoveToLinear(goalPos, moveTime, false, false);
             printf("\x1b[7A"); // eepos 7 + press key 1
             robot.PrintEEPos();
             Sleep(sleepTime);
@@ -625,7 +621,7 @@ void RobotPosControlMode(){
         {
             copy(robot.endEffectorPos, robot.endEffectorPos + 6, goalPos);
             goalPos[1] += 0.01;
-            robot.MoveToLinear(goalPos, moveTime, false);
+            robot.MoveToLinear(goalPos, moveTime, false, false);
             printf("\x1b[7A"); // eepos 7 + press key 1
             robot.PrintEEPos();
             Sleep(sleepTime);
@@ -633,7 +629,7 @@ void RobotPosControlMode(){
         {
             copy(robot.endEffectorPos, robot.endEffectorPos + 6, goalPos);
             goalPos[1] -= 0.01;
-            robot.MoveToLinear(goalPos, moveTime, false);
+            robot.MoveToLinear(goalPos, moveTime, false, false);
             printf("\x1b[7A"); // eepos 7 + press key 1
             robot.PrintEEPos();
             Sleep(sleepTime);
@@ -641,7 +637,7 @@ void RobotPosControlMode(){
         {
             copy(robot.endEffectorPos, robot.endEffectorPos + 6, goalPos);
             goalPos[2] += 0.01;
-            robot.MoveToLinear(goalPos, moveTime, false);
+            robot.MoveToLinear(goalPos, moveTime, false, false);
             printf("\x1b[7A"); // eepos 7 + press key 1
             robot.PrintEEPos();
             Sleep(sleepTime);
@@ -649,7 +645,7 @@ void RobotPosControlMode(){
         {
             copy(robot.endEffectorPos, robot.endEffectorPos + 6, goalPos);
             goalPos[2] -= 0.01;
-            robot.MoveToLinear(goalPos, moveTime, false);
+            robot.MoveToLinear(goalPos, moveTime, false, false);
             printf("\x1b[7A"); // eepos 7 + press key 1
             robot.PrintEEPos();
             Sleep(sleepTime);
@@ -797,25 +793,34 @@ void RobotControlMode(){
         PrintRobotControlMenu();
         cin >> userInput;
 
-        if(userInput == "1"){ // robot position control mode
+        if(userInput == "q"){ // back to last page
+            break;
+        }else if(userInput == "1"){ // robot position control mode
+            robot.cable.OpenAllBrake();
             RobotPosControlMode();
+            robot.cable.CloseAllBrake();
         }else if(userInput == "2"){ // gripper control mode
             GripperControlMode();
         }else if(userInput == "3"){ // move robot to home position
             double targetPos[6] = { 0, 0, 0, 0, 0, 0 };
+            robot.cable.OpenAllBrake();
             robot.MoveToParaBlend(targetPos, false);
+            robot.cable.CloseAllBrake();
             system("pause");
-        }else if(userInput == "q"){
-            cout << "Bye" << endl;
-            break;
+        }else if(userInput == "4"){ // Rail Control
+            robot.cable.OpenAllBrake();
+            robot.rail.OpenAllBrake();
+            RailControlMode();
+            robot.cable.CloseAllBrake();
+            robot.rail.CloseAllBrake();
         }
     }
 }
 
 void PrintOperationMenu(){
     cout << "====================== Operation Mode  ======================" << endl;
-    cout << "\t1 - Read Brick Positions File" << endl;
-    cout << "\t2 - Robot Control" << endl;
+    cout << "\t1 - Robot Control" << endl;
+    cout << "\t2 - Read Brick Positions File" << endl;
     cout << "\t3 - Read Point-to-Point Path File" << endl;
     cout << "\t4 - Read Trajectory File" << endl;
     cout << "\t5 - Request current cable motor torque readings" << endl;
@@ -830,9 +835,11 @@ void OperationMode(){
         cin >> userInput;
         if(userInput == "q"){ // Quit Calibration Mode
             break;
-        }else if(userInput == "1"){ // Read brick position file
+        }else if(userInput == "1"){ // Robot Pos Control
+            RobotControlMode();
+        }else if(userInput == "2"){ // Read brick position file
             string brickPosFileName;
-            cout << "Please Enter Robot Config File Path (Default bricks.csv): ";
+            cout << "Please Enter Brick Pos File Path (Default bricks.csv): ";
             getchar();
             getline(cin, brickPosFileName);
             vector<vector<double>> brickPosList = ReadBrickPosFile(brickPosFileName != "" ? brickPosFileName : "bricks.csv", robot.rotationalAngleOffset, robot.rotationalDistanceOffset); // Read "bricks.csv"
@@ -842,6 +849,7 @@ void OperationMode(){
             cout << "Speed Limit: " << robot.GetVelLmt() << "m/s" << endl;
             double goalPos[6] = {0};
             int brickIndex = 0;
+            robot.cable.OpenAllBrake();
             for(vector<double> brickPos : brickPosList){
                 // Move to pre pick up position
                 robot.gripper.Rotate(90);
@@ -849,12 +857,16 @@ void OperationMode(){
                 copy(robot.brickPickUpPos, robot.brickPickUpPos + 6, goalPos);
                 goalPos[5] += 0.0141; // calculated yaw for +0.21 height
                 goalPos[2] += 0.21; // 0.21 safe height from ABB
-                robot.MoveToParaBlend(goalPos, false);
+                cout << "Brick No. " << brickIndex << endl;
+                cout << "Moving to pre pick up position." << endl;
+                if(!robot.MoveToParaBlend(goalPos, true)) break;
                 Sleep(100); // wait for brick
 
                 // pickup brick
                 copy(robot.brickPickUpPos, robot.brickPickUpPos + 6, goalPos);
-                robot.MoveToParaBlend(goalPos, robot.safeT * 1.2, false);
+                cout << "Brick No. " << brickIndex << endl;
+                cout << "Picking up brick." << endl;
+                if(!robot.MoveToParaBlend(goalPos, robot.safeT * 1.2, true)) break;
                 Sleep(600); //////////// FOR TESTING ONYL, delete later!!!!!!!!!!!!!!!!!!
                 robot.gripper.Close();
                 Sleep(800); // wait for grippper to close
@@ -862,13 +874,17 @@ void OperationMode(){
                 // raise brick
                 copy(robot.brickPickUpPos, robot.brickPickUpPos+6, begin(goalPos));
                 goalPos[2] += robot.GetEEToGroundOffset();
-                robot.MoveToParaBlend(goalPos, robot.safeT, false);
+                cout << "Brick No. " << brickIndex << endl;
+                cout << "Picking up brick." << endl;
+                if(!robot.MoveToParaBlend(goalPos, robot.safeT, true)) break;
 
-                // move to save point
+                // move to safe point
                 robot.gripper.Rotate((int)(brickPos[4] + 92.2 - brickPos[3]/3.1415965*180)); // <-+27, constant frame to gripper offset; - yaw rotation in EE
                 double safePt[6] = {8.24, 6.51, -2.7, 0, 0, -0.0237}; // a safe area near to the arm // 0.21 safe height from ABB
                 copy(safePt, safePt+6, begin(goalPos)); // safe point
-                robot.MoveToParaBlend(goalPos, false);
+                cout << "Brick No. " << brickIndex << endl;
+                cout << "Moving to safe position." << endl;
+                if(!robot.MoveToParaBlend(goalPos, true)) break;
 
                 double safeH = 0.12; // meter, safety height from building brick level
                 // avoid the 5th pole
@@ -883,7 +899,7 @@ void OperationMode(){
                         // MoveBrkRail(brickPos[2]+safeZoneH);
                         goalPos[2] = lowPole; // safe level as 5th pole
                         cout << "Lowering to pole position??\n";
-                        robot.MoveToParaBlend(goalPos, false);
+                        if(!robot.MoveToParaBlend(goalPos, false)) break;
                     }
                 }
                 else if(brickPos[1]-2.271415*brickPos[0]<-13.260362){ // check if target brick pos falls into the region where cables may hit 5th pole
@@ -894,55 +910,53 @@ void OperationMode(){
                         // move to 5th pole height
                         goalPos[2] = lowPole; // safe level as 5th pole
                         cout << "Lowering to pole position??\n";
-                        robot.MoveToParaBlend(goalPos, false);
+                        if(!robot.MoveToParaBlend(goalPos, false)) break;
                     }
                 }
                 // double safeH = 0.12; // meter, safety height from building brick level
                 // goalPos[2] = brickPos[2] + robot.GetEEToGroundOffset() + safeH.; // brick level with safe height
                 // if(robot.endEffectorPos[2] < brickPos[2] + robot.GetEEToGroundOffset() + safeH){ // if current position is below target brick height, then raise brick first // need this?
-                //     robot.MoveToParaBlend(goalPos, false);
+                //     if(!robot.MoveToParaBlend(goalPos, false)) break;
                 // }
                 */
 
                 // Go to brick placing position
-                cout << "Going to brick position" << endl;
                 goalPos[0] = brickPos[0];
                 goalPos[1] = brickPos[1];
                 goalPos[5] = brickPos[3]; // Include yaw angle
-                robot.MoveToParaBlend(goalPos, false);
+                cout << "Brick No. " << brickIndex << endl;
+                cout << "Moving to brick position." << endl;
+                if(!robot.MoveToParaBlend(goalPos, true)) break;
                 
                 // Place brick
-                cout << "Placing brick" << endl; 
                 goalPos[2] -= safeH;
-                robot.MoveToParaBlend(goalPos, robot.safeT, false);
+                cout << "Brick No. " << brickIndex << endl;
+                cout << "Placing brick." << endl;
+                if(!robot.MoveToParaBlend(goalPos, robot.safeT, true)) break;
                 robot.gripper.Open();
                 Sleep(200); //Wait a while after placing brick
 
                 // Rise and leave building area
-                cout << "Going to stand by position\n"; 
                 goalPos[2] += safeH;
-                robot.MoveToParaBlend(goalPos, false);
+                cout << "Brick No. " << brickIndex << endl;
+                cout << "Moving to stand by position." << endl;
+                if(!robot.MoveToParaBlend(goalPos, true)) break;
 
                 // move to safe point
                 copy(begin(safePt), end(safePt), begin(goalPos)); // safe x,y,z position
+                cout << "Brick No. " << brickIndex << endl;
+                cout << "Moving to safe position." << endl;
                 if(robot.endEffectorPos[2] > safePt[2]){ // if current position is above safe point, then return to safe point within lowering z-height
                     goalPos[2] = robot.endEffectorPos[2];
-                    robot.MoveToParaBlend(goalPos, false);
+                    if(!robot.MoveToParaBlend(goalPos, true)) break;
                     goalPos[2] = safePt[2];
                 }
-                robot.MoveToParaBlend(goalPos, false);
-
-                // log
-                robot.PrintEEPos();
-                robot.PrintRailOffset();
+                if(!robot.MoveToParaBlend(goalPos, true)) break;
                 cout << "----------Completed brick #" << brickIndex <<"----------" << endl;
                 brickIndex++;
             }
-
+            robot.cable.CloseAllBrake();
             system("pause");
-            break;
-        }else if(userInput == "2"){ // Robot Pos Control
-            RobotControlMode();
         }else if(userInput == "3"){ // read point to point file, gen and run para blend traj
             string ptnFileName;
             cout << "Please Enter Point-To-Point Path File Path (Default points.csv): ";
@@ -950,9 +964,11 @@ void OperationMode(){
             getline(cin, ptnFileName);
             vector<vector<double>> pointList = ReadPointFile(ptnFileName != "" ? ptnFileName : "points.csv"); // Read "bricks.csv"
             cout << "The file contains " << pointList.size() << " points." << endl;
+            robot.cable.OpenAllBrake();
             for(vector<double> point : pointList){
-                robot.MoveToParaBlend(&point[0], true);
+                if(!robot.MoveToParaBlend(&point[0], true)) break;
             }
+            robot.cable.CloseAllBrake();
             system("pause");
         }else if(userInput == "4"){ // read and run traj file
             string trajFileName;
@@ -961,19 +977,22 @@ void OperationMode(){
             getline(cin, trajFileName);
             vector<vector<double>> trajList = ReadTrajFile(trajFileName != "" ? trajFileName : "traj.csv"); // Read "bricks.csv"
             cout << "The file contains " << trajList.size() << " points." << endl;
-            robot.RunTraj(trajList);
+            robot.cable.OpenAllBrake();
+            robot.RunCableTraj(trajList);
+            robot.cable.CloseAllBrake();
             system("pause");
         }else if(userInput == "5"){ // requst current torque readings
             cout << "Current Measured Cable Motor Trq: " << endl;
             for(int i = 0; i < robot.GetCableMotorNum(); i++){
                 cout << "\tCable " << i << ": " << robot.cable.GetMotorPosMeasured(i) << endl;
             }
+            system("pause");
         }else if(userInput == "6"){ // save current ee pos to file
             string robotPosPath;
             cout << "Please Enter Robot Position File Path (Default lastPos.txt): ";
             getchar();
             getline(cin, robotPosPath);
-            robot.SavePosToFile(robotPosPath  != "" ? robotPosPath : "RobotConfig.json");
+            robot.SavePosToFile(robotPosPath  != "" ? robotPosPath : "lastPos.txt");
             system("pause");
         }
     }
