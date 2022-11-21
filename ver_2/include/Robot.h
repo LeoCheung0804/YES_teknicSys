@@ -37,6 +37,11 @@ private:
     string railBrakeCommPort; // Rail Brake Communicate Port 
     string cableBrakeCommPort; // Rail Brake Communicate Port 
     string posLabel[6]{"x", "y", "z", "yaw", "pitch", "roll"}; 
+    bool useGripper{ false};
+    bool useCableMotor{ false };
+    bool useCableBraker{ false };
+    bool useRailMotor{ false };
+    bool useRailBraker{ false };
     bool useEBrake{true};
     Logger posLogger;
     bool eBrake(bool cableBrake, bool railBrake);
@@ -204,7 +209,7 @@ public:
     bool RunCableTraj (vector<vector<double>> trajectory, bool showAtten=true);
     bool MoveToParaBlend(double dest[], int time, bool showAtten=true);
     bool MoveToParaBlend(double dest[], bool showAtten=true);
-    bool MoveToLinear(double dest[], int time, bool showAtten=true, bool useEBrake=true);
+    bool MoveToLinear(double dest[], int time, bool showAtten=true, bool useEBrake=true);;
     void MoveRail(int index, float target, bool absulote);
 };
 

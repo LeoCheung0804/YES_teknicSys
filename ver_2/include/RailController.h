@@ -19,9 +19,11 @@ private:
     bool* brakeOnFlags;
     int workingMotor = 0;
     bool isConnected;
+    bool useMotor;
+    bool useBraker;
 public:
     RailController(bool isOnline=true);
-    void Connect(int motorPortNumber, int railNumber, string brakePortName);
+    void Connect(int motorPortNumber, int railNumber, string brakePortName, bool useMotor, bool useBraker);
     void Disconnect();
     bool IsConnected();
     void OpenBrake(int index);

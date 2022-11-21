@@ -19,9 +19,11 @@ private:
     bool* brakeOnFlags;
     int MILLIS_TO_NEXT_FRAME = 20;
     string sendStr;
+    bool useMotor;
+    bool useBraker;
 public:
     CableController(bool isOnline=true);
-    void Connect(int cableNumber, int brakeNumber, string brakePortName);
+    void Connect(int cableNumber, int brakeNumber, string brakePortName, bool useMotor, bool useBraker);
     void Disconnect();
     bool IsConnected();
     void TightenCableByIndex(int index, float targetTrq);

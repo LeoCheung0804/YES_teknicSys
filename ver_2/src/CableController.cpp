@@ -4,10 +4,11 @@
 #include <thread>
 #include <assert.h>
 #include <Windows.h>
+#include <conio.h>
 
 CableController::CableController(bool isOnline){ this ->isOnline = isOnline; }
 
-void CableController::Connect(int cableNumber, int brakeNumber, string brakePortName){
+void CableController::(int cableNumber, int brakeNumber, string brakePortName, bool useMotor, bool useBraker){
     this->isOnline = isOnline;
     this->cableNumber = cableNumber;
     this->brakeNumber = brakeNumber;
@@ -15,15 +16,21 @@ void CableController::Connect(int cableNumber, int brakeNumber, string brakePort
     this->brakeNode = ArduinoBLENode();
     this->isConnected = true;
     this->brakeOnFlags = new bool(brakeNumber);
+    this->useMotor = useMotor;
+    this->useBraker = useBraker;
     if(this->isOnline){
-        if(!this->motorNode.Connect(cableNumber)){
-            cout << "Failed to connect cable motors. Exit programme." << endl;
-            this->isConnected = false;
+        if(useMotorNum){
+            if(!this->motorNode.Connect(cableNumber)){
+                cout << "Failed to connect cable motors. Exit programme." << endl;
+                this->isConnected = false;
+            }
         }
-        if(!this->brakeNode.Connect(brakePortName)) { 
-            cout << "Failed to connect cable motor brakes. Exit programme.\n"; 
-            this->isConnected = false;
-        };    
+        if(useBraker){
+            if(!this->brakeNode.Connect(brakePortName)) { 
+                cout << "Failed to connect cable motor brakes. Exit programme.\n"; 
+                this->isConnected = false;
+            };  
+        }  
     }
     this->CloseAllBrake();
     cout << "Cable Controller Online." << endl;
@@ -32,8 +39,10 @@ void CableController::Connect(int cableNumber, int brakeNumber, string brakePort
 void CableController::Disconnect(){
     this->CloseAllBrake();
     if(this->isOnline){
-        this->motorNode.Disconnect();
-        this->brakeNode.Disconnect();
+        if(this->useMotor)
+            this->motorNode.Disconnect();
+        if(this->useBrake)
+            this->brakeNode.Disconnect();
     }
     cout << "Cable Controller Offline." << endl;
     this->isConnected = false;
@@ -45,17 +54,17 @@ void CableController::TightenCableByIndex(int index, float targetTrq){
     assert(index >= 0 && index <= cableNumber);
     cout << "Setting cable: " << index << " torque to: " << targetTrq << endl;
     this->OpenAllBrake();
-    if(isOnline){
+    if(isOnline && this->useMotor){
         nodeList[index]->Motion.AccLimit = 200;
         // get current trq
         nodeList[index]->Motion.TrqCommanded.Refresh();
         float currentTrq = nodeList[index]->Motion.TrqCommanded.Value();
         // check current trq and set move direction
         if(currentTrq > targetTrq){ 
-            nodeList[index]->Motion.MoveVelStart(-10); 
+            nodeList[index]->Motion.MoveVelStart(-100); 
         }
         else if (currentTrq < targetTrq - 1.8){ 
-            nodeList[index]->Motion.MoveVelStart(10);
+            nodeList[index]->Motion.MoveVelStart(100);
         }
         // move
         while(currentTrq > targetTrq || currentTrq < targetTrq - 1.8){
@@ -76,7 +85,7 @@ void CableController::TightenCableByIndex(int index, float targetTrq){
 void CableController::TightenAllCable(float targetTrq){
     cout << "Setting all cable torque to: " << targetTrq << endl;
     this->OpenAllBrake();
-    if(isOnline){
+    if(isOnline && this->useMotor){
         bool moving = false;
         for(INode* node : nodeList){
             node->Motion.AccLimit = 200;
@@ -85,11 +94,11 @@ void CableController::TightenAllCable(float targetTrq){
             float currentTrq = node->Motion.TrqCommanded.Value();
             // check current trq and set move direction
             if(currentTrq > targetTrq){ 
-                node->Motion.MoveVelStart(-10); 
+                node->Motion.MoveVelStart(-100); 
                 moving = true;
             }
             else if (currentTrq < targetTrq - 1.8){ 
-                node->Motion.MoveVelStart(10);
+                node->Motion.MoveVelStart(100);
                 moving = true;
             }
         }
@@ -104,13 +113,18 @@ void CableController::TightenAllCable(float targetTrq){
                 // check current trq
                 if(currentTrq > targetTrq || currentTrq < targetTrq - 1.8)
                     moving = true; // continue loop 
-                else{
-                    node->Motion.NodeStop(STOP_TYPE_ABRUPT);
-                    node->Motion.AccLimit = 40000;
-                }
                 cout << endl;
             }
+            if(kbhit()){
+                break;
+            }
         }
+
+        for(INode* node : nodeList){
+            node->Motion.AccLimit = 40000;
+            node->Motion.NodeStop(STOP_TYPE_ABRUPT);
+        }
+        
     }
     this->CloseAllBrake();
     cout << "Set all cable torque to: " << targetTrq << " finished." << endl;
@@ -119,7 +133,7 @@ void CableController::TightenAllCable(float targetTrq){
 void CableController::HomeAllMotors(){
     cout << "Moving all cable motors to zero position." << endl;
     this->OpenAllBrake();
-    if(isOnline){
+    if(isOnline && this->useMotor){
         bool moving = false;
         for(INode* node : nodeList){
             node->Motion.MovePosnStart(0, true);
@@ -139,7 +153,7 @@ void CableController::HomeAllMotors(){
 void CableController::MoveSingleMotorCmd(int index, int32_t cmd, bool absolute){
     assert(index >= 0 && index <= cableNumber);
     assert(!this->brakeOnFlags[index/2]);
-    if(this->isOnline){
+    if(this->isOnline && this->useMotor){
         ofstream myfile;
         try{
             nodeList[index]->Motion.MovePosnStart(cmd, absolute, true); // absolute position?
@@ -195,7 +209,7 @@ bool CableController::IsMoveFinished(){ return isMoveFinished; }
 
 void CableController::CalibrationMotor(int index, int32_t currentCmdPos){
     assert(index >= 0 && index <= cableNumber);
-    if(this->isOnline){
+    if(this->isOnline && this->useMotor){
         nodeList[index]->Motion.PosnMeasured.Refresh();
         nodeList[index]->Motion.AddToPosition(-nodeList[index]->Motion.PosnMeasured.Value() + currentCmdPos);
     }else{
@@ -205,7 +219,7 @@ void CableController::CalibrationMotor(int index, int32_t currentCmdPos){
 
 double CableController::GetMotorPosMeasured(int index){
     assert(index >= 0 && index <= cableNumber);
-    if(this->isOnline){
+    if(this->isOnline && this->useMotor){
         nodeList[index]->Motion.PosnMeasured.Refresh();
         return (double) nodeList[index]->Motion.PosnMeasured.Value();
     }else{
@@ -215,7 +229,7 @@ double CableController::GetMotorPosMeasured(int index){
 
 double CableController::GetMotorTorqueMeasured(int index){
     assert(index >= 0 && index <= cableNumber);
-    if(this->isOnline){
+    if(this->isOnline && this->useMotor){
         nodeList[index]->Motion.TrqMeasured.Refresh();
         return (double) nodeList[index]->Motion.TrqMeasured.Value();
     }else{
@@ -228,7 +242,7 @@ void CableController::OpenBrake(int index){
     this->sendStr = "(0:0)   ";
     this->sendStr[3] = ('0' + index);
     // cout << "Sending Command: " << this->sendStr << " to cable brakes" << endl;
-    if(this->isOnline)
+    if(this->isOnline && this->useBraker)
         brakeNode.Send(this->sendStr);
     this->brakeOnFlags[index] = false;
     cout << "Cable Brake " << index << " Opened." << endl;
@@ -239,7 +253,7 @@ void CableController::CloseBrake(int index){
     this->sendStr = "(1:0)   ";
     this->sendStr[3] = ('0' + index);
     // cout << "Sending Command: " << this->sendStr << " to cable brakes" << endl;
-    if(this->isOnline)
+    if(this->isOnline && this->useBraker)
         brakeNode.Send(this->sendStr);
     this->brakeOnFlags[index] = true;
     cout << "Cable Brake " << index << " Closed." << endl;
