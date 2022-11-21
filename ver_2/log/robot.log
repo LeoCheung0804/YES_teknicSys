@@ -1,0 +1,30 @@
+[122/11/19: 17:9:2:2][Info]Connecting to robot.
+[122/11/19: 17:9:11:11][Info]Robot Disconnected.
+[122/11/21: 9:35:9][Info]Reading robot config.
+[122/11/21: 9:35:18][Info]Connecting to robot.
+[122/11/21: 9:35:18][Error]All motors, all brakes and gripper connected success.
+[122/11/21: 9:35:19][Info]Robot Disconnected.
+[122/11/21: 9:35:31][Info]Reading robot config.
+[122/11/21: 9:35:32][Info]Connecting to robot.
+[122/11/21: 9:35:32][Error]All motors, all brakes and gripper connected success.
+[122/11/21: 9:35:33][Info]Robot Disconnected.
+[122/11/21: 9:35:59][Info]Reading robot config.
+[122/11/21: 9:36:2][Info]Connecting to robot.
+[122/11/21: 9:36:2][Error]All motors, all brakes and gripper connected success.
+[122/11/21: 9:37:4][Info]Robot Disconnected.
+[122/11/21: 9:39:31][Info]Reading robot config.
+[122/11/21: 9:39:32][Info]Connecting to robot.
+[122/11/21: 9:39:32][Error]All motors, all brakes and gripper connected success.
+[122/11/21: 9:39:34][Info]Robot Disconnected.
+[122/11/21: 9:40:1][Info]Reading robot config.
+[122/11/21: 9:40:2][Info]Connecting to robot.
+[122/11/21: 9:40:2][Error]All motors, all brakes and gripper connected success.
+[122/11/21: 9:55:26][Info]Reading robot config.
+[122/11/21: 9:55:27][Info]Connecting to robot.
+[122/11/21: 9:55:27][Error]All motors, all brakes and gripper connected success.
+[122/11/21: 9:55:39][Pos]x: 27.300000, y: 6.200000, z: -2.700000, yaw: 0.000000, pitch: 0.000000, roll: -0.034400, cable 0 : 27.300000, cable 1 : 6.200000, cable 2 : -2.700000, cable 3 : 0.000000
+[122/11/21: 9:55:39][Warning]New Position is beyond robot limit.
+[122/11/21: 9:57:4][Info]Reading robot config.
+[122/11/21: 9:57:7][Info]Connecting to robot.
+[122/11/21: 9:57:7][Error]All motors, all brakes and gripper connected success.
+[122/11/21: 9:58:23][Info]Robot Disconnected.

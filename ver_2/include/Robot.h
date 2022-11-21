@@ -2,9 +2,10 @@
 #define Robot_H
 
 #include "..\Dependencies\eigen-3.3.7\Eigen\Dense"
-#include "..\include\GripperController.h"
-#include "..\include\RailController.h"
-#include "..\include\CableController.h"
+#include "GripperController.h"
+#include "RailController.h"
+#include "CableController.h"
+#include "Logger.h"
 #include <string>
 #include <vector>
 using namespace Eigen;
@@ -37,6 +38,7 @@ private:
     string cableBrakeCommPort; // Rail Brake Communicate Port 
     string posLabel[6]{"x", "y", "z", "yaw", "pitch", "roll"}; 
     bool useEBrake{true};
+    Logger posLogger;
     bool eBrake(bool cableBrake, bool railBrake);
 public:
     double rotationalAngleOffset{0}; // rotational angel offset

@@ -15,12 +15,14 @@ Robot::Robot(){};
 // Constructor, based on the requested model
 Robot::Robot(string robotConfigPath){
     this->UpdateModelFromFile(robotConfigPath);
-    
-
 }
 
 void Robot::Connect(){
-
+        
+    if(!this->posLogger.OpenFile("log\\pos.log")){
+        cout << "Cannot open pos logger file. System will now exit." << endl;
+        exit(-1);
+    }
     this->isConnected = true;
     // Init BLE Nodes
     this->gripper = GripperController(this->isOnline);
@@ -53,6 +55,7 @@ void Robot::Disconnect(){
     this->cable.Disconnect();
     this->rail.Disconnect();
     this->isConnected = false;
+    this->posLogger.CloseFile();
 }
 
 bool Robot::IsConnected(){ return this->isConnected; }
@@ -213,9 +216,7 @@ void Robot::UpdatePosFromFile(string filename){
             for(int i = 0; i < this->railMotorNum; i++){
                 cout << "\t" << "Rail " << i << ": " << this->railOffset[i] << " / " << railMotorCmd[i]  << "    " << endl;
             }
-            if(!this->CheckLimits()){
-                cout << "Warning: New Position is beyond robot limit. " << endl;
-            }
+            this->posLogger.LogPos(this->endEffectorPos, this->railOffset);
         }
     }
     catch(const exception& e){
@@ -434,7 +435,7 @@ bool Robot::RunCableTraj(vector<vector<double>> posTraj, bool showAtten){
         for(int i = 0; i < 6; i++)
             this->endEffectorPos[i] = posTraj[index][i];
         index++;
-        
+        this->posLogger.LogPos(this->endEffectorPos, this->railOffset);
         if(showAtten){
             printf("\x1b[16A");
             this->PrintEEPos();
@@ -506,6 +507,8 @@ void Robot::MoveRail(int index, float target, bool absulote){
         rail.SelectWorkingMotor(index);
         rail.MoveSelectedMotorCmd(railTraj[i]);
         cable.MoveSingleMotorCmd(index, cableTraj[index][i]);
+        this->railOffset[index] = i;
+        this->posLogger.LogPos(this->endEffectorPos, this->railOffset);
         dur = chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now()-start).count();
         double dif = MILLIS_TO_NEXT_FRAME - dur - 1;
         if(dif > 0) { Sleep(dif);}

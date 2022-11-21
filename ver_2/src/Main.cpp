@@ -1,4 +1,5 @@
 #pragma comment(lib, "User32.lib")
+#include "..\include\Logger.h"
 #include "..\include\Robot.h"
 #include "..\include\TrajectoryGenerator.h"
 #include <iostream>
@@ -9,6 +10,7 @@ using namespace std;
 
 string userInput;
 Robot robot;
+Logger logger;
 
 void ClearConsoleInputBuffer()
 {
@@ -514,6 +516,7 @@ void PrintCalibrationMenu(){
     cout << "\t7 - Control Gripper " << endl;
     cout << "\t8 - Update Robot Pos" << endl;
     cout << "\t9 - Update Robot Config" << endl;
+    cout << "\t10 - Print Robot Status " << endl;
     cout << "\tq - Finish Calibration" << endl;
     cout << "Please Select Operation: " << endl;
 }
@@ -556,6 +559,11 @@ void CalibrationMode(){
             getchar();
             getline(cin, robotPosPath);
             robot.UpdatePosFromFile(robotPosPath  != "" ? robotPosPath : "lastPos.txt");
+            logger.LogPos(robot.endEffectorPos, robot.railOffset);
+            if(!robot.CheckLimits()){
+                logger.LogWarning("New Position is beyond robot limit.");
+                cout << "Warning: New Position is beyond robot limit. " << endl;
+            }
             system("pause");
         }else if(userInput == "9"){ // Update Robot Config
             string robotConfigPath;
@@ -570,6 +578,11 @@ void CalibrationMode(){
                 getline(cin, robotConfigFile);
                 robot.UpdateModelFromFile(robotConfigFile != "" ? robotConfigFile : "RobotConfig.json");
             }
+            system("pause");
+        }else if(userInput == "10"){ // print current status
+            robot.PrintEEPos();
+            robot.PrintRailOffset();
+            robot.PrintCableLength();
             system("pause");
         }
     }
@@ -705,6 +718,7 @@ void RailControlMode(){
                     if(!*p) {
                         cout << "Moving Rail " << selectedRail << " By Length: " << length << endl;
                         robot.MoveRail(selectedRail, length, false);
+                        logger.LogInfo("Raise rail " + to_string(selectedRail) + " by " + to_string(length));
                     }else{
                         cout << "Please enter a number!!!" << endl;
                     }
@@ -723,6 +737,7 @@ void RailControlMode(){
                     if(!*p) {
                         cout << "Moving Rail " << selectedRail << " To Absolute Length: " << length << endl;
                         robot.MoveRail(selectedRail, length, true);
+                        logger.LogInfo("Raise rail " + to_string(selectedRail) + " to " + to_string(length));
                     }else{
                         cout << "Please enter a number!!!" << endl;
                     }
@@ -744,6 +759,7 @@ void RailControlMode(){
                         for(int i = 0; i < robot.GetCableMotorNum(); i++){
                             robot.rail.SelectWorkingMotor(i);
                             robot.MoveRail(i, length, false);
+                            logger.LogInfo("Raise rail " + to_string(i) + " by " + to_string(length));
                         }
                         robot.rail.SelectWorkingMotor(selectedRail);
                     }else{
@@ -767,6 +783,7 @@ void RailControlMode(){
                         for(int i = 0; i < robot.GetCableMotorNum(); i++){
                             robot.rail.SelectWorkingMotor(i);
                             robot.MoveRail(i, length, true);
+                            logger.LogInfo("Raise rail " + to_string(i) + " to " + to_string(length));
                         }
                         robot.rail.SelectWorkingMotor(selectedRail);
                     }else{
@@ -825,6 +842,7 @@ void PrintOperationMenu(){
     cout << "\t4 - Read Trajectory File" << endl;
     cout << "\t5 - Request current cable motor torque readings" << endl;
     cout << "\t6 - Save Current EE Pos to File" << endl;
+    cout << "\t7 - Print Robot Status " << endl;
     cout << "\tq - Exit" << endl;
     cout << "Please Select Mode: ";
 }
@@ -858,14 +876,14 @@ void OperationMode(){
                 goalPos[5] += 0.0141; // calculated yaw for +0.21 height
                 goalPos[2] += 0.21; // 0.21 safe height from ABB
                 cout << "Brick No. " << brickIndex << endl;
-                cout << "Moving to pre pick up position." << endl;
+                cout << "====== Moving to pre pick up position." << endl;
                 if(!robot.MoveToParaBlend(goalPos, true)) break;
                 Sleep(100); // wait for brick
 
                 // pickup brick
                 copy(robot.brickPickUpPos, robot.brickPickUpPos + 6, goalPos);
                 cout << "Brick No. " << brickIndex << endl;
-                cout << "Picking up brick." << endl;
+                cout << "====== Picking up brick." << endl;
                 if(!robot.MoveToParaBlend(goalPos, robot.safeT * 1.2, true)) break;
                 Sleep(600); //////////// FOR TESTING ONYL, delete later!!!!!!!!!!!!!!!!!!
                 robot.gripper.Close();
@@ -874,16 +892,16 @@ void OperationMode(){
                 // raise brick
                 copy(robot.brickPickUpPos, robot.brickPickUpPos+6, begin(goalPos));
                 goalPos[2] += robot.GetEEToGroundOffset();
-                cout << "Brick No. " << brickIndex << endl;
-                cout << "Picking up brick." << endl;
+                cout << "====== Brick No. " << brickIndex << endl;
+                cout << "====== Picking up brick." << endl;
                 if(!robot.MoveToParaBlend(goalPos, robot.safeT, true)) break;
 
                 // move to safe point
                 robot.gripper.Rotate((int)(brickPos[4] + 92.2 - brickPos[3]/3.1415965*180)); // <-+27, constant frame to gripper offset; - yaw rotation in EE
                 double safePt[6] = {8.24, 6.51, -2.7, 0, 0, -0.0237}; // a safe area near to the arm // 0.21 safe height from ABB
                 copy(safePt, safePt+6, begin(goalPos)); // safe point
-                cout << "Brick No. " << brickIndex << endl;
-                cout << "Moving to safe position." << endl;
+                cout << "====== Brick No. " << brickIndex << endl;
+                cout << "====== Moving to safe position." << endl;
                 if(!robot.MoveToParaBlend(goalPos, true)) break;
 
                 double safeH = 0.12; // meter, safety height from building brick level
@@ -924,28 +942,28 @@ void OperationMode(){
                 goalPos[0] = brickPos[0];
                 goalPos[1] = brickPos[1];
                 goalPos[5] = brickPos[3]; // Include yaw angle
-                cout << "Brick No. " << brickIndex << endl;
-                cout << "Moving to brick position." << endl;
+                cout << "====== Brick No. " << brickIndex << endl;
+                cout << "====== Moving to brick position." << endl;
                 if(!robot.MoveToParaBlend(goalPos, true)) break;
                 
                 // Place brick
                 goalPos[2] -= safeH;
-                cout << "Brick No. " << brickIndex << endl;
-                cout << "Placing brick." << endl;
+                cout << "====== Brick No. " << brickIndex << endl;
+                cout << "====== Placing brick." << endl;
                 if(!robot.MoveToParaBlend(goalPos, robot.safeT, true)) break;
                 robot.gripper.Open();
                 Sleep(200); //Wait a while after placing brick
 
                 // Rise and leave building area
                 goalPos[2] += safeH;
-                cout << "Brick No. " << brickIndex << endl;
-                cout << "Moving to stand by position." << endl;
+                cout << "====== Brick No. " << brickIndex << endl;
+                cout << "====== Moving to stand by position." << endl;
                 if(!robot.MoveToParaBlend(goalPos, true)) break;
 
                 // move to safe point
                 copy(begin(safePt), end(safePt), begin(goalPos)); // safe x,y,z position
-                cout << "Brick No. " << brickIndex << endl;
-                cout << "Moving to safe position." << endl;
+                cout << "====== Brick No. " << brickIndex << endl;
+                cout << "====== Moving to safe position." << endl;
                 if(robot.endEffectorPos[2] > safePt[2]){ // if current position is above safe point, then return to safe point within lowering z-height
                     goalPos[2] = robot.endEffectorPos[2];
                     if(!robot.MoveToParaBlend(goalPos, true)) break;
@@ -994,6 +1012,11 @@ void OperationMode(){
             getline(cin, robotPosPath);
             robot.SavePosToFile(robotPosPath  != "" ? robotPosPath : "lastPos.txt");
             system("pause");
+        }else if(userInput == "7"){ // print current status
+            robot.PrintEEPos();
+            robot.PrintRailOffset();
+            robot.PrintCableLength();
+            system("pause");
         }
     }
 }
@@ -1022,7 +1045,12 @@ void MainMenu(){
 }
 
 int main(){
-
+    if(!logger.OpenFile("log\\robot.log")){
+        cout << "Cannot open logger file. System will now exit." << endl;
+        exit(-1);
+    }
+    
+    logger.LogInfo("Reading robot config.");
     // read robot config file
     if(fstream("RobotConfig.json").good()){
         cout << "RobotConfig.json found. Config robot using RobotConfig.json " << endl;
@@ -1037,19 +1065,25 @@ int main(){
     }
     system("pause");
 
+    logger.LogInfo("Connecting to robot.");
     // connect to robot
     robot.Connect();
 
     if(robot.IsConnected()){
         cout << "All motors, all brakes and gripper connected success." << endl;
+        logger.LogError("All motors, all brakes and gripper connected success.");
+        
         // start main program
         MainMenu();
     }else{
         cout << "Robot Init Failed. Exiting..." << endl;
+        logger.LogError("Rail connect failed.");
     }
 
     // disconnect from robot
     robot.Disconnect();
+    logger.LogInfo("Robot Disconnected.");
+    logger.CloseFile();
     cout << "Bye" << endl;
 
     return 0;
