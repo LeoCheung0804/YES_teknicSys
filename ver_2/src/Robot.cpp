@@ -56,9 +56,12 @@ void Robot::Connect(){
 }
 
 void Robot::Disconnect(){
-    this->gripper.Disconnect();
-    this->cable.Disconnect();
-    this->rail.Disconnect();
+    if(this->gripper.IsConnected())
+        this->gripper.Disconnect();
+    if(this->cable.IsConnected())
+        this->cable.Disconnect();
+    if(this->rail.IsConnected())
+        this->rail.Disconnect();
     this->isConnected = false;
     this->posLogger.CloseFile();
 }
@@ -149,6 +152,7 @@ void Robot::UpdateModelFromFile(string filename, bool reconnect){ // Read model.
         this->useCableBraker = model.value("useCableBraker", false );
         this->useRailMotor = model.value("useRailMotor", false );
         this->useRailBraker = model.value("useRailBraker", false );
+        this->absTrqLmt = model.value("absTrqLmt", 60);
         string posLabel[] = {"x", "y", "z", "yaw", "pitch", "roll"};
 
         // Interate through arrays

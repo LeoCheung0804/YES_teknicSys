@@ -507,7 +507,7 @@ void RailMotorControlMode(){
 void PrintCalibrationMenu(){
 
     cout << "====================== Calibration Mode  ======================" << endl;
-    cout << "\t1 - Tighten Cables" << endl;
+    cout << "\t1 - Set Cables Torque" << endl;
     cout << "\t2 - Loose Cables" << endl;
     cout << "\t3 - Set All Motors to Home Position" << endl;
     cout << "\t4 - Reset EE Rotation to Zero" << endl;
@@ -528,10 +528,27 @@ void CalibrationMode(){
         if(userInput == "q"){ // Quit Calibration Mode
             break;
         }else if(userInput == "1"){ // Tighten Cables
-            robot.cable.TightenAllCable(robot.GetWorkingTrq());
+            cout << "Please Enter Target Torque (Default " << robot.GetWorkingTrq() << "): ";
+            getchar();
+            getline(cin, userInput);
+            char* p;
+            double targetTrq = strtod(userInput.c_str(), &p);
+            if(!*p) {
+                if(!userInput.length())
+                    targetTrq = robot.GetWorkingTrq();
+                if(targetTrq < -10 || targetTrq > 2){
+                    cout << "Target Torque Invalid." << endl;
+                    system("pause");
+                    continue;
+                }
+                cout << "Setting to Target Torque: " << targetTrq << endl;
+                robot.cable.SetCableTrq(targetTrq, 2);
+            }else{
+                cout << "Please enter a number !!!" << endl;
+            }
             system("pause");
         }else if(userInput == "2"){ // Loose Cables
-            cout << "Loose Cables. Not implemented. Tell Galad he sucks." << endl;
+            
             system("pause");
         }else if(userInput == "3"){ // Move All Cable Motors to Home Position
             robot.cable.HomeAllMotors();
@@ -996,6 +1013,7 @@ void OperationMode(){
             vector<vector<double>> trajList = ReadTrajFile(trajFileName != "" ? trajFileName : "traj.csv"); // Read "bricks.csv"
             cout << "The file contains " << trajList.size() << " points." << endl;
             robot.cable.OpenAllBrake();
+            robot.MoveToParaBlend(&(trajList[0])[0]);
             robot.RunCableTraj(trajList);
             robot.cable.CloseAllBrake();
             system("pause");

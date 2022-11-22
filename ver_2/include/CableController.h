@@ -12,6 +12,7 @@ private:
     ArduinoBLENode brakeNode;
     int cableNumber;
     int brakeNumber;
+    float absTrqLmt;
     vector<INode*> nodeList;
     bool isOnline;
     bool isConnected;
@@ -27,7 +28,7 @@ public:
     void Disconnect();
     bool IsConnected();
     void TightenCableByIndex(int index, float targetTrq);
-    void TightenAllCable(float targetTrq);
+    void SetCableTrq(float targetTrq, float tolerance);
     void HomeAllMotors();
     void MoveSingleMotorCmd(int index, int32_t cmd, bool absolute=true);
     void MoveAllMotorCmd(vector<int32_t> cmdList, bool absolute=true);

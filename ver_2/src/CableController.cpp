@@ -18,6 +18,10 @@ void CableController::Connect(int cableNumber, int brakeNumber, string brakePort
     this->brakeOnFlags = new bool(brakeNumber);
     this->useMotor = useMotor;
     this->useBraker = useBraker;
+    for(int i = 0; i < brakeNumber; i++) {
+        this->brakeOnFlags[i] = false;
+        cout << this->brakeOnFlags[i] << endl;
+    }
     if(this->isOnline){
         if(useMotor){
             if(!this->motorNode.Connect(cableNumber)){
@@ -62,10 +66,10 @@ void CableController::TightenCableByIndex(int index, float targetTrq){
         float currentTrq = nodeList[index]->Motion.TrqCommanded.Value();
         // check current trq and set move direction
         if(currentTrq > targetTrq){ 
-            nodeList[index]->Motion.MoveVelStart(-100); 
+            nodeList[index]->Motion.MoveVelStart(-10); 
         }
         else if (currentTrq < targetTrq - 1.8){ 
-            nodeList[index]->Motion.MoveVelStart(100);
+            nodeList[index]->Motion.MoveVelStart(10);
         }
         // move
         while(currentTrq > targetTrq || currentTrq < targetTrq - 1.8){
@@ -83,7 +87,7 @@ void CableController::TightenCableByIndex(int index, float targetTrq){
     
 }
 
-void CableController::TightenAllCable(float targetTrq){
+void CableController::SetCableTrq(float targetTrq, float tolerance){
     cout << "Setting all cable torque to: " << targetTrq << endl;
     this->OpenAllBrake();
     if(isOnline && this->useMotor){
@@ -113,13 +117,13 @@ void CableController::TightenAllCable(float targetTrq){
                     node->Motion.MoveVelStart(-10); 
                     moving = true;
                 }
-                else if (currentTrq < targetTrq - 1.5){ 
+                else if (currentTrq < targetTrq - tolerance){ 
                     node->Motion.MoveVelStart(10);
                     moving = true;
                 }
                 cout << "motor: " << index << ": " << currentTrq << "       " << endl;
                 // check current trq
-                if(currentTrq > targetTrq || currentTrq < targetTrq - 2)
+                if(currentTrq > targetTrq || currentTrq < targetTrq - tolerance)
                     moving = true; // continue loop 
                     index ++;
             }
@@ -151,6 +155,14 @@ void CableController::HomeAllMotors(){
             for (INode* node : nodeList) {
                 if(!node->Motion.MoveIsDone()) 
                     moving = true;
+                node->Motion.TrqCommanded.Refresh();
+                float currentTrq = node->Motion.TrqCommanded.Value();
+                if(currentTrq < -this->absTrqLmt || currentTrq > this->absTrqLmt){
+                    node->Motion.NodeStop(STOP_TYPE_ABRUPT);
+                    cout << "Error: Trq too large" << endl;
+                    moving = false;
+                    break;
+                }
             }
         }
     }
@@ -165,6 +177,15 @@ void CableController::MoveSingleMotorCmd(int index, int32_t cmd, bool absolute){
         ofstream myfile;
         try{
             nodeList[index]->Motion.MovePosnStart(cmd, absolute, true); // absolute position?
+            while(!nodeList[index]->Motion.MoveIsDone()) {
+                nodeList[index]->Motion.TrqCommanded.Refresh();
+                float currentTrq = nodeList[index]->Motion.TrqCommanded.Value();
+                if(currentTrq < -this->absTrqLmt || currentTrq > this->absTrqLmt){
+                    nodeList[index]->Motion.NodeStop(STOP_TYPE_ABRUPT);
+                    cout << "Error: Trq too large" << endl;
+                    break;
+                }
+            }
             if (nodeList[index]->Status.Alerts.Value().isInAlert()) {
                 myfile.open("log.txt", ios::app);
                 myfile << "Alert from Motor [" << index << "]: "<< nodeList[index]->Status.Alerts.Value().bits <<"\n";
