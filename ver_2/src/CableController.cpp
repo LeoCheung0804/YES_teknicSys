@@ -8,7 +8,7 @@
 
 CableController::CableController(bool isOnline){ this ->isOnline = isOnline; }
 
-void CableController::(int cableNumber, int brakeNumber, string brakePortName, bool useMotor, bool useBraker){
+void CableController::Connect(int cableNumber, int brakeNumber, string brakePortName, bool useMotor, bool useBraker){
     this->isOnline = isOnline;
     this->cableNumber = cableNumber;
     this->brakeNumber = brakeNumber;
@@ -19,11 +19,12 @@ void CableController::(int cableNumber, int brakeNumber, string brakePortName, b
     this->useMotor = useMotor;
     this->useBraker = useBraker;
     if(this->isOnline){
-        if(useMotorNum){
+        if(useMotor){
             if(!this->motorNode.Connect(cableNumber)){
                 cout << "Failed to connect cable motors. Exit programme." << endl;
                 this->isConnected = false;
             }
+            this->nodeList = motorNode.GetNodeList();
         }
         if(useBraker){
             if(!this->brakeNode.Connect(brakePortName)) { 
@@ -41,7 +42,7 @@ void CableController::Disconnect(){
     if(this->isOnline){
         if(this->useMotor)
             this->motorNode.Disconnect();
-        if(this->useBrake)
+        if(this->useBraker)
             this->brakeNode.Disconnect();
     }
     cout << "Cable Controller Offline." << endl;
@@ -86,34 +87,41 @@ void CableController::TightenAllCable(float targetTrq){
     cout << "Setting all cable torque to: " << targetTrq << endl;
     this->OpenAllBrake();
     if(isOnline && this->useMotor){
-        bool moving = false;
+        bool moving = true;
+        int index = 0;
+        cout << "current torques: " << endl;
         for(INode* node : nodeList){
             node->Motion.AccLimit = 200;
             // get current trq
             node->Motion.TrqCommanded.Refresh();
             float currentTrq = node->Motion.TrqCommanded.Value();
+            cout << "motor: " << index << ": " << currentTrq << "       " << endl;
             // check current trq and set move direction
-            if(currentTrq > targetTrq){ 
-                node->Motion.MoveVelStart(-100); 
-                moving = true;
-            }
-            else if (currentTrq < targetTrq - 1.8){ 
-                node->Motion.MoveVelStart(100);
-                moving = true;
-            }
+            index++;
         }
+        // -5 < trq < -3.5
         while(moving){
+            printf("\x1b[9A");
             moving = false;
-            cout << "current torques: ";
+            cout << "current torques: " << endl;
+            int index = 0;
             for(INode* node : nodeList){
                 // get current trq
                 node->Motion.TrqCommanded.Refresh();
                 float currentTrq = node->Motion.TrqCommanded.Value();
-                cout << currentTrq << " ";
+                if(currentTrq > targetTrq){ 
+                    node->Motion.MoveVelStart(-10); 
+                    moving = true;
+                }
+                else if (currentTrq < targetTrq - 1.5){ 
+                    node->Motion.MoveVelStart(10);
+                    moving = true;
+                }
+                cout << "motor: " << index << ": " << currentTrq << "       " << endl;
                 // check current trq
-                if(currentTrq > targetTrq || currentTrq < targetTrq - 1.8)
+                if(currentTrq > targetTrq || currentTrq < targetTrq - 2)
                     moving = true; // continue loop 
-                cout << endl;
+                    index ++;
             }
             if(kbhit()){
                 break;

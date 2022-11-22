@@ -1,6 +1,6 @@
 {
     "ModelName": "YES",
-    "isOnline": false,
+    "isOnline": true,
     "cableMotorNum": 8,    
     "railMotorNum": 4,
     "homePos": {
@@ -30,7 +30,7 @@
     "brickPickUpOffset": 0.21,
     "velLmt": 0.45,
     "endEffToGroundOffset": -0.0816,
-    "targetTorque": -4.7,
+    "targetTorque": -3.5,
     "absTorqueLmt": 85.0,
     "cableMotorScale": 509295.8179,
     "railMotorScale": -73885.256197,

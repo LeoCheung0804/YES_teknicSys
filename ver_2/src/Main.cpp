@@ -819,9 +819,9 @@ void RobotControlMode(){
         }else if(userInput == "2"){ // gripper control mode
             GripperControlMode();
         }else if(userInput == "3"){ // move robot to home position
-            double targetPos[6] = { 0, 0, 0, 0, 0, 0 };
+            robot.PrintHomePos();
             robot.cable.OpenAllBrake();
-            robot.MoveToParaBlend(targetPos, false);
+            robot.MoveToParaBlend(robot.homePos, false);
             robot.cable.CloseAllBrake();
             system("pause");
         }else if(userInput == "4"){ // Rail Control

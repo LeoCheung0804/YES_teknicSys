@@ -32,15 +32,18 @@ void Robot::Connect(){
 
     // Init Rail Motor Nodes
     this->rail = RailController(this->isOnline);
-    this->rail.Connect(851, this->railMotorNum, this->railBrakeCommPort, this->useCableMotor, this->useCableBraker);
+    this->rail.Connect(851, this->railMotorNum, this->railBrakeCommPort, this->useRailMotor, this->useRailBraker);
     
     // Init Cable Motor Nodes
     this->cable = CableController(this->isOnline);
-    this->cable.Connect(this->cableMotorNum, this->cableMotorBrakeNum, this->cableBrakeCommPort, this->useRailMotor, this->useRailBraker);
+    this->cable.Connect(this->cableMotorNum, this->cableMotorBrakeNum, this->cableBrakeCommPort, this->useCableMotor, this->useCableBraker);
 
-    if(!this->gripper.IsConnected()){
-        cout << "Error: Gripper not connected." << endl;
-        this->isConnected = false;
+    if(this->useGripper){
+        
+        if(!this->gripper.IsConnected()){
+            cout << "Error: Gripper not connected." << endl;
+            this->isConnected = false;
+        }
     }
     if(!this->cable.IsConnected()){
         cout << "Error: Cable motors not connected." << endl;
@@ -141,11 +144,11 @@ void Robot::UpdateModelFromFile(string filename, bool reconnect){ // Read model.
         this->railBrakeCommPort = model.value("railBrakeCommPort", "\\\\.\\COM26");
         this->brickPickUpOffset = model.value("brickPickUpOffset", 0.12);
         this->velLmt = model.value("velLmt", 0.45);
-        this->useGripper = model.value{"useGripper", false};
-        this->useCableMotor = model.value{"useCableMotor", false };
-        this->useCableBraker = model.value{"useCableBraker", false };
-        this->useRailMotor = model.value{"useRailMotor", false };
-        this->useRailBraker = model.value{"useRailBraker", false };
+        this->useGripper = model.value("useGripper", false);
+        this->useCableMotor = model.value("useCableMotor", false );
+        this->useCableBraker = model.value("useCableBraker", false );
+        this->useRailMotor = model.value("useRailMotor", false );
+        this->useRailBraker = model.value("useRailBraker", false );
         string posLabel[] = {"x", "y", "z", "yaw", "pitch", "roll"};
 
         // Interate through arrays
@@ -455,12 +458,12 @@ bool Robot::RunCableTraj(vector<vector<double>> posTraj, bool showAtten){
     return true;
 }
 
-bool Robot::MoveToLinear(double dest[], int time, bool showAtten, this->useEBrake = model.value)"useEBrake", 
+bool Robot::MoveToLinear(double dest[], int time, bool showAtten, bool useEBrake){ 
     if(!useEBrake) this->useEBrake = false;
     bool result = this->RunCableTraj(GenLinearTrajForCableMotor(this->endEffectorPos, dest, time, showAtten),showAtten);
     this->useEBrake = true;
     return result;
-};
+}
 
 bool Robot::MoveToParaBlend(double dest[], int time, bool showAtten){
     return this->RunCableTraj(GenParaBlendTrajForCableMotor(this->endEffectorPos, dest, time), showAtten);

@@ -14,8 +14,8 @@ void RailController::Connect(int motorPortNumber, int railNumber, string brakePo
     this->useMotor = useMotor;
     this->useBraker = useBraker;
     if(this->isOnline){
-        if(useMotorNum){
-            if(!this->motorNode.Connect(cableNumber)){
+        if(useMotor){
+            if(!this->motorNode.Connect(railNumber)){
                 cout << "Failed to connect rail motors. Exit programme." << endl;
                 this->isConnected = false;
             }
@@ -36,7 +36,7 @@ void RailController::Disconnect(){
     if(this->isOnline){
         if(this->useMotor)
             this->motorNode.Disconnect();
-        if(this->useBrake)
+        if(this->useBraker)
             this->brakeNode.Disconnect();
     }
     cout << "Rail Controller Offline." << endl;
