@@ -135,7 +135,7 @@ void Robot::UpdateModelFromFile(string filename, bool reconnect){ // Read model.
         // Initialize parameters
         this->cableMotorNum = model.value("cableMotorNum", 8); // Default value set in 2nd input
         this->railMotorNum = model.value("railMotorNum", 4);
-        this->absTrqLmt = model.value("absTorqueLmt", 60);
+        this->absTrqLmt = model.value("absTrqLmt", 10);
         this->endEffToGroundOffset = model.value("endEffToGroundOffset", -0.28);
         this->targetTrq = model.value("targetTorque", -2.5);
         this->cableMotorScale = model.value("cableMotorScale", 509295);
@@ -152,7 +152,7 @@ void Robot::UpdateModelFromFile(string filename, bool reconnect){ // Read model.
         this->useCableBraker = model.value("useCableBraker", false );
         this->useRailMotor = model.value("useRailMotor", false );
         this->useRailBraker = model.value("useRailBraker", false );
-        this->absTrqLmt = model.value("absTrqLmt", 60);
+        this->cable.SetTrqLmt(this->absTrqLmt);
         string posLabel[] = {"x", "y", "z", "yaw", "pitch", "roll"};
 
         // Interate through arrays
@@ -439,19 +439,23 @@ bool Robot::RunCableTraj(vector<vector<double>> posTraj, bool showAtten){
     vector<vector<int32_t>> cmdTraj = this->PoseTrajToCmdTraj(posTraj);
     int index = 0;
     if(showAtten){
-        for(int i = 0; i < 16; i++){
+        for(int i = 0; i < 17; i++){
             cout << endl;
         }
     }
     for(vector<int32_t> frame : cmdTraj){
         if(!this->eBrake(true, false)) return false;
-        this->cable.MoveAllMotorCmd(frame);
+        if(!this->cable.MoveAllMotorCmd(frame)){
+            cout << "Trajectory stopped" << endl;
+            return false;
+        }
         for(int i = 0; i < 6; i++)
             this->endEffectorPos[i] = posTraj[index][i];
         index++;
         this->posLogger.LogPos(this->endEffectorPos, this->railOffset);
         if(showAtten){
-            printf("\x1b[16A");
+            printf("\x1b[17A");
+            cout << "Current frame: " << index << endl;
             this->PrintEEPos();
             cout << "Current Cable Motor Count: " << endl;
             for (int i = 0; i < this->cableMotorNum; i++){

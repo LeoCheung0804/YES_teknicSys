@@ -142,6 +142,18 @@ void CableController::SetCableTrq(float targetTrq, float tolerance){
     cout << "Set all cable torque to: " << targetTrq << " finished." << endl;
 }
 
+void CableController::SetTrqLmt(float lmt){
+    this->absTrqLmt = lmt;
+}
+
+void CableController::ClearAlert(){
+    for (INode* node : nodeList) {      
+        node->EnableReq(true);                    //Enable node 
+        node->Status.AlertsClear();               //Clear Alerts on node 
+        node->Motion.NodeStopClear();             //Clear Nodestops on Node     
+    }
+}
+
 void CableController::HomeAllMotors(){
     cout << "Moving all cable motors to zero position." << endl;
     this->OpenAllBrake();
@@ -177,15 +189,7 @@ void CableController::MoveSingleMotorCmd(int index, int32_t cmd, bool absolute){
         ofstream myfile;
         try{
             nodeList[index]->Motion.MovePosnStart(cmd, absolute, true); // absolute position?
-            while(!nodeList[index]->Motion.MoveIsDone()) {
-                nodeList[index]->Motion.TrqCommanded.Refresh();
-                float currentTrq = nodeList[index]->Motion.TrqCommanded.Value();
-                if(currentTrq < -this->absTrqLmt || currentTrq > this->absTrqLmt){
-                    nodeList[index]->Motion.NodeStop(STOP_TYPE_ABRUPT);
-                    cout << "Error: Trq too large" << endl;
-                    break;
-                }
-            }
+            
             if (nodeList[index]->Status.Alerts.Value().isInAlert()) {
                 myfile.open("log.txt", ios::app);
                 myfile << "Alert from Motor [" << index << "]: "<< nodeList[index]->Status.Alerts.Value().bits <<"\n";
@@ -201,37 +205,74 @@ void CableController::MoveSingleMotorCmd(int index, int32_t cmd, bool absolute){
             myfile << "\nERROR: Motor [" << index << "] command failed. " << fn->tm_hour << ":"<< fn->tm_min << ":" << fn->tm_sec <<"\n";
             myfile << "Caught error: addr="<< (int) theErr.TheAddr<<", err="<<hex<<theErr.ErrorCode <<"\nmsg="<<theErr.ErrorMsg<<"\n";
             myfile.close();
+            this->eStop = true;
         }
     }else{
         Sleep(10);
     }
 }
-
-void CableController::MoveAllMotorCmd(vector<int32_t> cmdList, bool absolute){
-    
+void CableController::CheckTrq(){
+    bool moving = true;
+    bool eStop = false;
+    float currentTrq = 0;
+    float absTrqLmt = 35; 
+    float errorCable = 0;
+    while(moving && !eStop){
+        moving = false;
+        // check quite loop condition
+        for(int i = 0; i < this->cableNumber; i++){
+            if(!nodeList[i]->Motion.MoveIsDone()){
+                moving = true;
+                break;
+            }
+        }
+        // check torque
+        for(int i = 0; i < this->cableNumber; i++){
+            nodeList[i]->Motion.TrqCommanded.Refresh();
+            currentTrq = nodeList[i]->Motion.TrqCommanded.Value();
+            if(currentTrq < -absTrqLmt || currentTrq > absTrqLmt){
+                cout << "Error: Trq too large, cable: " << i << ": " << currentTrq << "/" << absTrqLmt << endl;
+                // stop all node
+                for(int j = 0; j < this->cableNumber; j++){
+                    nodeList[j]->Motion.NodeStop(STOP_TYPE_ABRUPT);
+                }
+                moving = false;
+                eStop = true;
+                break;
+            }
+        }
+    }
+}
+bool CableController::MoveAllMotorCmd(vector<int32_t> cmdList, bool absolute){
+    this->eStop = false;
     auto start = chrono::steady_clock::now();
 
     vector<thread> threadList;
     int index = 0;
+    // thread t1(&CableController::CheckTrq, this);
     for(int32_t cmd : cmdList){
         threadList.push_back(thread(&CableController::MoveSingleMotorCmd, this, index, cmd, absolute));
         index++;
     }
     for(thread &thr : threadList){
         thr.join();
-        index++;
     }
-    
+    // t1.join();
     auto end = chrono::steady_clock::now();
-    
     double dif = this->MILLIS_TO_NEXT_FRAME - chrono::duration_cast<chrono::milliseconds>(end-start).count() - 1;
-    if(dif > 0) { Sleep(dif);}
+    while(dif > 0){    
+        end = chrono::steady_clock::now();
+        dif = this->MILLIS_TO_NEXT_FRAME - chrono::duration_cast<chrono::milliseconds>(end-start).count() - 1;
+        if(this->eStop)
+            return false;
+    }
+    return true;
 }
 
-void CableController::MoveAllMotorCmd(int cmd, bool absolute){
+bool CableController::MoveAllMotorCmd(int cmd, bool absolute){
     vector<int32_t> cmdList;
     for(int i = 0; i < this->cableNumber; i++){ cmdList.push_back(cmd); }
-    this->MoveAllMotorCmd(cmdList, absolute);
+    return this->MoveAllMotorCmd(cmdList, absolute);
 }
 
 bool CableController::IsMoveFinished(){ return isMoveFinished; }

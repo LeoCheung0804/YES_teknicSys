@@ -818,6 +818,8 @@ void PrintRobotControlMenu(){
     cout << "\t2 - Gripper Control" << endl;
     cout << "\t3 - Move Robot to Home Position" << endl;
     cout << "\t4 - Rail Control " << endl;
+    cout << "\t5 - Clear Exception " << endl;
+
     cout << "\tq - Exit" << endl;
     cout << "Please Select Mode: ";
 }
@@ -838,7 +840,7 @@ void RobotControlMode(){
         }else if(userInput == "3"){ // move robot to home position
             robot.PrintHomePos();
             robot.cable.OpenAllBrake();
-            robot.MoveToParaBlend(robot.homePos, false);
+            robot.MoveToParaBlend(robot.homePos, true);
             robot.cable.CloseAllBrake();
             system("pause");
         }else if(userInput == "4"){ // Rail Control
@@ -847,6 +849,9 @@ void RobotControlMode(){
             RailControlMode();
             robot.cable.CloseAllBrake();
             robot.rail.CloseAllBrake();
+        }else if(userInput == "5"){
+            robot.cable.ClearAlert();
+            system("pause");
         }
     }
 }
@@ -1020,7 +1025,7 @@ void OperationMode(){
         }else if(userInput == "5"){ // requst current torque readings
             cout << "Current Measured Cable Motor Trq: " << endl;
             for(int i = 0; i < robot.GetCableMotorNum(); i++){
-                cout << "\tCable " << i << ": " << robot.cable.GetMotorPosMeasured(i) << endl;
+                cout << "\tCable " << i << ": " << robot.cable.GetMotorTorqueMeasured(i) << endl;
             }
             system("pause");
         }else if(userInput == "6"){ // save current ee pos to file
