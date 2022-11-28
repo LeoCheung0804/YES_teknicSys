@@ -188,7 +188,7 @@ void Robot::UpdateModelFromFile(string filename, bool reconnect){ // Read model.
     
 }
 
-void Robot::UpdatePosFromFile(string filename){
+void Robot::UpdatePosFromFile(string filename, bool calibration){
     try{
         ifstream file (filename); //"lastPos.txt" or "currentPos.csv"
         if(!file.good()){
@@ -210,7 +210,7 @@ void Robot::UpdatePosFromFile(string filename){
             catch(int e){ cout << "Check if currentPos.csv matches the in1 input no." << endl; }
             vector<double> cableLengthList = this->GetCableLength();
             // calibration motors
-            if(this->isOnline){
+            if(this->isOnline && calibration){
                 // cable motors
                 cout << "Calibrating Cable Motor" << endl;
                 for(int index = 0; index < this->cableMotorNum; index++){
@@ -507,7 +507,7 @@ bool Robot::RunCableTraj(vector<vector<double>> posTraj, bool showAtten){
     vector<vector<int32_t>> cmdTraj = this->PoseTrajToCmdTraj(posTraj);
     int index = 0;
     if(showAtten){
-        for(int i = 0; i < 26; i++){
+        for(int i = 0; i < 18; i++){
             cout << endl;
         }
     }
@@ -524,21 +524,22 @@ bool Robot::RunCableTraj(vector<vector<double>> posTraj, bool showAtten){
         if(this->isOnline)
             this->posLogger.LogPos(this->endEffectorPos, this->railOffset);
         if(showAtten){
-            printf("\x1b[26A");
+            printf("\x1b[18A");
             cout << "Current frame: " << index << endl;
             this->PrintEEPos();
             cout << "Current Cable Motor Count: " << endl;
             for (int i = 0; i < this->cableMotorNum; i++){
                 cout << "\tCable " << i << ": " << frame[i] << endl;
             }
-            cout << "Current Measured Cable Motor Trq: " << endl;
-            for (int i = 0; i < this->cableMotorNum; i++){
-                cout << "\tCable " << i << ": " << this->cable.GetMotorTorqueMeasured(i) << endl;
-            }
+            // cout << "Current Measured Cable Motor Trq: " << endl;
+            // for (int i = 0; i < this->cableMotorNum; i++){
+            //     cout << "\tCable " << i << ": " << this->cable.GetMotorTorqueMeasured(i) << endl;
+            // }
             
         }
         auto end = chrono::steady_clock::now();
         double dif = this->MILLIS_TO_NEXT_FRAME - chrono::duration_cast<chrono::milliseconds>(end-start).count() - 1;
+        cout << "dif: " << dif << endl;
         while(dif > 0){    
             end = chrono::steady_clock::now();
             dif = this->MILLIS_TO_NEXT_FRAME - chrono::duration_cast<chrono::milliseconds>(end-start).count() - 1;

@@ -3,6 +3,7 @@
 
 #include "TeknicNode.h"
 #include "ArduinoBLENode.h"
+#include "Logger.h"
 
 using namespace std;
 using namespace sFnd;
@@ -18,11 +19,12 @@ private:
     bool isConnected;
     bool isMoveFinished;
     bool* brakeOnFlags;
-    int MILLIS_TO_NEXT_FRAME = 20;
+    int MILLIS_TO_NEXT_FRAME = 50;
     string sendStr;
     bool useMotor;
     bool useBraker;
     bool eStop;
+    Logger logger;
 public:
     CableController(bool isOnline=true);
     void Connect(int cableNumber, int brakeNumber, string brakePortName, bool useMotor, bool useBraker);

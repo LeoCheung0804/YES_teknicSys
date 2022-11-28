@@ -11,7 +11,7 @@ private:
     ArduinoBLENode node;
     bool isOnline;
     bool isMoveFinished;
-    int MILLIS_TO_NEXT_FRAME = 20;
+    int MILLIS_TO_NEXT_FRAME = 50;
     string sendStr = "";
     bool isConnected;
 public:

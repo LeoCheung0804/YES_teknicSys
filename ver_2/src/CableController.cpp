@@ -18,6 +18,7 @@ void CableController::Connect(int cableNumber, int brakeNumber, string brakePort
     this->brakeOnFlags = new bool(brakeNumber);
     this->useMotor = useMotor;
     this->useBraker = useBraker;
+    this->logger.OpenFile("log\\trq.log");
     for(int i = 0; i < brakeNumber; i++) {
         this->brakeOnFlags[i] = false;
         cout << this->brakeOnFlags[i] << endl;
@@ -42,6 +43,7 @@ void CableController::Connect(int cableNumber, int brakeNumber, string brakePort
 }
 
 void CableController::Disconnect(){
+    this->logger.CloseFile();
     this->CloseAllBrake();
     if(this->isOnline){
         if(this->useMotor)
@@ -57,7 +59,7 @@ bool CableController::IsConnected(){ return this->isConnected; }
 
 void CableController::SetCableTrqByIndex(int index, float targetTrq, float tolerance){
     cout << "Setting all cable torque to: " << targetTrq << endl;
-    this->OpenBrake(index);
+    // this->OpenBrake(int(index/2));
     if(isOnline && this->useMotor){
         bool moving = true;
         cout << "current torques: " << endl;
@@ -95,7 +97,7 @@ void CableController::SetCableTrqByIndex(int index, float targetTrq, float toler
         nodeList[index]->Motion.AccLimit = 40000;
         
     }
-    this->CloseBrake(index);
+    // this->CloseBrake(int(index/2));
     cout << "Set cable " << index << " torque to: " << targetTrq << " finished." << endl;
     
 }
@@ -122,10 +124,12 @@ void CableController::SetCableTrq(float targetTrq, float tolerance){
             moving = false;
             cout << "current torques: " << endl;
             int index = 0;
+            string log = "";
             for(INode* node : nodeList){
                 // get current trq
                 node->Motion.TrqCommanded.Refresh();
                 float currentTrq = node->Motion.TrqCommanded.Value();
+                log +=  to_string(currentTrq) + ",";
                 if(currentTrq > targetTrq){ 
                     node->Motion.MoveVelStart(-10); 
                     moving = true;
@@ -140,6 +144,8 @@ void CableController::SetCableTrq(float targetTrq, float tolerance){
                     moving = true; // continue loop 
                     index ++;
             }
+            log += "\n";
+            logger.LogInfo(log);
             if(kbhit()){
                 break;
             }
@@ -175,7 +181,7 @@ void CableController::StopAllMotor(){
 
 bool CableController::MoveSingleMotorCmd(int index, int32_t cmd, bool absolute){
     assert(index >= 0 && index <= cableNumber);
-    assert(!this->brakeOnFlags[index/2]);
+    // assert(!this->brakeOnFlags[index/2]);
     if(this->isOnline && this->useMotor){
         ofstream myfile;
         try{

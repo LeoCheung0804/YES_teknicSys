@@ -76,7 +76,7 @@ public:
 
     /// @brief Read robot Position from csv/txt file
     /// @param filename string. Position file name
-    void UpdatePosFromFile(string filename);
+    void UpdatePosFromFile(string filename, bool calibration=true);
 
     /// @brief Read robot Position from csv/txt file
     /// @param filename string. Position file name

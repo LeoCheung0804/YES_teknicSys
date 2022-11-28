@@ -1112,13 +1112,7 @@ int main(){
         getline(cin, robotConfigFile);
         robot.UpdateModelFromFile(robotConfigFile != "" ? robotConfigFile : "RobotConfig.json");
     }
-    if(fstream("lastPos.txt").good()){
-        cout << "lastPos.txt found. Recover last position of robot." << endl;
-        robot.UpdatePosFromFile("lastPos.txt");
-        logger.LogInfo("Reading Last Pos from pos log file");
-    }
 
-    system("pause");
     
     logger.LogInfo("Connecting to robot.");
     // connect to robot
@@ -1128,6 +1122,12 @@ int main(){
         cout << "All motors, all brakes and gripper connected success." << endl;
         logger.LogInfo("All motors, all brakes and gripper connected success.");
         
+        if(fstream("lastPos.txt").good()){
+            cout << "lastPos.txt found. Recover last position of robot." << endl;
+            robot.UpdatePosFromFile("lastPos.txt", true);
+            logger.LogInfo("Reading Last Pos from pos log file");
+        }
+        system("pause");
         // start main program
         MainMenu();
     }else{
