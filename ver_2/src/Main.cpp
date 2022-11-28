@@ -1088,18 +1088,6 @@ void MainMenu(){
         }else if(userInput == "2"){
             OperationMode();
         }else if(userInput == "q"){
-            string robotPosPath;
-            cout << "Please Enter Robot Position File Path (Default lastPos.txt, enter no to escap from saving): ";
-            getchar();
-            getline(cin, robotPosPath);
-            if(robotPosPath == "no")
-                break;
-            else{
-                robot.SavePosToFile(robotPosPath  != "" ? robotPosPath : "lastPos.txt");
-                system("pause");
-                break;
-            }
-            cout << "Exiting..." << endl;
             break;
         }
     }
@@ -1138,7 +1126,7 @@ int main(){
 
     if(robot.IsConnected()){
         cout << "All motors, all brakes and gripper connected success." << endl;
-        logger.LogError("All motors, all brakes and gripper connected success.");
+        logger.LogInfo("All motors, all brakes and gripper connected success.");
         
         // start main program
         MainMenu();
@@ -1147,6 +1135,18 @@ int main(){
         logger.LogError("Rail connect failed.");
     }
 
+    // save last pos
+    robot.PrintEEPos();
+    robot.PrintRailOffset();
+    string robotPosPath;
+    cout << "Please Enter Robot Position File Path (Default lastPos.txt, enter 'no' to escape from saving): ";
+    getchar();
+    getline(cin, robotPosPath);
+    if(robotPosPath != "no"){
+        robot.SavePosToFile(robotPosPath  != "" ? robotPosPath : "lastPos.txt");
+        system("pause");
+    }
+    
     // disconnect from robot
     robot.Disconnect();
     logger.LogInfo("Robot Disconnected.");
