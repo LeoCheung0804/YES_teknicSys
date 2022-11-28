@@ -15,6 +15,7 @@ private:
 public:
     Logger();
     bool OpenFile(string filename);
+    bool NewFile(string filename);
     void CloseFile();
     void Log(string msg);
     void LogError(string msg);

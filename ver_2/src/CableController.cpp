@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <Windows.h>
 #include <conio.h>
+#include <queue>
 
 CableController::CableController(bool isOnline){ this ->isOnline = isOnline; }
 
@@ -61,38 +62,26 @@ void CableController::SetCableTrqByIndex(int index, float targetTrq, float toler
     cout << "Setting all cable torque to: " << targetTrq << endl;
     // this->OpenBrake(int(index/2));
     if(isOnline && this->useMotor){
-        bool moving = true;
         cout << "current torques: " << endl;
         nodeList[index]->Motion.AccLimit = 200;
         // get current trq
-        nodeList[index]->Motion.TrqCommanded.Refresh();
-        float currentTrq = nodeList[index]->Motion.TrqCommanded.Value();
+        float currentTrq = nodeList[index]->Motion.TrqMeasured.Value();
         cout << "motor: " << index << ": " << currentTrq << "       " << endl;
-        // -5 < trq < -3.5
-        while(moving){
-            // printf("\x1b[9A");
-            moving = false;
-            cout << "current torques: " << endl;
-            // get current trq
-            nodeList[index]->Motion.TrqCommanded.Refresh();
-            float currentTrq = nodeList[index]->Motion.TrqCommanded.Value();
-            if(currentTrq > targetTrq){ 
-                nodeList[index]->Motion.MoveVelStart(-10); 
-                moving = true;
-            }
-            else if (currentTrq < targetTrq - tolerance){ 
-                nodeList[index]->Motion.MoveVelStart(10);
-                moving = true;
-            }
-            cout << "motor: " << index << ": " << currentTrq << "       " << endl;
-            // check current trq
-            if(currentTrq > targetTrq || currentTrq < targetTrq - tolerance)
-                moving = true; // continue loop 
-            if(kbhit()){
-                break;
+        
+        if(currentTrq > targetTrq){ 
+            nodeList[index]->Motion.MoveVelStart(-10); 
+            currentTrq = nodeList[index]->Motion.TrqMeasured.Value();
+            while(currentTrq > targetTrq){
+                cout << "current torques: " << endl;
+                // get current trq
+                currentTrq = nodeList[index]->Motion.TrqMeasured.Value();
+                cout << "motor: " << index << ": " << currentTrq << "       " << endl;
+                if(kbhit()){
+                    nodeList[index]->Motion.NodeStop(STOP_TYPE_ABRUPT);
+                    break;
+                }
             }
         }
-
         nodeList[index]->Motion.NodeStop(STOP_TYPE_ABRUPT);
         nodeList[index]->Motion.AccLimit = 40000;
         
@@ -102,6 +91,7 @@ void CableController::SetCableTrqByIndex(int index, float targetTrq, float toler
     
 }
 
+/*
 void CableController::SetCableTrq(float targetTrq, float tolerance){
     cout << "Setting all cable torque to: " << targetTrq << endl;
     this->OpenAllBrake();
@@ -112,12 +102,18 @@ void CableController::SetCableTrq(float targetTrq, float tolerance){
         for(INode* node : nodeList){
             node->Motion.AccLimit = 200;
             // get current trq
-            node->Motion.TrqCommanded.Refresh();
-            float currentTrq = node->Motion.TrqCommanded.Value();
+            float currentTrq = node->Motion.TrqMeasured.Value();
             cout << "motor: " << index << ": " << currentTrq << "       " << endl;
             // check current trq and set move direction
             index++;
         }
+        int windowSize = 5;
+        vector<queue<float>> bucketList;
+        for(int i = 0; i < cableNumber; i++){
+            queue<float> bucket;
+            bucketList.push_back(bucket);
+        }
+        float result = 0;
         // -5 < trq < -3.5
         while(moving){
             printf("\x1b[9A");
@@ -127,26 +123,106 @@ void CableController::SetCableTrq(float targetTrq, float tolerance){
             string log = "";
             for(INode* node : nodeList){
                 // get current trq
-                node->Motion.TrqCommanded.Refresh();
                 float currentTrq = node->Motion.TrqCommanded.Value();
-                log +=  to_string(currentTrq) + ",";
-                if(currentTrq > targetTrq){ 
+                bucketList[index].push(currentTrq);
+                if(bucketList[index].size() > windowSize){
+                    bucketList[index].pop();
+                }
+                result = 0;
+                for(int i = 0; i < bucketList[index].size(); i++){
+                    result += bucketList[index].front();
+                    bucketList[index].push(bucketList[index].front());
+                    bucketList[index].pop();
+                }
+                result = result / bucketList[index].size();
+                if(result > targetTrq){ 
                     node->Motion.MoveVelStart(-10); 
                     moving = true;
                 }
-                else if (currentTrq < targetTrq - tolerance){ 
+                else if (result < targetTrq - tolerance){ 
                     node->Motion.MoveVelStart(10);
                     moving = true;
                 }
-                cout << "motor: " << index << ": " << currentTrq << "       " << endl;
+                cout << "motor: " << index << ": " << result << "       " << endl;
                 // check current trq
-                if(currentTrq > targetTrq || currentTrq < targetTrq - tolerance)
+                if(result > targetTrq || result < targetTrq - tolerance)
                     moving = true; // continue loop 
                     index ++;
+                log +=  to_string(result) + ",";
             }
             log += "\n";
             logger.LogInfo(log);
             if(kbhit()){
+                break;
+            }
+        }
+
+        for(INode* node : nodeList){
+            node->Motion.NodeStop(STOP_TYPE_ABRUPT);
+            node->Motion.AccLimit = 40000;
+        }
+        
+    }
+    this->CloseAllBrake();
+    cout << "Set all cable torque to: " << targetTrq << " finished." << endl;
+}
+*/
+
+
+void CableController::SetCableTrq(float targetTrq, float tolerance){
+    cout << "Setting all cable torque to: " << targetTrq << endl;
+    this->OpenAllBrake();
+    if(isOnline && this->useMotor){
+        bool moving = true;
+        int index = 0;
+        cout << "current torques: " << endl;
+        float currentTrq = 0;
+        for(INode* node : nodeList){
+            node->Motion.AccLimit = 200;
+            // get current trq
+            currentTrq = node->Motion.TrqMeasured.Value();
+            cout << "motor: " << index << ": " << currentTrq << "       " << endl;
+            // check current trq and set move direction
+            if(currentTrq > targetTrq){ 
+                node->Motion.MoveVelStart(-10); 
+            }
+            index++;
+        }
+        // -5 < trq < -3.5
+        string log = "";
+        auto start = chrono::steady_clock::now();
+        auto end = chrono::steady_clock::now();
+        double dif = this->MILLIS_TO_NEXT_FRAME - chrono::duration_cast<chrono::milliseconds>(end-start).count() - 1;
+        while(moving){
+            end = chrono::steady_clock::now();
+            dif = this->MILLIS_TO_NEXT_FRAME - chrono::duration_cast<chrono::milliseconds>(end-start).count() - 1;
+            if(dif < 0){
+                start = chrono::steady_clock::now();
+                printf("\x1b[9A");
+                moving = false;
+                cout << "current torques: " << endl;
+                index = 0;
+                log = "";
+                for(INode* node : nodeList){
+                    // get current trq
+                    currentTrq = node->Motion.TrqMeasured.Value();
+                    if (currentTrq < targetTrq){ 
+                        node->Motion.NodeStop(STOP_TYPE_ABRUPT);
+                    }else{
+                        moving = true;
+                    }
+                    cout << "motor: " << index << ": " << currentTrq << "       " << endl;
+                    index ++;
+                    log +=  to_string(currentTrq) + ",";
+                }
+                logger.LogInfo(log);
+            }
+            if(kbhit()){
+                for(INode* node : nodeList){
+                    node->Motion.NodeStop(STOP_TYPE_ABRUPT);
+                    node->Motion.AccLimit = 40000;
+                }
+                moving = false;
                 break;
             }
         }
