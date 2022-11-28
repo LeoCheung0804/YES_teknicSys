@@ -26,6 +26,7 @@ void ClearConsoleInputBuffer()
 }
 
 void PrintGripperControlMenu(){
+    system("CLS");
     cout << "====================== Gripper Control Menu  ======================" << endl;
     cout << "\t1 - Close Gripper" << endl;
     cout << "\t2 - Open Gripper" << endl;
@@ -71,31 +72,33 @@ void GripperControlMode(){
     }
 }
 
-void PrintCableMotorControlMenu(int selectedCable){
+int selectedCable = 0;
+void PrintCableMotorControlMenu(){
+    system("CLS");
     cout << "====================== Cable Motor Control Mode  ======================" << endl;
     cout << "Beware that there is no soft emergency stop in this mode. " << endl;
     cout << "Current Selected Cable: " << selectedCable << endl;
     cout << "\t1 - Select Cable" << endl;
-    cout << "\t2 - Move Selected Cable Relative (Motor Step)" << endl;
-    cout << "\t3 - Move Selected Cable Absolute (Motor Step)" << endl;
+    cout << "\t2 - Set Cable Trq" << endl;
+    cout << "\t3 - Move Selected Cable Relative (Motor Step)" << endl;
     cout << "\t4 - Move Selected Cable Relative (Cable Length)" << endl;
-    cout << "\t5 - Move Selected Cable Absolute (Cable Length)" << endl;
-    cout << "\t6 - Move ALL Cable Relative (Motor Step)" << endl;
-    cout << "\t7 - Move ALL Cable Absolute (Motor Step)" << endl;
-    cout << "\t8 - Move ALL Cable Relative (Cable Length)" << endl;
-    cout << "\t9 - Move ALL Cable Absolute (Cable Length)" << endl;
-    cout << "\t10 - Open Selected Cable Brake" << endl;
-    cout << "\t11 - Close Selected Cable Brake" << endl;
-    cout << "\t12 - Open ALL Cable Brake" << endl;
-    cout << "\t13 - Close ALL Cable Brake" << endl;
+    cout << "\t5 - Move ALL Cable Relative (Motor Step)" << endl;
+    cout << "\t6 - Move ALL Cable Relative (Cable Length)" << endl;
+    cout << "\t7 - Move Selected Cable Absolute (Motor Step)" << endl;
+    cout << "\t8 - Move Selected Cable Absolute (Cable Length)" << endl;
+    cout << "\t9 - Move ALL Cable Absolute (Motor Step)" << endl;
+    cout << "\t10 - Move ALL Cable Absolute (Cable Length)" << endl;
+    // cout << "\t11 - Open Selected Cable Brake" << endl;
+    // cout << "\t12 - Close Selected Cable Brake" << endl;
+    // cout << "\t13 - Open ALL Cable Brake" << endl;
+    // cout << "\t14 - Close ALL Cable Brake" << endl;
     cout << "\tq - Back To Pervioue Menu" << endl;
     cout << "Please Select Operation: " << endl;
 }
 
 void CableMotorControlMode(){
-    int selectedCable = 0;
     while(true){
-        PrintCableMotorControlMenu(selectedCable);
+        PrintCableMotorControlMenu();
         cin >> userInput;
         if(userInput == "q"){ // Quit Calibration Mode
             break;
@@ -114,7 +117,27 @@ void CableMotorControlMode(){
                 }
             }
             system("pause");
-        }else if(userInput == "2"){ // Move Selected Cable Relative By Motor Step
+        }else if(userInput == "2"){ // Set Cable Trq
+            cout << "Please Enter Target Torque (Default " << robot.GetWorkingTrq() << "): ";
+            getchar();
+            getline(cin, userInput);
+            char* p;
+            double targetTrq = strtod(userInput.c_str(), &p);
+            if(!*p) {
+                if(!userInput.length())
+                    targetTrq = robot.GetWorkingTrq();
+                if(targetTrq < -10 || targetTrq > 2){
+                    cout << "Target Torque Invalid." << endl;
+                    system("pause");
+                    continue;
+                }
+                cout << "Setting to Target Torque: " << targetTrq << endl;
+                robot.cable.SetCableTrqByIndex(selectedCable, targetTrq, 2);
+            }else{
+                cout << "Please enter a number !!!" << endl;
+            }
+            system("pause");
+        }else if(userInput == "3"){ // Move Selected Cable Relative By Motor Step
             while(true){
                 cout << "Move Selected Cable Relative By Motor Step" << endl;
                 cout << "Please Enter Step (enter q to exit): ";
@@ -127,24 +150,6 @@ void CableMotorControlMode(){
                     if(!*p) {
                         cout << "Moving Cable " << selectedCable << " By Step: " << step << endl;
                         robot.cable.MoveSingleMotorCmd(selectedCable, step, false);
-                    }else{
-                        cout << "Please enter an intager number!!!" << endl;
-                    }
-                }
-            }
-        }else if(userInput == "3"){ // Move Selected Cable Absolute By Motor Step
-            while(true){
-                cout << "Move Selected Cable Absolute By Motor Step" << endl;
-                cout << "Please Enter Step (enter q to exit): ";
-                cin >> userInput;
-                if(userInput == "q"){
-                    break;
-                }else{
-                    char* p;
-                    int step = strtol(userInput.c_str(), &p, 10);
-                    if(!*p) {
-                        cout << "Moving Cable " << selectedCable << " To Absolute Step: " << step << endl;
-                        robot.cable.MoveSingleMotorCmd(selectedCable, step, true);
                     }else{
                         cout << "Please enter an intager number!!!" << endl;
                     }
@@ -168,25 +173,7 @@ void CableMotorControlMode(){
                     }
                 }
             }
-        }else if(userInput == "5"){ // Move Selected Cable Absolute By Cable Length
-            while(true){
-                cout << "Move Selected Cable Absolute By Cable Length" << endl;
-                cout << "Please Enter Length in Meters (enter q to exit): ";
-                cin >> userInput;
-                if(userInput == "q"){
-                    break;
-                }else{
-                    char* p;
-                    double length = strtod(userInput.c_str(), &p);
-                    if(!*p) {
-                        cout << "Moving Cable " << selectedCable << " To Absolute Length: " << length << endl;
-                        robot.cable.MoveSingleMotorCmd(selectedCable, robot.CableMotorLengthToCmdAbsulote(length), true);
-                    }else{
-                        cout << "Please enter a number!!!" << endl;
-                    }
-                }
-            }
-        }else if(userInput == "6"){ // Move ALL Cable Relative By Motor Step
+        }else if(userInput == "5"){ // Move ALL Cable Relative By Motor Step
             while(true){
                 cout << "Move ALL Cable Relative By Motor Step" << endl;
                 cout << "Please Enter Step (enter q to exit): ";
@@ -204,25 +191,7 @@ void CableMotorControlMode(){
                     }
                 }
             }
-        }else if(userInput == "7"){ // Move ALL Cable Absolute By Motor Step
-            while(true){
-                cout << "Move ALL Cable Absolute By Motor Step" << endl;
-                cout << "Please Enter Step (enter q to exit): ";
-                cin >> userInput;
-                if(userInput == "q"){
-                    break;
-                }else{
-                    char* p;
-                    int step = strtol(userInput.c_str(), &p, 10);
-                    if(!*p) {
-                        cout << "Moving ALL Cable To Absolute Step: " << step << endl;
-                        robot.cable.MoveAllMotorCmd(step, true);
-                    }else{
-                        cout << "Please enter an intager number!!!" << endl;
-                    }
-                }
-            }
-        }else if(userInput == "8"){ // Move ALL Cable Relative By Cable Length
+        }else if(userInput == "6"){ // Move ALL Cable Relative By Cable Length
             while(true){
                 cout << "Move ALL Cable Relative By Cable Length" << endl;
                 cout << "Please Enter Length in Meters (enter q to exit): ";
@@ -240,7 +209,61 @@ void CableMotorControlMode(){
                     }
                 }
             }
-        }else if(userInput == "9"){ // Move ALL Cable Absolute By Cable Length
+        }else if(userInput == "7"){ // Move Selected Cable Absolute By Motor Step
+            while(true){
+                cout << "Move Selected Cable Absolute By Motor Step" << endl;
+                cout << "Please Enter Step (enter q to exit): ";
+                cin >> userInput;
+                if(userInput == "q"){
+                    break;
+                }else{
+                    char* p;
+                    int step = strtol(userInput.c_str(), &p, 10);
+                    if(!*p) {
+                        cout << "Moving Cable " << selectedCable << " To Absolute Step: " << step << endl;
+                        robot.cable.MoveSingleMotorCmd(selectedCable, step, true);
+                    }else{
+                        cout << "Please enter an intager number!!!" << endl;
+                    }
+                }
+            }
+        }else if(userInput == "8"){ // Move Selected Cable Absolute By Cable Length
+            while(true){
+                cout << "Move Selected Cable Absolute By Cable Length" << endl;
+                cout << "Please Enter Length in Meters (enter q to exit): ";
+                cin >> userInput;
+                if(userInput == "q"){
+                    break;
+                }else{
+                    char* p;
+                    double length = strtod(userInput.c_str(), &p);
+                    if(!*p) {
+                        cout << "Moving Cable " << selectedCable << " To Absolute Length: " << length << endl;
+                        robot.cable.MoveSingleMotorCmd(selectedCable, robot.CableMotorLengthToCmdAbsulote(length), true);
+                    }else{
+                        cout << "Please enter a number!!!" << endl;
+                    }
+                }
+            }
+        }else if(userInput == "9"){ // Move ALL Cable Absolute By Motor Step
+            while(true){
+                cout << "Move ALL Cable Absolute By Motor Step" << endl;
+                cout << "Please Enter Step (enter q to exit): ";
+                cin >> userInput;
+                if(userInput == "q"){
+                    break;
+                }else{
+                    char* p;
+                    int step = strtol(userInput.c_str(), &p, 10);
+                    if(!*p) {
+                        cout << "Moving ALL Cable To Absolute Step: " << step << endl;
+                        robot.cable.MoveAllMotorCmd(step, true);
+                    }else{
+                        cout << "Please enter an intager number!!!" << endl;
+                    }
+                }
+            }
+        }else if(userInput == "10"){ // Move ALL Cable Absolute By Cable Length
             while(true){
                 cout << "Move ALL Cable Absolute By Cable Length" << endl;
                 cout << "Please Enter Length in Meters (enter q to exit): ";
@@ -258,7 +281,8 @@ void CableMotorControlMode(){
                     }
                 }
             }
-        }else if(userInput == "10"){ // Open Selected Cable Brake
+        }
+        /*else if(userInput == "10"){ // Open Selected Cable Brake
             robot.cable.OpenBrake(selectedCable);
             system("pause");
         }else if(userInput == "11"){ // Close Selected Cable Brake
@@ -273,11 +297,13 @@ void CableMotorControlMode(){
                 robot.cable.CloseBrake(i);
             system("pause");
         }
+        */
     }
 
 }
 
 void PrintRailMotorControlMenu(int selectedRailMotor){
+    system("CLS");
     cout << "====================== Rail Motor Control Mode  ======================" << endl;
     cout << "Beware that there is no soft emergency stop in this mode. " << endl;
     cout << "Current Selected Rail: " << selectedRailMotor << endl;
@@ -505,18 +531,18 @@ void RailMotorControlMode(){
 }
 
 void PrintCalibrationMenu(){
-
+    system("CLS");
     cout << "====================== Calibration Mode  ======================" << endl;
     cout << "\t1 - Set Cables Torque" << endl;
-    cout << "\t2 - Loose Cables" << endl;
-    cout << "\t3 - Set All Motors to Home Position" << endl;
-    cout << "\t4 - Reset EE Rotation to Zero" << endl;
-    cout << "\t5 - Control Cable Motor " << endl;
+    cout << "\t2 - Request current cable motor torque readings" << endl;
+    cout << "\t3 - Control Cable Motor " << endl;
+    cout << "\t4 - Update Robot Pos" << endl;
+    cout << "\t5 - Reset EE Rotation to Zero" << endl;
     cout << "\t6 - Control Linear Rail Motor" << endl;
     cout << "\t7 - Control Gripper " << endl;
-    cout << "\t8 - Update Robot Pos" << endl;
-    cout << "\t9 - Update Robot Config" << endl;
-    cout << "\t10 - Print Robot Status " << endl;
+    cout << "\t8 - Update Robot Config" << endl;
+    cout << "\t9 - Print Robot Status " << endl;
+    cout << "\t10 - Clear Exception " << endl;
     cout << "\tq - Finish Calibration" << endl;
     cout << "Please Select Operation: " << endl;
 }
@@ -527,7 +553,7 @@ void CalibrationMode(){
         cin >> userInput;
         if(userInput == "q"){ // Quit Calibration Mode
             break;
-        }else if(userInput == "1"){ // Tighten Cables
+        }else if(userInput == "1"){ // Set Cable Trq
             cout << "Please Enter Target Torque (Default " << robot.GetWorkingTrq() << "): ";
             getchar();
             getline(cin, userInput);
@@ -547,30 +573,17 @@ void CalibrationMode(){
                 cout << "Please enter a number !!!" << endl;
             }
             system("pause");
-        }else if(userInput == "2"){ // Loose Cables
-            
+        }else if(userInput == "2"){ // requst current torque readings
+            cout << "Current Measured Cable Motor Trq: " << endl;
+            for(int i = 0; i < robot.GetCableMotorNum(); i++){
+                cout << "\tCable " << i << ": " << robot.cable.GetMotorTorqueMeasured(i) << endl;
+            }
             system("pause");
-        }else if(userInput == "3"){ // Move All Cable Motors to Home Position
-            robot.cable.HomeAllMotors();
-            robot.rail.HomeAllMotors();
-            system("pause");
-        }else if(userInput == "4"){ // Reset End Effector Rotation to 0,0,0
-            double targetPos[6] = {robot.endEffectorPos[0], robot.endEffectorPos[1], robot.endEffectorPos[2], 0, 0,0 };
-            robot.cable.OpenAllBrake();
-            robot.MoveToParaBlend(targetPos, 3500, false);
-            robot.cable.CloseAllBrake();
-            system("pause");
-        }else if(userInput == "5"){ // Control Cable Individual
+        }else if(userInput == "3"){ // Control Cable Individual
             robot.cable.OpenAllBrake();
             CableMotorControlMode();
             robot.cable.CloseAllBrake();
-        }else if(userInput == "6"){ // Control Linear Rail Motor
-            robot.cable.OpenAllBrake();
-            RailMotorControlMode();
-            robot.cable.CloseAllBrake();
-        }else if(userInput == "7"){ // Control Gripper
-            GripperControlMode();
-        }else if(userInput == "8"){ // Update Robot Pos By File
+        }else if(userInput == "4"){ // Update Robot Pos By File
             string robotPosPath;
             cout << "Please Enter Robot Position File Path (Default lastPos.txt): ";
             getchar();
@@ -582,7 +595,19 @@ void CalibrationMode(){
                 cout << "Warning: New Position is beyond robot limit. " << endl;
             }
             system("pause");
-        }else if(userInput == "9"){ // Update Robot Config
+        }else if(userInput == "5"){ // Reset End Effector Rotation to 0,0,0
+            double targetPos[6] = {robot.endEffectorPos[0], robot.endEffectorPos[1], robot.endEffectorPos[2], 0, 0,0 };
+            robot.cable.OpenAllBrake();
+            robot.MoveToParaBlend(targetPos, 3500, true);
+            robot.cable.CloseAllBrake();
+            system("pause");
+        }else if(userInput == "6"){ // Control Linear Rail Motor
+            robot.cable.OpenAllBrake();
+            RailMotorControlMode();
+            robot.cable.CloseAllBrake();
+        }else if(userInput == "7"){ // Control Gripper
+            GripperControlMode();
+        }else if(userInput == "8"){ // Update Robot Config
             string robotConfigPath;
             cout << "Please Enter Robot Config File Path (Default RobotConfig.json): ";
             getchar();
@@ -596,16 +621,20 @@ void CalibrationMode(){
                 robot.UpdateModelFromFile(robotConfigFile != "" ? robotConfigFile : "RobotConfig.json");
             }
             system("pause");
-        }else if(userInput == "10"){ // print current status
+        }else if(userInput == "9"){ // print current status
             robot.PrintEEPos();
             robot.PrintRailOffset();
             robot.PrintCableLength();
+            system("pause");
+        }else if(userInput == "10"){ // clear motor alert
+            robot.cable.ClearAlert();
             system("pause");
         }
     }
 }
 
 void PrintRobotPosControlMenu(){
+    system("CLS");
     cout << "====================== Robot Pos Control Mode  ======================" << endl;
     cout << "Beware that there is no soft emergency stop in this mode. " << endl;
     cout << "\tw - Move the robot on +x direction." << endl;
@@ -686,7 +715,7 @@ void RobotPosControlMode(){
 }
 
 void PrintRailControlMenu(int selectedRail){
-    
+    system("CLS");
     cout << "====================== Rail Control Mode  ======================" << endl;
     cout << "Current Selected Rail: " << selectedRail << endl;
     cout << "\t1 - Select Rail" << endl;
@@ -813,13 +842,12 @@ void RailControlMode(){
 }
 
 void PrintRobotControlMenu(){
+    system("CLS");
     cout << "====================== Robot Control Mode  ======================" << endl;
     cout << "\t1 - Robot Position Control" << endl;
-    cout << "\t2 - Gripper Control" << endl;
-    cout << "\t3 - Move Robot to Home Position" << endl;
+    cout << "\t2 - Move Robot to Home Position" << endl;
+    cout << "\t3 - Gripper Control" << endl;
     cout << "\t4 - Rail Control " << endl;
-    cout << "\t5 - Clear Exception " << endl;
-
     cout << "\tq - Exit" << endl;
     cout << "Please Select Mode: ";
 }
@@ -835,28 +863,26 @@ void RobotControlMode(){
             robot.cable.OpenAllBrake();
             RobotPosControlMode();
             robot.cable.CloseAllBrake();
-        }else if(userInput == "2"){ // gripper control mode
-            GripperControlMode();
-        }else if(userInput == "3"){ // move robot to home position
+        }else if(userInput == "2"){ // move robot to home position
             robot.PrintHomePos();
             robot.cable.OpenAllBrake();
             robot.MoveToParaBlend(robot.homePos, true);
             robot.cable.CloseAllBrake();
             system("pause");
+        }else if(userInput == "3"){ // gripper control mode
+            GripperControlMode();
         }else if(userInput == "4"){ // Rail Control
             robot.cable.OpenAllBrake();
             robot.rail.OpenAllBrake();
             RailControlMode();
             robot.cable.CloseAllBrake();
             robot.rail.CloseAllBrake();
-        }else if(userInput == "5"){
-            robot.cable.ClearAlert();
-            system("pause");
         }
     }
 }
 
 void PrintOperationMenu(){
+    system("CLS");
     cout << "====================== Operation Mode  ======================" << endl;
     cout << "\t1 - Robot Control" << endl;
     cout << "\t2 - Read Brick Positions File" << endl;
@@ -1045,6 +1071,7 @@ void OperationMode(){
 }
 
 void PrintMainMenu(){
+    system("CLS");
     cout << "====================== Mode Selection  ======================" << endl;
     cout << "\t1 - Calibration Mode" << endl;
     cout << "\t2 - Operation Mode" << endl;
@@ -1061,6 +1088,17 @@ void MainMenu(){
         }else if(userInput == "2"){
             OperationMode();
         }else if(userInput == "q"){
+            string robotPosPath;
+            cout << "Please Enter Robot Position File Path (Default lastPos.txt, enter no to escap from saving): ";
+            getchar();
+            getline(cin, robotPosPath);
+            if(robotPosPath == "no")
+                break;
+            else{
+                robot.SavePosToFile(robotPosPath  != "" ? robotPosPath : "lastPos.txt");
+                system("pause");
+                break;
+            }
             cout << "Exiting..." << endl;
             break;
         }
@@ -1086,8 +1124,14 @@ int main(){
         getline(cin, robotConfigFile);
         robot.UpdateModelFromFile(robotConfigFile != "" ? robotConfigFile : "RobotConfig.json");
     }
-    system("pause");
+    if(fstream("lastPos.txt").good()){
+        cout << "lastPos.txt found. Recover last position of robot." << endl;
+        robot.UpdatePosFromFile("lastPos.txt");
+        logger.LogInfo("Reading Last Pos from pos log file");
+    }
 
+    system("pause");
+    
     logger.LogInfo("Connecting to robot.");
     // connect to robot
     robot.Connect();

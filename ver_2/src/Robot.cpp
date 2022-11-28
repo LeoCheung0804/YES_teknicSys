@@ -19,10 +19,13 @@ Robot::Robot(string robotConfigPath){
 
 void Robot::Connect(){
         
-    if(!this->posLogger.OpenFile("log\\pos.log")){
-        cout << "Cannot open pos logger file. System will now exit." << endl;
-        exit(-1);
+    if(this->isOnline){
+        if(!this->posLogger.OpenFile("log\\pos.log")){
+            cout << "Cannot open pos logger file. System will now exit." << endl;
+            exit(-1);
+        }
     }
+
     this->isConnected = true;
     // Init BLE Nodes
     if(this->useGripper){
@@ -63,7 +66,9 @@ void Robot::Disconnect(){
     if(this->rail.IsConnected())
         this->rail.Disconnect();
     this->isConnected = false;
-    this->posLogger.CloseFile();
+    
+    if(this->isOnline)
+        this->posLogger.CloseFile();
 }
 
 bool Robot::IsConnected(){ return this->isConnected; }
@@ -230,7 +235,67 @@ void Robot::UpdatePosFromFile(string filename){
             for(int i = 0; i < this->railMotorNum; i++){
                 cout << "\t" << "Rail " << i << ": " << this->railOffset[i] << " / " << railMotorCmd[i]  << "    " << endl;
             }
-            this->posLogger.LogPos(this->endEffectorPos, this->railOffset);
+            
+            if(this->isOnline)
+                this->posLogger.LogPos(this->endEffectorPos, this->railOffset);
+        }
+    }
+    catch(const exception& e){
+        cout << "Error in reading " << filename << endl;
+        cout << e.what() << endl;
+    }
+}
+
+void Robot::UpdatePosFromLog(string filename){
+    try{
+        ifstream file (filename); //"lastPos.txt" or "currentPos.csv"
+        if(!file.good()){
+            cout << "Error: File Not Exist. Keep using current pos." << endl;
+            return;
+        }
+        string temp;
+        int count = 0;
+        if(file.is_open()){
+            try{
+                while (file >> temp){
+                    if(count < 6){ this->endEffectorPos[count] = stod(temp); } // convert string to double stod() for the first 6 inputs
+                    else if(count < 10){ this->railOffset[count-6] = stod(temp); } // reading the rail offset, then break while loop
+                    else { break; }
+                    count++;
+                }
+                cout << "Completed reading from external file" << endl; //"Completed updating from external pose file"
+            }
+            catch(int e){ cout << "Check if currentPos.csv matches the in1 input no." << endl; }
+            vector<double> cableLengthList = this->GetCableLength();
+            // calibration motors
+            if(this->isOnline){
+                // cable motors
+                cout << "Calibrating Cable Motor" << endl;
+                for(int index = 0; index < this->cableMotorNum; index++){
+                    this->cable.CalibrationMotor(index, this->CableMotorLengthToCmd(index, cableLengthList[index]));
+                }
+                // slider motors
+                cout << "Calibrating Rail Motor" << endl;
+                for(int index = 0; index < this->railMotorNum; index++){
+                    this->rail.CalibrationMotor(index, this->RailMotorOffsetToCmd(index, railOffset[index]));
+                } 
+                cout << "Updating motor counts completed" << endl;
+            }
+            this->PrintEEPos();
+            // for teknic motors
+            cout << "Cable Motor length / internal counts: " << endl;
+            for (int i = 0; i < this->cableMotorNum; i++){
+                cout << "\t" << "Cable " << i << ": " << cableLengthList[i] << " / " << this->cable.GetMotorPosMeasured(i)  << "    " << endl;
+            }
+            // for twincat motors
+            cout << "Rail Motor length / internal counts: " << endl;
+            vector<int> railMotorCmd = this->rail.GetMotorPosMeasured();
+            for(int i = 0; i < this->railMotorNum; i++){
+                cout << "\t" << "Rail " << i << ": " << this->railOffset[i] << " / " << railMotorCmd[i]  << "    " << endl;
+            }
+            
+            if(this->isOnline)
+                this->posLogger.LogPos(this->endEffectorPos, this->railOffset);
         }
     }
     catch(const exception& e){
@@ -398,10 +463,13 @@ vector<int32_t> Robot::EEPoseToCmd(double eePos[], double railOffset[]){
 bool Robot::eBrake(bool cableBrake, bool railBrake){
     if(!useEBrake) return true;
     if(kbhit()){ // Emergency quit during trajectory control
-        if(cableBrake)
+        if(cableBrake){
+            this->cable.StopAllMotor();
             this->cable.CloseAllBrake();
-        if(railBrake)
+        }
+        if(railBrake){
             this->rail.CloseAllBrake();
+        }
         string userInput;
         while(true){
             cout << endl;
@@ -439,11 +507,12 @@ bool Robot::RunCableTraj(vector<vector<double>> posTraj, bool showAtten){
     vector<vector<int32_t>> cmdTraj = this->PoseTrajToCmdTraj(posTraj);
     int index = 0;
     if(showAtten){
-        for(int i = 0; i < 17; i++){
+        for(int i = 0; i < 26; i++){
             cout << endl;
         }
     }
     for(vector<int32_t> frame : cmdTraj){
+        auto start = chrono::steady_clock::now();
         if(!this->eBrake(true, false)) return false;
         if(!this->cable.MoveAllMotorCmd(frame)){
             cout << "Trajectory stopped" << endl;
@@ -452,15 +521,27 @@ bool Robot::RunCableTraj(vector<vector<double>> posTraj, bool showAtten){
         for(int i = 0; i < 6; i++)
             this->endEffectorPos[i] = posTraj[index][i];
         index++;
-        this->posLogger.LogPos(this->endEffectorPos, this->railOffset);
+        if(this->isOnline)
+            this->posLogger.LogPos(this->endEffectorPos, this->railOffset);
         if(showAtten){
-            printf("\x1b[17A");
+            printf("\x1b[26A");
             cout << "Current frame: " << index << endl;
             this->PrintEEPos();
             cout << "Current Cable Motor Count: " << endl;
             for (int i = 0; i < this->cableMotorNum; i++){
                 cout << "\tCable " << i << ": " << frame[i] << endl;
             }
+            cout << "Current Measured Cable Motor Trq: " << endl;
+            for (int i = 0; i < this->cableMotorNum; i++){
+                cout << "\tCable " << i << ": " << this->cable.GetMotorTorqueMeasured(i) << endl;
+            }
+            
+        }
+        auto end = chrono::steady_clock::now();
+        double dif = this->MILLIS_TO_NEXT_FRAME - chrono::duration_cast<chrono::milliseconds>(end-start).count() - 1;
+        while(dif > 0){    
+            end = chrono::steady_clock::now();
+            dif = this->MILLIS_TO_NEXT_FRAME - chrono::duration_cast<chrono::milliseconds>(end-start).count() - 1;
         }
     }
     return true;
@@ -524,9 +605,13 @@ void Robot::MoveRail(int index, float target, bool absulote){
         auto start = chrono::steady_clock::now();
         rail.SelectWorkingMotor(index);
         rail.MoveSelectedMotorCmd(railTraj[i]);
-        cable.MoveSingleMotorCmd(index, cableTraj[index][i]);
+        if(!cable.MoveSingleMotorCmd(index, cableTraj[index][i])){
+            cout << "Move cable " << index << " failed!";
+            break;
+        }
         this->railOffset[index] = i;
-        this->posLogger.LogPos(this->endEffectorPos, this->railOffset);
+        if(this->isOnline)
+            this->posLogger.LogPos(this->endEffectorPos, this->railOffset);
         dur = chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now()-start).count();
         double dif = MILLIS_TO_NEXT_FRAME - dur - 1;
         if(dif > 0) { Sleep(dif);}

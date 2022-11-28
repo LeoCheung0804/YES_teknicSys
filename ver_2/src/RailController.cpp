@@ -79,15 +79,6 @@ void RailController::CloseAllBrake(){
     }
 };
 
-void RailController::HomeAllMotors(){
-    this->OpenAllBrake();
-    for(int index = 0; index < this->railNumber; index++){
-        this->SelectWorkingMotor(index);
-        this->MoveSelectedMotorCmd(0, true);
-    }
-    this->CloseAllBrake();
-}
-
 void RailController::SelectWorkingMotor(int index){
     this->bArry[workingMotor] = false;
     this->bArry[index] = true;

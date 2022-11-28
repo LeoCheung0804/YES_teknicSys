@@ -23,23 +23,20 @@ private:
     bool useMotor;
     bool useBraker;
     bool eStop;
-    void CheckTrq();
 public:
     CableController(bool isOnline=true);
     void Connect(int cableNumber, int brakeNumber, string brakePortName, bool useMotor, bool useBraker);
     void Disconnect();
     bool IsConnected();
-    void TightenCableByIndex(int index, float targetTrq);
+    void SetCableTrqByIndex(int index, float targetTrq, float tolerance);
     void SetCableTrq(float targetTrq, float tolerance);
-    void HomeAllMotors();
-    void MoveSingleMotorCmd(int index, int32_t cmd, bool absolute=true);
+    bool MoveSingleMotorCmd(int index, int32_t cmd, bool absolute=true);
     bool MoveAllMotorCmd(vector<int32_t> cmdList, bool absolute=true);
     bool MoveAllMotorCmd(int32_t cmd, bool absolute=true);
-    bool IsMoveFinished();    
     void CalibrationMotor(int index, int32_t currentCmdPos);
     double GetMotorPosMeasured(int index);
     double GetMotorTorqueMeasured(int index);
-    void SavePosToFile(string filename);
+    void StopAllMotor();
     void OpenBrake(int index);
     void CloseBrake(int index);
     void OpenAllBrake();

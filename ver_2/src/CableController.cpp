@@ -55,34 +55,47 @@ void CableController::Disconnect(){
 
 bool CableController::IsConnected(){ return this->isConnected; }
 
-void CableController::TightenCableByIndex(int index, float targetTrq){
-    assert(index >= 0 && index <= cableNumber);
-    cout << "Setting cable: " << index << " torque to: " << targetTrq << endl;
-    this->OpenAllBrake();
+void CableController::SetCableTrqByIndex(int index, float targetTrq, float tolerance){
+    cout << "Setting all cable torque to: " << targetTrq << endl;
+    this->OpenBrake(index);
     if(isOnline && this->useMotor){
+        bool moving = true;
+        cout << "current torques: " << endl;
         nodeList[index]->Motion.AccLimit = 200;
         // get current trq
         nodeList[index]->Motion.TrqCommanded.Refresh();
         float currentTrq = nodeList[index]->Motion.TrqCommanded.Value();
-        // check current trq and set move direction
-        if(currentTrq > targetTrq){ 
-            nodeList[index]->Motion.MoveVelStart(-10); 
-        }
-        else if (currentTrq < targetTrq - 1.8){ 
-            nodeList[index]->Motion.MoveVelStart(10);
-        }
-        // move
-        while(currentTrq > targetTrq || currentTrq < targetTrq - 1.8){
+        cout << "motor: " << index << ": " << currentTrq << "       " << endl;
+        // -5 < trq < -3.5
+        while(moving){
+            // printf("\x1b[9A");
+            moving = false;
+            cout << "current torques: " << endl;
+            // get current trq
             nodeList[index]->Motion.TrqCommanded.Refresh();
-            currentTrq = nodeList[index]->Motion.TrqCommanded.Value();
-            cout <<"Cable " << index << " current torque: " << currentTrq << endl;
-            // need to turn the print interval.
+            float currentTrq = nodeList[index]->Motion.TrqCommanded.Value();
+            if(currentTrq > targetTrq){ 
+                nodeList[index]->Motion.MoveVelStart(-10); 
+                moving = true;
+            }
+            else if (currentTrq < targetTrq - tolerance){ 
+                nodeList[index]->Motion.MoveVelStart(10);
+                moving = true;
+            }
+            cout << "motor: " << index << ": " << currentTrq << "       " << endl;
+            // check current trq
+            if(currentTrq > targetTrq || currentTrq < targetTrq - tolerance)
+                moving = true; // continue loop 
+            if(kbhit()){
+                break;
+            }
         }
-        // stop
+
         nodeList[index]->Motion.NodeStop(STOP_TYPE_ABRUPT);
         nodeList[index]->Motion.AccLimit = 40000;
+        
     }
-    this->CloseAllBrake();
+    this->CloseBrake(index);
     cout << "Set cable " << index << " torque to: " << targetTrq << " finished." << endl;
     
 }
@@ -133,8 +146,8 @@ void CableController::SetCableTrq(float targetTrq, float tolerance){
         }
 
         for(INode* node : nodeList){
-            node->Motion.AccLimit = 40000;
             node->Motion.NodeStop(STOP_TYPE_ABRUPT);
+            node->Motion.AccLimit = 40000;
         }
         
     }
@@ -154,35 +167,13 @@ void CableController::ClearAlert(){
     }
 }
 
-void CableController::HomeAllMotors(){
-    cout << "Moving all cable motors to zero position." << endl;
-    this->OpenAllBrake();
-    if(isOnline && this->useMotor){
-        bool moving = false;
-        for(INode* node : nodeList){
-            node->Motion.MovePosnStart(0, true);
-        }
-        while(moving) {
-            moving = false;
-            for (INode* node : nodeList) {
-                if(!node->Motion.MoveIsDone()) 
-                    moving = true;
-                node->Motion.TrqCommanded.Refresh();
-                float currentTrq = node->Motion.TrqCommanded.Value();
-                if(currentTrq < -this->absTrqLmt || currentTrq > this->absTrqLmt){
-                    node->Motion.NodeStop(STOP_TYPE_ABRUPT);
-                    cout << "Error: Trq too large" << endl;
-                    moving = false;
-                    break;
-                }
-            }
-        }
-    }
-    this->CloseAllBrake();
-    cout << "Move all cable motors to zero position finished." << endl;
+void CableController::StopAllMotor(){
+    for(INode* node : nodeList){
+        node->Motion.NodeStop(STOP_TYPE_ABRUPT);
+    } 
 }
 
-void CableController::MoveSingleMotorCmd(int index, int32_t cmd, bool absolute){
+bool CableController::MoveSingleMotorCmd(int index, int32_t cmd, bool absolute){
     assert(index >= 0 && index <= cableNumber);
     assert(!this->brakeOnFlags[index/2]);
     if(this->isOnline && this->useMotor){
@@ -206,46 +197,16 @@ void CableController::MoveSingleMotorCmd(int index, int32_t cmd, bool absolute){
             myfile << "Caught error: addr="<< (int) theErr.TheAddr<<", err="<<hex<<theErr.ErrorCode <<"\nmsg="<<theErr.ErrorMsg<<"\n";
             myfile.close();
             this->eStop = true;
+            return false;
         }
     }else{
         Sleep(10);
     }
+    return true;
 }
-void CableController::CheckTrq(){
-    bool moving = true;
-    bool eStop = false;
-    float currentTrq = 0;
-    float absTrqLmt = 35; 
-    float errorCable = 0;
-    while(moving && !eStop){
-        moving = false;
-        // check quite loop condition
-        for(int i = 0; i < this->cableNumber; i++){
-            if(!nodeList[i]->Motion.MoveIsDone()){
-                moving = true;
-                break;
-            }
-        }
-        // check torque
-        for(int i = 0; i < this->cableNumber; i++){
-            nodeList[i]->Motion.TrqCommanded.Refresh();
-            currentTrq = nodeList[i]->Motion.TrqCommanded.Value();
-            if(currentTrq < -absTrqLmt || currentTrq > absTrqLmt){
-                cout << "Error: Trq too large, cable: " << i << ": " << currentTrq << "/" << absTrqLmt << endl;
-                // stop all node
-                for(int j = 0; j < this->cableNumber; j++){
-                    nodeList[j]->Motion.NodeStop(STOP_TYPE_ABRUPT);
-                }
-                moving = false;
-                eStop = true;
-                break;
-            }
-        }
-    }
-}
+
 bool CableController::MoveAllMotorCmd(vector<int32_t> cmdList, bool absolute){
     this->eStop = false;
-    auto start = chrono::steady_clock::now();
 
     vector<thread> threadList;
     int index = 0;
@@ -257,15 +218,8 @@ bool CableController::MoveAllMotorCmd(vector<int32_t> cmdList, bool absolute){
     for(thread &thr : threadList){
         thr.join();
     }
-    // t1.join();
-    auto end = chrono::steady_clock::now();
-    double dif = this->MILLIS_TO_NEXT_FRAME - chrono::duration_cast<chrono::milliseconds>(end-start).count() - 1;
-    while(dif > 0){    
-        end = chrono::steady_clock::now();
-        dif = this->MILLIS_TO_NEXT_FRAME - chrono::duration_cast<chrono::milliseconds>(end-start).count() - 1;
-        if(this->eStop)
-            return false;
-    }
+    if(this->eStop)
+        return false;
     return true;
 }
 
@@ -274,8 +228,6 @@ bool CableController::MoveAllMotorCmd(int cmd, bool absolute){
     for(int i = 0; i < this->cableNumber; i++){ cmdList.push_back(cmd); }
     return this->MoveAllMotorCmd(cmdList, absolute);
 }
-
-bool CableController::IsMoveFinished(){ return isMoveFinished; }
 
 void CableController::CalibrationMotor(int index, int32_t currentCmdPos){
     assert(index >= 0 && index <= cableNumber);
@@ -288,8 +240,8 @@ void CableController::CalibrationMotor(int index, int32_t currentCmdPos){
 }
 
 double CableController::GetMotorPosMeasured(int index){
-    assert(index >= 0 && index <= cableNumber);
     if(this->isOnline && this->useMotor){
+        assert(index >= 0 && index <= cableNumber);
         nodeList[index]->Motion.PosnMeasured.Refresh();
         return (double) nodeList[index]->Motion.PosnMeasured.Value();
     }else{

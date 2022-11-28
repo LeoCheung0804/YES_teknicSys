@@ -31,7 +31,6 @@ public:
     void OpenAllBrake();
     void CloseAllBrake();
     void CalibrationMotor(int index, int32_t currentCmdPos);
-    void HomeAllMotors();
     void SelectWorkingMotor(int index);
     void MoveSelectedMotorCmd(int32_t cmd, bool absolute=true);
     vector<int> GetMotorPosMeasured();

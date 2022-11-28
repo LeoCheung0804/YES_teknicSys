@@ -44,6 +44,7 @@ private:
     bool useRailBraker{ false };
     bool useEBrake{true};
     Logger posLogger;
+    int MILLIS_TO_NEXT_FRAME = 50;
     bool eBrake(bool cableBrake, bool railBrake);
 public:
     double rotationalAngleOffset{0}; // rotational angel offset
@@ -76,6 +77,11 @@ public:
     /// @brief Read robot Position from csv/txt file
     /// @param filename string. Position file name
     void UpdatePosFromFile(string filename);
+
+    /// @brief Read robot Position from csv/txt file
+    /// @param filename string. Position file name
+    void UpdatePosFromLog(string filename);
+
 
 // Verify
     /// @brief Check whether the robot is valid, ususally used after load the robot config.
