@@ -71,7 +71,7 @@ void CableController::SetCableTrqByIndex(int index, float targetTrq, float toler
         if(currentTrq > targetTrq){ 
             nodeList[index]->Motion.MoveVelStart(-10); 
             currentTrq = nodeList[index]->Motion.TrqMeasured.Value();
-            while(currentTrq > targetTrq){
+            while(currentTrq > targetTrq - tolerance){
                 cout << "current torques: " << endl;
                 // get current trq
                 currentTrq = nodeList[index]->Motion.TrqMeasured.Value();
@@ -173,6 +173,7 @@ void CableController::SetCableTrq(float targetTrq, float tolerance){
     cout << "Setting all cable torque to: " << targetTrq << endl;
     this->OpenAllBrake();
     if(isOnline && this->useMotor){
+        bool* stoppFlag = new bool(this->cableNumber);
         bool moving = true;
         int index = 0;
         cout << "current torques: " << endl;
@@ -183,8 +184,9 @@ void CableController::SetCableTrq(float targetTrq, float tolerance){
             currentTrq = node->Motion.TrqMeasured.Value();
             cout << "motor: " << index << ": " << currentTrq << "       " << endl;
             // check current trq and set move direction
-            if(currentTrq > targetTrq){ 
+            if(currentTrq > targetTrq - tolerance){ 
                 node->Motion.MoveVelStart(-10); 
+                stoppFlag[index] = false;
             }
             index++;
         }
@@ -193,6 +195,7 @@ void CableController::SetCableTrq(float targetTrq, float tolerance){
         auto start = chrono::steady_clock::now();
         auto end = chrono::steady_clock::now();
         double dif = this->MILLIS_TO_NEXT_FRAME - chrono::duration_cast<chrono::milliseconds>(end-start).count() - 1;
+        
         while(moving){
             end = chrono::steady_clock::now();
             dif = this->MILLIS_TO_NEXT_FRAME - chrono::duration_cast<chrono::milliseconds>(end-start).count() - 1;
@@ -206,8 +209,9 @@ void CableController::SetCableTrq(float targetTrq, float tolerance){
                 for(INode* node : nodeList){
                     // get current trq
                     currentTrq = node->Motion.TrqMeasured.Value();
-                    if (currentTrq < targetTrq){ 
+                    if (currentTrq < targetTrq - tolerance || stoppFlag[index]){ 
                         node->Motion.NodeStop(STOP_TYPE_ABRUPT);
+                        stoppFlag[index] = true;
                     }else{
                         moving = true;
                     }

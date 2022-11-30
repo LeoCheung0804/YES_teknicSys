@@ -132,7 +132,7 @@ void CableMotorControlMode(){
                     continue;
                 }
                 cout << "Setting to Target Torque: " << targetTrq << endl;
-                robot.cable.SetCableTrqByIndex(selectedCable, targetTrq, 2);
+                robot.cable.SetCableTrqByIndex(selectedCable, targetTrq, 4);
             }else{
                 cout << "Please enter a number !!!" << endl;
             }
@@ -568,7 +568,7 @@ void CalibrationMode(){
                     continue;
                 }
                 cout << "Setting to Target Torque: " << targetTrq << endl;
-                robot.cable.SetCableTrq(targetTrq, 2);
+                robot.cable.SetCableTrq(targetTrq, 4);
             }else{
                 cout << "Please enter a number !!!" << endl;
             }
