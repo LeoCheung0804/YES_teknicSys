@@ -908,3 +908,73 @@ msg=Node @ 0 error. Reported by function: unsigned int __thiscall sFnd::CPMmotio
 
 Error: cnErrCode 0x8004010A
 
+
+ERROR: Motor [6] command failed. 9:9:33
+Caught error: addr=6, err=8004010a
+msg=Node @ 6 error. Reported by function: unsigned int __thiscall sFnd::CPMmotion::MovePosnStart(int,bool,bool).
+
+Error: cnErrCode 0x8004010A
+
+
+ERROR: Motor [4] command failed. 9:9:33
+Caught error: addr=4, err=8004010a
+msg=Node @ 4 error. Reported by function: unsigned int __thiscall sFnd::CPMmotion::MovePosnStart(int,bool,bool).
+
+Error: cnErrCode 0x8004010A
+
+
+ERROR: Motor [4] command failed. 9:9:44
+Caught error: addr=4, err=8004010a
+msg=Node @ 4 error. Reported by function: unsigned int __thiscall sFnd::CPMmotion::MovePosnStart(int,bool,bool).
+
+Error: cnErrCode 0x8004010A
+
+
+ERROR: Motor [6] command failed. 9:9:44
+Caught error: addr=6, err=8004010a
+msg=Node @ 6 error. Reported by function: unsigned int __thiscall sFnd::CPMmotion::MovePosnStart(int,bool,bool).
+
+Error: cnErrCode 0x8004010A
+
+
+ERROR: Motor [6] command failed. 9:13:44
+Caught error: addr=6, err=8004010a
+msg=Node @ 6 error. Reported by function: unsigned int __thiscall sFnd::CPMmotion::MovePosnStart(int,bool,bool).
+
+Error: cnErrCode 0x8004010A
+
+
+ERROR: Motor [6] command failed. 9:21:4
+Caught error: addr=6, err=8004010a
+msg=Node @ 6 error. Reported by function: unsigned int __thiscall sFnd::CPMmotion::MovePosnStart(int,bool,bool).
+
+Error: cnErrCode 0x8004010A
+
+
+ERROR: Motor [4] command failed. 9:21:4
+Caught error: addr=4, err=8004010a
+msg=Node @ 4 error. Reported by function: unsigned int __thiscall sFnd::CPMmotion::MovePosnStart(int,bool,bool).
+
+Error: cnErrCode 0x8004010A
+
+
+ERROR: Motor [7] command failed. 9:21:4
+Caught error: addr=7, err=8004010a
+msg=Node @ 7 error. Reported by function: unsigned int __thiscall sFnd::CPMmotion::MovePosnStart(int,bool,bool).
+
+Error: cnErrCode 0x8004010A
+
+
+ERROR: Motor [4] command failed. 9:32:24
+Caught error: addr=4, err=8004010a
+msg=Node @ 4 error. Reported by function: unsigned int __thiscall sFnd::CPMmotion::MovePosnStart(int,bool,bool).
+
+Error: cnErrCode 0x8004010A
+
+
+ERROR: Motor [7] command failed. 9:32:24
+Caught error: addr=7, err=8004010a
+msg=Node @ 7 error. Reported by function: unsigned int __thiscall sFnd::CPMmotion::MovePosnStart(int,bool,bool).
+
+Error: cnErrCode 0x8004010A
+

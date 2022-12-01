@@ -29,32 +29,48 @@ void Robot::Connect(){
     this->isConnected = true;
     // Init BLE Nodes
     if(this->useGripper){
-        this->gripper = GripperController(this->isOnline);
+        this->gripper = GripperController(this->isOnline, this->useGripper);
         this->gripper.Connect(this->gripperCommPort);
-    }
-
-    // Init Rail Motor Nodes
-    this->rail = RailController(this->isOnline);
-    this->rail.Connect(851, this->railMotorNum, this->railBrakeCommPort, this->useRailMotor, this->useRailBraker);
-    
-    // Init Cable Motor Nodes
-    this->cable = CableController(this->isOnline);
-    this->cable.Connect(this->cableMotorNum, this->cableMotorBrakeNum, this->cableBrakeCommPort, this->useCableMotor, this->useCableBraker);
-
-    if(this->useGripper){
-        
         if(!this->gripper.IsConnected()){
             cout << "Error: Gripper not connected." << endl;
             this->isConnected = false;
         }
     }
-    if(!this->cable.IsConnected()){
-        cout << "Error: Cable motors not connected." << endl;
-        this->isConnected = false;
+
+    // Init Brake Motor Nodes
+    if(this->useRailBraker || this->useCableBraker){
+        this->brake = BrakeController(this->isOnline);
+        this->brake.UseCableBrake(this->cableMotorBrakeNum);
+        this->brake.UseRailBrake(this->railMotorNum);
+        this->brake.Connect(this->railBrakeCommPort);
+        if(!this->brake.IsConnected()){
+            cout << "Error: Brake not connected." << endl;
+            this->isConnected = false;
+        }
     }
-    if(!this->rail.IsConnected()){
-        cout << "Error: Rail motors not connected." << endl;
-        this->isConnected = false;
+
+    // Init Rail Motor Nodes
+    if(this->useRailMotor){
+        this->rail = RailController(this->isOnline, this->useRailMotor);
+        this->brake.OpenAllRailBrake();
+        this->rail.Connect(851, this->railMotorNum);
+        this->brake.CloseAllRailBrake();
+        if(!this->rail.IsConnected()){
+            cout << "Error: Rail motors not connected." << endl;
+            this->isConnected = false;
+        }
+    }
+    
+    // Init Cable Motor Nodes
+    if(this->useCableBraker){
+        this->cable = CableController(this->isOnline, this->useCableMotor);
+        this->brake.OpenAllCableBrake();
+        this->cable.Connect(this->cableMotorNum);
+        this->brake.CloseAllCableBrake();
+        if(!this->cable.IsConnected()){
+            cout << "Error: Cable motors not connected." << endl;
+            this->isConnected = false;
+        }
     }
 }
 
@@ -463,13 +479,9 @@ vector<int32_t> Robot::EEPoseToCmd(double eePos[], double railOffset[]){
 bool Robot::eBrake(bool cableBrake, bool railBrake){
     if(!useEBrake) return true;
     if(kbhit()){ // Emergency quit during trajectory control
-        if(cableBrake){
-            this->cable.StopAllMotor();
-            this->cable.CloseAllBrake();
-        }
-        if(railBrake){
-            this->rail.CloseAllBrake();
-        }
+        this->cable.StopAllMotor();
+        this->brake.CloseAllCableBrake();
+        this->brake.CloseAllRailBrake();
         string userInput;
         while(true){
             cout << endl;
@@ -483,10 +495,8 @@ bool Robot::eBrake(bool cableBrake, bool railBrake){
                 cout << "Trajectory emergency quit." << endl;
                 return false;
             }else if(userInput == "2"){
-                if(cableBrake)
-                    this->cable.OpenAllBrake();
-                if(railBrake)
-                    this->rail.OpenAllBrake();
+                this->brake.OpenAllRailBrake();
+                this->brake.OpenAllCableBrake();
                 cout << "Trajectory Resume." << endl;
                 return true;
             }
@@ -566,8 +576,8 @@ bool Robot::MoveToParaBlend(double dest[], bool showAtten){
 
 void Robot::MoveRail(int index, float target, bool absulote){
     if (target < 0 || target > 2.55) { cout << "WARNING! Intended rail offset is out of bound!" << endl;;}
-    this->cable.OpenBrake(index);
-    this->rail.OpenBrake(index);
+    this->brake.OpenCableBrakeByIndex(index);
+    this->brake.OpenRailBrakeByIndex(index);
 
     double velLmt = 0.01; // meters per sec // measured vel 0.025 ms-1
     double dura = abs(target - this->railOffset[index])/velLmt*1000;// *1000 to change unit to ms
@@ -627,12 +637,13 @@ void Robot::MoveRail(int index, float target, bool absulote){
     Sleep(50);
     cout << "Rail traj done .... \n";
 
-    this->cable.CloseBrake(index);
-    this->rail.CloseBrake(index);
+    this->brake.CloseCableBrakeByIndex(index);
+    this->brake.CloseRailBrakeByIndex(index);
 
 }
 
 void Robot::SavePosToFile(string filename){
+    if(!this->isOnline) return;
     
     //// Safe system shut down, safe last pos and emegency shut down
     // Saving last position before quiting programme

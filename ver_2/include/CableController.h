@@ -2,7 +2,6 @@
 #define CableController_H
 
 #include "TeknicNode.h"
-#include "ArduinoBLENode.h"
 #include "Logger.h"
 
 using namespace std;
@@ -10,24 +9,20 @@ using namespace sFnd;
 class CableController{
 private:
     TeknicNode motorNode;
-    ArduinoBLENode brakeNode;
     int cableNumber;
-    int brakeNumber;
     float absTrqLmt;
     vector<INode*> nodeList;
     bool isOnline;
+    bool useCable;
     bool isConnected;
     bool isMoveFinished;
-    bool* brakeOnFlags;
     int MILLIS_TO_NEXT_FRAME = 50;
     string sendStr;
-    bool useMotor;
-    bool useBraker;
     bool eStop;
     Logger logger;
 public:
-    CableController(bool isOnline=true);
-    void Connect(int cableNumber, int brakeNumber, string brakePortName, bool useMotor, bool useBraker);
+    CableController(bool isOnline=false, bool useCable=false);
+    void Connect(int cableNumber);
     void Disconnect();
     bool IsConnected();
     void SetCableTrqByIndex(int index, float targetTrq, float tolerance);
@@ -39,10 +34,6 @@ public:
     double GetMotorPosMeasured(int index);
     double GetMotorTorqueMeasured(int index);
     void StopAllMotor();
-    void OpenBrake(int index);
-    void CloseBrake(int index);
-    void OpenAllBrake();
-    void CloseAllBrake();
     void SetTrqLmt(float lmt);
     void ClearAlert();
 };

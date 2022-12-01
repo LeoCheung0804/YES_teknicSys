@@ -1,19 +1,20 @@
-#ifndef ArduinoBLENode_H
-#define ArduinoBLENode_H
+#ifndef COMPortNode_H
+#define COMPortNode_H
 
 #include <Windows.h>
 #include <string>
 
 using namespace std;
-class ArduinoBLENode{
+class COMPortNode{
 private:
+    bool isOnline;
     HANDLE hComm;
     int readTimeout=1000;
     
     // set communication port
     bool SetSerialParams();
 public:
-    ArduinoBLENode();
+    COMPortNode(bool isOnline=false);
 
     bool Connect(string portName);  
     void Disconnect();

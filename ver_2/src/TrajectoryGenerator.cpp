@@ -128,7 +128,7 @@ vector<vector<double>> GenParaBlendTrajForCableMotor(double start[], double end[
     return result;
 }
 
-vector<vector<double>> ReadBrickPosFile(string filename, float tempD, float tempA){
+vector<vector<double>> ReadBrickPosFile(string filename, float tempA, float tempD){
     ifstream file(filename);
     vector<vector<double>> result;
     vector<double> row;

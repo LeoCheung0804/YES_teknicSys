@@ -1,8 +1,9 @@
 #include "..\include\TwincatADSNode.h"
 #include <iostream>
-TwincatADSNode::TwincatADSNode(){}
+TwincatADSNode::TwincatADSNode(bool isOnline){ this->isOnline = isOnline; }
 
 bool TwincatADSNode::Connect(int port){
+    if(!this->isOnline) return true;
     long nErr, nPort;
     unsigned long lHdlVar;
     bool TRUE_FLAG = true;
@@ -37,6 +38,7 @@ bool TwincatADSNode::Connect(int port){
 }
 
 void TwincatADSNode::Disconnect(){
+    if(!this->isOnline);
     long nErr;
     // Close ADS communication port, disable power for motors
     long lHdlVar; 
@@ -50,4 +52,20 @@ void TwincatADSNode::Disconnect(){
     if ( AdsPortClose() ){ cout << "Error: AdsPortClose: " << nErr << '\n'; }
 }
 
+void TwincatADSNode::WriteReq(string handle, int32_t pData){
+    if(!this->isOnline);
+    long nErr = AdsSyncWriteReq(this->pAddr,ADSIGRP_SYM_VALBYHND, handlers[handle], sizeof(pData), &pData); 
+    if (nErr) { cout << "Error: AdsSyncWriteReq: " << nErr << '\n'; }
+}
 
+void TwincatADSNode::WriteReq(string handle, bool* pData){
+    if(!this->isOnline);
+    long nErr = AdsSyncWriteReq(this->pAddr,ADSIGRP_SYM_VALBYHND, handlers[handle], sizeof(pData), &pData[0]); 
+    if (nErr) { cout << "Error: AdsSyncWriteReq: " << nErr << '\n'; }
+}
+
+void TwincatADSNode::ReadReq(string handle, bool* pData){
+    if(!this->isOnline);
+    long nErr = AdsSyncReadReq(this->pAddr, ADSIGRP_SYM_VALBYHND, handlers[handle], sizeof(pData), &pData[0]);
+    if (nErr) { cout << "Error: AdsSyncReadReq: " << nErr << '\n';}
+}

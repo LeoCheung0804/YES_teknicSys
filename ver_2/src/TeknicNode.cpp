@@ -3,9 +3,10 @@
 
 using namespace std;
 
-TeknicNode::TeknicNode(){}
+TeknicNode::TeknicNode(bool isOnline){ this->isOnline = isOnline; }
 
 bool TeknicNode::Connect(int nodeNumber){
+    if(!this->isOnline) return true;
     try{
         cout << "Connecting to teknic nodes." << endl;
         this->nodeNumber = nodeNumber;
@@ -92,6 +93,7 @@ bool TeknicNode::Connect(int nodeNumber){
 }
 
 void TeknicNode::Disconnect(){  
+    if(!this->isOnline) return;
     for(int i = 0; i < nodeNumber; i++){ //Disable Nodes
         nodeList[i]->EnableReq(false);
     }
@@ -110,4 +112,59 @@ INode* TeknicNode::GetNode(int nodeIndex){
         return nullptr;
 }
 
+void TeknicNode::SetAccLmt(int index, int val){ 
+    if(!this->isOnline) return;
+    this->nodeList[index]->Motion.AccLimit = val;
+}
 
+float TeknicNode::GetTrqMeasured(int index){
+    if(!this->isOnline) return 0;
+    return this->nodeList[index]->Motion.TrqMeasured.Value();
+}
+
+void TeknicNode::SetVel(int index, int val){
+    this->nodeList[index]->Motion.MoveVelStart(val); 
+}
+
+void TeknicNode::StopNode(int index){
+    if(!this->isOnline) return;
+    this->nodeList[index]->Motion.NodeStop(STOP_TYPE_ABRUPT);
+}
+
+void TeknicNode::StopAll(){
+    if(!this->isOnline) return;
+    for(INode* node : this->nodeList){
+        node->Motion.NodeStop(STOP_TYPE_ABRUPT);
+    }
+}
+
+
+void TeknicNode::ClearAlert(){
+    if(!this->isOnline) return;
+    for (INode* node : this->nodeList) {      
+        node->EnableReq(true);                    //Enable node 
+        node->Status.AlertsClear();               //Clear Alerts on node 
+        node->Motion.NodeStopClear();             //Clear Nodestops on Node     
+    }
+}
+
+void TeknicNode::MoveToPosn(int index, int32_t cmd, bool absolute){
+    if(!this->isOnline) return;
+    this->nodeList[index]->Motion.MovePosnStart(cmd, absolute, true);
+}
+
+bool TeknicNode::NodeIsInAlert(int index){
+    if(!this->isOnline) return false;
+    return this->nodeList[index]->Status.Alerts.Value().isInAlert();
+}
+
+void TeknicNode::SetCurrentPosn(int index, int32_t cmd){
+    if(!this->isOnline) return;
+    this->nodeList[index]->Motion.PosnMeasured.Refresh();
+    this->nodeList[index]->Motion.AddToPosition(-nodeList[index]->Motion.PosnMeasured.Value() + cmd);
+}
+
+int32_t TeknicNode::GetCurrentPosn(int index){
+    if(!this->isOnline) return 0;
+    return this->nodeList[index]->Motion.PosnMeasured.Value();
+}

@@ -58,10 +58,10 @@
         [0.180, 0.220, -0.100],
         [-0.180, 0.220, -0.100]
     ],
-    "gripperCommPort": "\\\\.\\COM26",
-    "railBrakeCommPort": "\\\\.\\COM23",
+    "gripperCommPort": "\\\\.\\COM15",
+    "railBrakeCommPort": "\\\\.\\COM14",
     "useGripper": false,
-    "useCableMotor": true,
+    "useCableMotor": false,
     "useCableBraker": false,
     "useRailMotor": false,
     "useRailBraker": false

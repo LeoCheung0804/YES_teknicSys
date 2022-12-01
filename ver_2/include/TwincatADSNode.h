@@ -9,15 +9,18 @@
 using namespace std;
 class TwincatADSNode{
 private:
+    bool isOnline;
     AmsAddr Addr;
     // data type: double, bool[], double[], bool[], bool[].
     string adsVarNames[5] = {"MAIN.Axis_GoalPos", "MAIN.startMove", "MAIN.actPos", "MAIN.bHomeSwitch", "MAIN.homeBusy"}; 
 public:
     map<string, unsigned long> handlers;
     PAmsAddr pAddr;
-    TwincatADSNode();
-    TwincatADSNode(int port);
+    TwincatADSNode(bool isOnline=false);
     bool Connect(int port);
     void Disconnect();
+    void WriteReq(string handle, int32_t pData);
+    void WriteReq(string handle, bool* pData);
+    void ReadReq(string handle, bool* pData);
 };
 #endif

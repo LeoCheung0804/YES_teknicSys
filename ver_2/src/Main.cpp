@@ -282,22 +282,6 @@ void CableMotorControlMode(){
                 }
             }
         }
-        /*else if(userInput == "10"){ // Open Selected Cable Brake
-            robot.cable.OpenBrake(selectedCable);
-            system("pause");
-        }else if(userInput == "11"){ // Close Selected Cable Brake
-            robot.cable.CloseBrake(selectedCable);
-            system("pause");
-        }else if(userInput == "12"){ // Open ALL Cable Brake
-            for(int i = 0; i < robot.GetCableMotorBrakeNum(); i++)
-                robot.cable.OpenBrake(i);
-            system("pause");
-        }else if(userInput == "13"){ // Close ALL Cable Brake
-            for(int i = 0; i < robot.GetCableMotorBrakeNum(); i++)
-                robot.cable.CloseBrake(i);
-            system("pause");
-        }
-        */
     }
 
 }
@@ -512,18 +496,18 @@ void RailMotorControlMode(){
                 }
             }
         }else if(userInput == "10"){ // Open Selected Rail Brake
-            robot.rail.OpenBrake(selectedRailMotor);
+            robot.brake.OpenRailBrakeByIndex(selectedRailMotor);
             system("pause");
         }else if(userInput == "11"){ // Close Selected Rail Brake
-            robot.rail.CloseBrake(selectedRailMotor);
+            robot.brake.CloseRailBrakeByIndex(selectedRailMotor);
             system("pause");
         }else if(userInput == "12"){ // Open ALL Rail Brake
             for(int i = 0; i < robot.GetRailMotorNum(); i++)
-                robot.rail.OpenBrake(i);
+                robot.brake.OpenRailBrakeByIndex(i);
             system("pause");
         }else if(userInput == "13"){ // Close ALL Rail Brake
             for(int i = 0; i < robot.GetRailMotorNum(); i++)
-                robot.rail.CloseBrake(i);
+                robot.brake.CloseRailBrakeByIndex(i);
             system("pause");
         }
     }
@@ -580,9 +564,9 @@ void CalibrationMode(){
             }
             system("pause");
         }else if(userInput == "3"){ // Control Cable Individual
-            robot.cable.OpenAllBrake();
+            robot.brake.OpenAllCableBrake();
             CableMotorControlMode();
-            robot.cable.CloseAllBrake();
+            robot.brake.CloseAllCableBrake();
         }else if(userInput == "4"){ // Update Robot Pos By File
             string robotPosPath;
             cout << "Please Enter Robot Position File Path (Default lastPos.txt): ";
@@ -597,14 +581,14 @@ void CalibrationMode(){
             system("pause");
         }else if(userInput == "5"){ // Reset End Effector Rotation to 0,0,0
             double targetPos[6] = {robot.endEffectorPos[0], robot.endEffectorPos[1], robot.endEffectorPos[2], 0, 0,0 };
-            robot.cable.OpenAllBrake();
+            robot.brake.OpenAllCableBrake();
             robot.MoveToParaBlend(targetPos, 3500, true);
-            robot.cable.CloseAllBrake();
+            robot.brake.CloseAllCableBrake();
             system("pause");
         }else if(userInput == "6"){ // Control Linear Rail Motor
-            robot.cable.OpenAllBrake();
+            robot.brake.OpenAllCableBrake();
             RailMotorControlMode();
-            robot.cable.CloseAllBrake();
+            robot.brake.CloseAllCableBrake();
         }else if(userInput == "7"){ // Control Gripper
             GripperControlMode();
         }else if(userInput == "8"){ // Update Robot Config
@@ -860,23 +844,23 @@ void RobotControlMode(){
         if(userInput == "q"){ // back to last page
             break;
         }else if(userInput == "1"){ // robot position control mode
-            robot.cable.OpenAllBrake();
+            robot.brake.OpenAllCableBrake();
             RobotPosControlMode();
-            robot.cable.CloseAllBrake();
+            robot.brake.CloseAllCableBrake();
         }else if(userInput == "2"){ // move robot to home position
             robot.PrintHomePos();
-            robot.cable.OpenAllBrake();
+            robot.brake.OpenAllCableBrake();
             robot.MoveToParaBlend(robot.homePos, true);
-            robot.cable.CloseAllBrake();
+            robot.brake.CloseAllCableBrake();
             system("pause");
         }else if(userInput == "3"){ // gripper control mode
             GripperControlMode();
         }else if(userInput == "4"){ // Rail Control
-            robot.cable.OpenAllBrake();
-            robot.rail.OpenAllBrake();
+            robot.brake.OpenAllCableBrake();
+            robot.brake.OpenAllRailBrake();
             RailControlMode();
-            robot.cable.CloseAllBrake();
-            robot.rail.CloseAllBrake();
+            robot.brake.CloseAllCableBrake();
+            robot.brake.CloseAllRailBrake();
         }
     }
 }
@@ -915,7 +899,7 @@ void OperationMode(){
             cout << "Speed Limit: " << robot.GetVelLmt() << "m/s" << endl;
             double goalPos[6] = {0};
             int brickIndex = 0;
-            robot.cable.OpenAllBrake();
+            robot.brake.OpenAllCableBrake();
             for(vector<double> brickPos : brickPosList){
                 // Move to pre pick up position
                 robot.gripper.Rotate(90);
@@ -925,13 +909,20 @@ void OperationMode(){
                 goalPos[2] += 0.21; // 0.21 safe height from ABB
                 cout << "Brick No. " << brickIndex << endl;
                 cout << "====== Moving to pre pick up position." << endl;
+                cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
+                cout << "Rot: " << "yaw: " << goalPos[3] << " pitch: " << goalPos[4] << " roll: " << goalPos[5] << endl;
+                system("pause");
                 if(!robot.MoveToParaBlend(goalPos, true)) break;
+                
                 Sleep(100); // wait for brick
 
                 // pickup brick
                 copy(robot.brickPickUpPos, robot.brickPickUpPos + 6, goalPos);
                 cout << "Brick No. " << brickIndex << endl;
                 cout << "====== Picking up brick." << endl;
+                cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
+                cout << "Rot: " << "yaw: " << goalPos[3] << " pitch: " << goalPos[4] << " roll: " << goalPos[5] << endl;
+                system("pause");
                 if(!robot.MoveToParaBlend(goalPos, robot.safeT * 1.2, true)) break;
                 Sleep(600); //////////// FOR TESTING ONYL, delete later!!!!!!!!!!!!!!!!!!
                 robot.gripper.Close();
@@ -939,9 +930,12 @@ void OperationMode(){
 
                 // raise brick
                 copy(robot.brickPickUpPos, robot.brickPickUpPos+6, begin(goalPos));
-                goalPos[2] += robot.GetEEToGroundOffset();
+                goalPos[2] += 0.14;
                 cout << "====== Brick No. " << brickIndex << endl;
-                cout << "====== Picking up brick." << endl;
+                cout << "====== Raise up brick." << endl;
+                cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
+                cout << "Rot: " << "yaw: " << goalPos[3] << " pitch: " << goalPos[4] << " roll: " << goalPos[5] << endl;
+                system("pause");
                 if(!robot.MoveToParaBlend(goalPos, robot.safeT, true)) break;
 
                 // move to safe point
@@ -950,6 +944,9 @@ void OperationMode(){
                 copy(safePt, safePt+6, begin(goalPos)); // safe point
                 cout << "====== Brick No. " << brickIndex << endl;
                 cout << "====== Moving to safe position." << endl;
+                cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
+                cout << "Rot: " << "yaw: " << goalPos[3] << " pitch: " << goalPos[4] << " roll: " << goalPos[5] << endl;
+                system("pause");
                 if(!robot.MoveToParaBlend(goalPos, true)) break;
 
                 double safeH = 0.12; // meter, safety height from building brick level
@@ -992,12 +989,18 @@ void OperationMode(){
                 goalPos[5] = brickPos[3]; // Include yaw angle
                 cout << "====== Brick No. " << brickIndex << endl;
                 cout << "====== Moving to brick position." << endl;
+                cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
+                cout << "Rot: " << "yaw: " << goalPos[3] << " pitch: " << goalPos[4] << " roll: " << goalPos[5] << endl;
+                system("pause");
                 if(!robot.MoveToParaBlend(goalPos, true)) break;
                 
                 // Place brick
                 goalPos[2] -= safeH;
                 cout << "====== Brick No. " << brickIndex << endl;
                 cout << "====== Placing brick." << endl;
+                cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
+                cout << "Rot: " << "yaw: " << goalPos[3] << " pitch: " << goalPos[4] << " roll: " << goalPos[5] << endl;
+                system("pause");
                 if(!robot.MoveToParaBlend(goalPos, robot.safeT, true)) break;
                 robot.gripper.Open();
                 Sleep(200); //Wait a while after placing brick
@@ -1006,22 +1009,30 @@ void OperationMode(){
                 goalPos[2] += safeH;
                 cout << "====== Brick No. " << brickIndex << endl;
                 cout << "====== Moving to stand by position." << endl;
+                cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
+                cout << "Rot: " << "yaw: " << goalPos[3] << " pitch: " << goalPos[4] << " roll: " << goalPos[5] << endl;
+                system("pause");
                 if(!robot.MoveToParaBlend(goalPos, true)) break;
 
                 // move to safe point
                 copy(begin(safePt), end(safePt), begin(goalPos)); // safe x,y,z position
                 cout << "====== Brick No. " << brickIndex << endl;
                 cout << "====== Moving to safe position." << endl;
+                cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
+                cout << "Rot: " << "yaw: " << goalPos[3] << " pitch: " << goalPos[4] << " roll: " << goalPos[5] << endl;
+                system("pause");
                 if(robot.endEffectorPos[2] > safePt[2]){ // if current position is above safe point, then return to safe point within lowering z-height
                     goalPos[2] = robot.endEffectorPos[2];
                     if(!robot.MoveToParaBlend(goalPos, true)) break;
                     goalPos[2] = safePt[2];
                 }
+                system("pause");
                 if(!robot.MoveToParaBlend(goalPos, true)) break;
                 cout << "----------Completed brick #" << brickIndex <<"----------" << endl;
+                system("pause");
                 brickIndex++;
             }
-            robot.cable.CloseAllBrake();
+            robot.brake.CloseAllCableBrake();
             system("pause");
         }else if(userInput == "3"){ // read point to point file, gen and run para blend traj
             string ptnFileName;
@@ -1030,11 +1041,11 @@ void OperationMode(){
             getline(cin, ptnFileName);
             vector<vector<double>> pointList = ReadPointFile(ptnFileName != "" ? ptnFileName : "points.csv"); // Read "bricks.csv"
             cout << "The file contains " << pointList.size() << " points." << endl;
-            robot.cable.OpenAllBrake();
+            robot.brake.OpenAllCableBrake();
             for(vector<double> point : pointList){
                 if(!robot.MoveToParaBlend(&point[0], true)) break;
             }
-            robot.cable.CloseAllBrake();
+            robot.brake.CloseAllCableBrake();
             system("pause");
         }else if(userInput == "4"){ // read and run traj file
             string trajFileName;
@@ -1043,10 +1054,10 @@ void OperationMode(){
             getline(cin, trajFileName);
             vector<vector<double>> trajList = ReadTrajFile(trajFileName != "" ? trajFileName : "traj.csv"); // Read "bricks.csv"
             cout << "The file contains " << trajList.size() << " points." << endl;
-            robot.cable.OpenAllBrake();
+            robot.brake.OpenAllCableBrake();
             robot.MoveToParaBlend(&(trajList[0])[0]);
             robot.RunCableTraj(trajList);
-            robot.cable.CloseAllBrake();
+            robot.brake.CloseAllCableBrake();
             system("pause");
         }else if(userInput == "5"){ // requst current torque readings
             cout << "Current Measured Cable Motor Trq: " << endl;

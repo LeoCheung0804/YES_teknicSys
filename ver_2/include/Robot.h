@@ -5,6 +5,7 @@
 #include "GripperController.h"
 #include "RailController.h"
 #include "CableController.h"
+#include "BrakeController.h"
 #include "Logger.h"
 #include <string>
 #include <vector>
@@ -60,6 +61,7 @@ public:
     CableController cable;
     RailController rail;
     GripperController gripper;
+    BrakeController brake;
 
     int safeT = 1500;
 // Constructor

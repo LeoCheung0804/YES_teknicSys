@@ -1,10 +1,11 @@
-#include "..\include\ArduinoBLENode.h"
+#include "..\include\COMPortNode.h"
 #include <iostream>
 #include <thread>
 
-ArduinoBLENode::ArduinoBLENode(){}
+COMPortNode::COMPortNode(bool isOnline){ this->isOnline = isOnline; }
 
-bool ArduinoBLENode::SetSerialParams(){
+bool COMPortNode::SetSerialParams(){
+    if(!this->isOnline) return true;
     // Set parameters for serial port
     DCB dcbSerialParams = { 0 }; // Initializing DCB structure
     dcbSerialParams.DCBlength = sizeof(dcbSerialParams);
@@ -42,7 +43,8 @@ bool ArduinoBLENode::SetSerialParams(){
     return true;
 }
 
-bool ArduinoBLENode::Connect(string portName){
+bool COMPortNode::Connect(string portName){
+    if(!this->isOnline) return true;
     cout << "Connecting to BLE Device on port: " << portName << endl;;
     const char* cArray = portName.c_str();
     this->hComm = CreateFile(cArray, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
@@ -54,15 +56,18 @@ bool ArduinoBLENode::Connect(string portName){
     if (!SetSerialParams()) { 
         return false; 
     }
+    Sleep(2000);
     cout << "Connected to BLE Device on port: " << portName << endl;
     return true;
 }
 
-void ArduinoBLENode::Disconnect(){
+void COMPortNode::Disconnect(){
+    if(!this->isOnline) return;
     this->Send("(z,    )");
 }
 
-string ArduinoBLENode::Send(string Ard_char){
+string COMPortNode::Send(string Ard_char){
+    if(!this->isOnline) return "";
     char buffer[8] = {};
     for(int i = 0; i < 8; i++){
         buffer[i] = Ard_char[i];
@@ -70,12 +75,15 @@ string ArduinoBLENode::Send(string Ard_char){
     DWORD dNoOfBytesWritten = 0;
     if (!(bool)WriteFile(this->hComm, buffer, 8, &dNoOfBytesWritten, NULL)){ 
         cout << "Arduino writing error: " << GetLastError() << endl; 
+        return "False";
     }    
-    return Read();
+    return "Succrss";
+    // return Read();
     // Read(); // need this?
 }
 
-string ArduinoBLENode::Read(){
+string COMPortNode::Read(){
+    if(!this->isOnline) return "";
     DWORD dwEventMask, BytesRead;
     int i{0};
     char tmp;

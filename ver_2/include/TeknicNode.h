@@ -8,7 +8,7 @@ using namespace std;
 using namespace sFnd;
 class TeknicNode{
 private:
-    bool isConnected;
+    bool isOnline;
     int nodeNumber;
     unsigned int portCount;
     vector<string> comHubPorts;
@@ -18,7 +18,7 @@ private:
     /// @return bool. true if there are exact number of teknic motors connected.
     bool CheckMotorNetwork();
 public:
-    TeknicNode();
+    TeknicNode(bool isOnline=false);
     /// @brief Scan the network, find all connected sc hub and all connected teknic motors.
     /// @return bool. Whether the connection has been established.
     bool Connect(int nodeNumber);
@@ -26,7 +26,16 @@ public:
     
     INode* GetNode(int nodeIndex);
     vector<INode*> GetNodeList();
-
+    void SetAccLmt(int index, int val);
+    float GetTrqMeasured(int index);
+    void SetVel(int index, int val);
+    void StopNode(int index);
+    void StopAll();
+    void ClearAlert();
+    void MoveToPosn(int index, int32_t cmd, bool absolute);
+    bool NodeIsInAlert(int index);
+    void SetCurrentPosn(int index, int32_t cmd);
+    int32_t GetCurrentPosn(int index);
 };
 
 #endif
