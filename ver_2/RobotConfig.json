@@ -7,25 +7,25 @@
         "x": 7.3, 
         "y": 6.2, 
         "z": -2.7, 
-        "yaw": 0, 
+        "roll": 0, 
         "pitch": 0, 
-        "roll": -0.0344
+        "yaw": -0.0344
     },
     "endEffectorPosLimit": {
         "x": -0.1,
         "y":  11.5, 
         "z": -0.02, 
-        "yaw":  13.8, 
+        "roll":  13.8, 
         "pitch": -3.75, 
-        "roll": 0.3
+        "yaw": 0.3
     },
     "brickPickUpPos": {
         "x": 9.921,
         "y":  6.705, 
         "z": -2.963,
-        "yaw":  0, 
+        "roll":  0, 
         "pitch": 0, 
-        "roll": 0.0148
+        "yaw": 0.0148
     },
     "brickPickUpOffset": 0.21,
     "velLmt": 0.45,
@@ -61,8 +61,8 @@
     "gripperCommPort": "\\\\.\\COM15",
     "railBrakeCommPort": "\\\\.\\COM14",
     "useGripper": false,
-    "useCableMotor": false,
-    "useCableBraker": false,
+    "useCableMotor": true,
+    "useCableBraker": true,
     "useRailMotor": false,
-    "useRailBraker": false
+    "useRailBraker": true
 }
