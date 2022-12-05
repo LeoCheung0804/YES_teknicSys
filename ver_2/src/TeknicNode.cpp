@@ -123,6 +123,7 @@ float TeknicNode::GetTrqMeasured(int index){
 }
 
 void TeknicNode::SetVel(int index, int val){
+    if(!this->isOnline) return;
     this->nodeList[index]->Motion.MoveVelStart(val); 
 }
 

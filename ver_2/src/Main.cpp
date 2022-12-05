@@ -149,6 +149,10 @@ void CableMotorControlMode(){
                     int step = strtol(userInput.c_str(), &p, 10);
                     if(!*p) {
                         cout << "Moving Cable " << selectedCable << " By Step: " << step << endl;
+                        if(step / robot.GetCableMotorScale() > 0.5 || step / robot.GetCableMotorScale() < -0.5){
+                            cout << "Step too large! range should be in -0.5m ~ 0.5m." << endl;
+                            continue;
+                        }
                         robot.cable.MoveSingleMotorCmd(selectedCable, step, false);
                     }else{
                         cout << "Please enter an intager number!!!" << endl;
@@ -167,6 +171,10 @@ void CableMotorControlMode(){
                     double length = strtod(userInput.c_str(), &p);
                     if(!*p) {
                         cout << "Moving Cable " << selectedCable << " By Length: " << length << endl;
+                        if(length > 0.5 || length < -0.5){
+                            cout << "Step too large! range should be in -0.5 ~ 0.5." << endl;
+                            continue;
+                        }
                         robot.cable.MoveSingleMotorCmd(selectedCable, robot.CableMotorLengthToCmdAbsulote(length), false);
                     }else{
                         cout << "Please enter a number!!!" << endl;
@@ -300,10 +308,10 @@ void PrintRailMotorControlMenu(int selectedRailMotor){
     cout << "\t7 - Move ALL Rail Absolute (Motor Step)" << endl;
     cout << "\t8 - Move ALL Rail Relative (Rail Length)" << endl;
     cout << "\t9 - Move ALL Rail Absolute (Rail Length)" << endl;
-    cout << "\t10 - Open Selected Rail Brake" << endl;
-    cout << "\t11 - Close Selected Rail Brake" << endl;
-    cout << "\t12 - Open ALL Rail Brake" << endl;
-    cout << "\t13 - Close ALL Rail Brake" << endl;
+    // cout << "\t10 - Open Selected Rail Brake" << endl;
+    // cout << "\t11 - Close Selected Rail Brake" << endl;
+    // cout << "\t12 - Open ALL Rail Brake" << endl;
+    // cout << "\t13 - Close ALL Rail Brake" << endl;
     cout << "\tq - Back To Pervioue Menu" << endl;
     cout << "Please Select Operation: " << endl;
 }
@@ -495,20 +503,6 @@ void RailMotorControlMode(){
                     }
                 }
             }
-        }else if(userInput == "10"){ // Open Selected Rail Brake
-            robot.brake.OpenRailBrakeByIndex(selectedRailMotor);
-            system("pause");
-        }else if(userInput == "11"){ // Close Selected Rail Brake
-            robot.brake.CloseRailBrakeByIndex(selectedRailMotor);
-            system("pause");
-        }else if(userInput == "12"){ // Open ALL Rail Brake
-            for(int i = 0; i < robot.GetRailMotorNum(); i++)
-                robot.brake.OpenRailBrakeByIndex(i);
-            system("pause");
-        }else if(userInput == "13"){ // Close ALL Rail Brake
-            for(int i = 0; i < robot.GetRailMotorNum(); i++)
-                robot.brake.CloseRailBrakeByIndex(i);
-            system("pause");
         }
     }
 
