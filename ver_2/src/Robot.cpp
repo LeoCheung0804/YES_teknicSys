@@ -62,7 +62,7 @@ void Robot::Connect(){
     }
     
     // Init Cable Motor Nodes
-    if(this->useCableBraker){
+    if(this->useCableMotor){
         this->cable = CableController(this->isOnline, this->useCableMotor);
         this->brake.OpenAllCableBrake();
         this->cable.Connect(this->cableMotorNum);
@@ -174,7 +174,7 @@ void Robot::UpdateModelFromFile(string filename, bool reconnect){ // Read model.
         this->useRailMotor = model.value("useRailMotor", false );
         this->useRailBraker = model.value("useRailBraker", false );
         this->cable.SetTrqLmt(this->absTrqLmt);
-        string posLabel[] = {"x", "y", "z", "yaw", "pitch", "roll"};
+        string posLabel[] = {"x", "y", "z", "roll", "pitch", "yaw"};
 
         // Interate through arrays
         for(int i=0; i<6; i++){
@@ -241,15 +241,20 @@ void Robot::UpdatePosFromFile(string filename, bool calibration){
             }
             this->PrintEEPos();
             // for teknic motors
-            cout << "Cable Motor length / internal counts: " << endl;
-            for (int i = 0; i < this->cableMotorNum; i++){
-                cout << "\t" << "Cable " << i << ": " << cableLengthList[i] << " / " << this->cable.GetMotorPosMeasured(i)  << "    " << endl;
+            if(this->useCableMotor){
+                cout << "Cable Motor length / internal counts: " << endl;
+                for (int i = 0; i < this->cableMotorNum; i++){
+                    cout << "\t" << "Cable " << i << ": " << cableLengthList[i] << " / " << this->cable.GetMotorPosMeasured(i)  << "    " << endl;
+                }
+
             }
             // for twincat motors
-            cout << "Rail Motor length / internal counts: " << endl;
-            vector<int> railMotorCmd = this->rail.GetMotorPosMeasured();
-            for(int i = 0; i < this->railMotorNum; i++){
-                cout << "\t" << "Rail " << i << ": " << this->railOffset[i] << " / " << railMotorCmd[i]  << "    " << endl;
+            if(this->useRailMotor){
+                cout << "Rail Motor length / internal counts: " << endl;
+                vector<int> railMotorCmd = this->rail.GetMotorPosMeasured();
+                for(int i = 0; i < this->railMotorNum; i++){
+                    cout << "\t" << "Rail " << i << ": " << this->railOffset[i] << " / " << railMotorCmd[i]  << "    " << endl;
+                }
             }
             
             if(this->isOnline)
@@ -480,27 +485,15 @@ bool Robot::eBrake(bool cableBrake, bool railBrake){
     if(!useEBrake) return true;
     if(kbhit()){ // Emergency quit during trajectory control
         this->cable.StopAllMotor();
-        this->brake.CloseAllCableBrake();
-        this->brake.CloseAllRailBrake();
+        if(cableBrake)
+            this->brake.CloseAllCableBrake();
+        if(railBrake)
+            this->brake.CloseAllRailBrake();
         string userInput;
-        while(true){
-            cout << endl;
-            cout << "================================== STOP MENU ==================================" << endl;
-            cout << "System interrupted!! Do you want to quit the trajectory control?" << endl;
-            cout << "\t1 - Quit trajectory" << endl;
-            cout << "\t2 - Resume trajectory" << endl;
-            cout << "Please Select Operation: " << endl;
-            cin >> userInput;
-            if(userInput == "1"){
-                cout << "Trajectory emergency quit." << endl;
-                return false;
-            }else if(userInput == "2"){
-                this->brake.OpenAllRailBrake();
-                this->brake.OpenAllCableBrake();
-                cout << "Trajectory Resume." << endl;
-                return true;
-            }
-        }
+        cout << endl;
+        cout << "================================== Trajectory Stopped!! ==================================" << endl;
+        system("pause");
+        return false;
     }
     return true;
 };
@@ -663,10 +656,14 @@ void Robot::SavePosToFile(string filename){
     for(int i = 0; i < this->cableMotorNum; i++){
         myfile <<  this->cable.GetMotorPosMeasured(i) << " ";
     }
-
     vector<int> railMotorCmd = this->rail.GetMotorPosMeasured();
     for(int i = 0; i < this->railMotorNum; i++){
-        myfile << railMotorCmd[i] << " ";
+        if(this->useRailMotor){
+                myfile << railMotorCmd[i] << " ";
+        }
+        else{
+                myfile << 0 << " ";
+        }
     }
 
     myfile << endl;

@@ -108,7 +108,6 @@ void CableController::SetCableTrq(float targetTrq, float tolerance){
                         moving = true;
                     }
                     cout << "motor: " << index << ": " << currentTrq << "       " << endl;
-                    index ++;
                     log +=  to_string(currentTrq) + ",";
                 }
                 logger.LogInfo(log);

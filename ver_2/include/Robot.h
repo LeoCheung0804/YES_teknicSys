@@ -37,7 +37,7 @@ private:
     string gripperCommPort; // Gripper Communicate Port 
     string railBrakeCommPort; // Rail Brake Communicate Port 
     string cableBrakeCommPort; // Rail Brake Communicate Port 
-    string posLabel[6]{"x", "y", "z", "yaw", "pitch", "roll"}; 
+    string posLabel[6]{"x", "y", "z", "roll", "pitch", "yaw"}; 
     bool useGripper{ false};
     bool useCableMotor{ false };
     bool useCableBraker{ false };

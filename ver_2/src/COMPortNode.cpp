@@ -77,6 +77,7 @@ string COMPortNode::Send(string Ard_char){
         cout << "Arduino writing error: " << GetLastError() << endl; 
         return "False";
     }    
+    cout << "Sent: " << Ard_char << endl;
     return "Succrss";
     // return Read();
     // Read(); // need this?

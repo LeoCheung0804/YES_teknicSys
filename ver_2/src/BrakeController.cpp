@@ -18,6 +18,7 @@ void BrakeController::Connect(string portName){
         cout << "Error: Failed to connect Brake. \n"; 
         this->isConnected = false;
     }
+    Sleep(2000);
     cout << "Brake Controller Online." << endl;
     this->isConnected = true;
 }
@@ -31,14 +32,14 @@ void BrakeController::Disconnect(){
 
 void BrakeController::UseCableBrake(int num){ 
     this->useCableBrake = true; 
-    this->cableBrakeNum = cableBrakeNum;
-    this->cableBrakeFlag = new bool(cableBrakeNum);
+    this->cableBrakeNum = num;
+    this->cableBrakeFlag = new bool(num);
 }
 
 void BrakeController::UseRailBrake(int num){ 
     this->useRailBrake = true; 
-    this->railBrakeNum = railBrakeNum;
-    this->railBrakeFlag = new bool(railBrakeNum);
+    this->railBrakeNum = num;
+    this->railBrakeFlag = new bool(num);
 }
 
 bool BrakeController::IsConnected(){ return this->isConnected; }
@@ -74,6 +75,7 @@ void BrakeController::OpenAllRailBrake(){
     for(int i = 0; i < this->railBrakeNum; i++){
         this->OpenRailBrakeByIndex(i);
     }
+    Sleep(1000);
     cout << "ALL Rail Brake Opened." << endl;
     
 }
@@ -122,6 +124,7 @@ void BrakeController::OpenAllCableBrake(){
     for(int i = 0; i < this->cableBrakeNum; i++){
         this->OpenCableBrakeByIndex(i);
     }
+    Sleep(1000);
     cout << "ALL Cable Brake Opened." << endl;
 }
 
@@ -131,7 +134,6 @@ void BrakeController::CloseAllCableBrake(){
     this->sendStr[1] = '0' + CABLE_BRAKE_ALL;
     // cout << "Sending Command: " << this->sendStr << " to Brakes" << endl;
     this->node.Send(this->sendStr);
-        
     for(int i = 0; i < this->cableBrakeNum; i++){
         this->cableBrakeFlag[i] = true;
     }

@@ -8,6 +8,7 @@ RailController::RailController(bool isOnline, bool useRail){
 }
 
 void RailController::Connect(int motorPortNumber, int railNumber){
+    if(!this->useRail) return;
     this->railNumber = railNumber;
     this->bArry = new bool(railNumber);
     if(!this->motorNode.Connect(railNumber)){
@@ -19,6 +20,7 @@ void RailController::Connect(int motorPortNumber, int railNumber){
 }
 
 void RailController::Disconnect(){
+    if(!this->useRail) return;
     this->motorNode.Disconnect();
     cout << "Rail Controller Offline." << endl;
     this->isConnected = false;
@@ -27,18 +29,21 @@ void RailController::Disconnect(){
 bool RailController::IsConnected(){ return this->isConnected; }
 
 void RailController::SelectWorkingMotor(int index){
+    if(!this->useRail) return;
     this->bArry[workingMotor] = false;
     this->bArry[index] = true;
     workingMotor = index;
 }
 
 void RailController::MoveSelectedMotorCmd(int32_t cmd, bool absulote){
+    if(!this->useRail) return;
     if(!absulote) return;
     this->motorNode.WriteReq("MAIN.Axis_GoalPos", cmd);
     this->motorNode.WriteReq("MAIN.Axis_GoalPos", this->bArry);
 }
 
 void RailController::CalibrationMotor(int index, int32_t currentCmdPos){
+    if(!this->useRail) return;
     bool *busyFlag = new bool(this->railNumber);
     bool *homeFlag = new bool(this->railNumber);
     
@@ -61,6 +66,7 @@ void RailController::CalibrationMotor(int index, int32_t currentCmdPos){
 }
 
 vector<int> RailController::GetMotorPosMeasured(){
+    if(!this->useRail) return vector<int>();
     long nErr;
     bool *actPos = new bool(this->railNumber);
     this->motorNode.ReadReq("MAIN.actPos", actPos);
