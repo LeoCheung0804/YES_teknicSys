@@ -31,7 +31,8 @@ void PrintGripperControlMenu(){
     cout << "\t1 - Close Gripper" << endl;
     cout << "\t2 - Open Gripper" << endl;
     cout << "\t3 - Rotate Gripper" << endl;
-    cout << "\t4 - Calibrate Gripper" << endl;
+    cout << "\t4 - Release Gripper" << endl;
+    cout << "\t5 - Write Calibration Data to Gripper" << endl;
     cout << "\tq - Exit" << endl;
     cout << "Please Select Mode: ";
 }
@@ -51,10 +52,30 @@ void GripperControlMode(){
             system("pause");
         }else if(userInput == "3"){
             while(true){
-                cout << "Please Enter Target Angle (enter q to exit): ";
+                cout << "Please Enter Target Angle (q to exit, x/y to set start/end angle for calibration): ";
                 cin >> userInput;
                 if(userInput == "q"){
                     break;
+                }else if(userInput == "x"){
+                    cout << "Please Enter Start Angle for Calibration (Enter None Integer to exit): ";
+                    cin >> userInput;
+                    char* p;
+                    int angle = strtol(userInput.c_str(), &p, 10);
+                    if(!*p) {
+                        robot.gripper.SetCalibrateStartAngle(angle);
+                    }else{
+                        cout << "Please enter intager!!!";
+                    }
+                }else if(userInput == "y"){
+                    cout << "Please Enter Start Angle for Calibration (Enter None Integer to exit): ";
+                    cin >> userInput;
+                    char* p;
+                    int angle = strtol(userInput.c_str(), &p, 10);
+                    if(!*p) {
+                        robot.gripper.SetCalibrateEndAngle(angle);
+                    }else{
+                        cout << "Please enter intager!!!";
+                    }
                 }else{
                     char* p;
                     int angle = strtol(userInput.c_str(), &p, 10);
@@ -66,6 +87,9 @@ void GripperControlMode(){
                 }
             }
         }else if(userInput == "4"){
+            robot.gripper.Release();
+            system("pause");
+        }else if(userInput == "5"){
             robot.gripper.Calibrate();
             system("pause");
         }

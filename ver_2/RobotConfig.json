@@ -1,6 +1,6 @@
 {
     "ModelName": "YES",
-    "isOnline": false,
+    "isOnline": true,
     "cableMotorNum": 8,    
     "railMotorNum": 4,
     "homePos": {
@@ -58,11 +58,11 @@
         [0.180, 0.220, -0.100],
         [-0.180, 0.220, -0.100]
     ],
-    "gripperCommPort": "\\\\.\\COM15",
+    "gripperCommPort": "\\\\.\\COM13",
     "railBrakeCommPort": "\\\\.\\COM14",
-    "useGripper": false,
-    "useCableMotor": true,
-    "useCableBraker": true,
+    "useGripper": true,
+    "useCableMotor": false,
+    "useCableBraker": false,
     "useRailMotor": false,
-    "useRailBraker": true
+    "useRailBraker": false
 }

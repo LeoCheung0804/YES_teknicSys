@@ -25,6 +25,9 @@ public:
     void Open();
     void Close();
     void Rotate(int angle);
+    void Release();
+    void SetCalibrateStartAngle(int angle);
+    void SetCalibrateEndAngle(int angle);
     void Calibrate();
 };
 #endif
