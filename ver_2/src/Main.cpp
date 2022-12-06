@@ -956,7 +956,7 @@ void OperationMode(){
                 robot.gripper.Open();
 
                 copy(robot.brickPickUpPos, robot.brickPickUpPos + 6, goalPos);
-                goalPos[5] += 0.0141; // calculated yaw for +0.21 height
+                goalPos[5] = 0.0141; // calculated yaw for +0.21 height
                 goalPos[2] += 0.21; // 0.21 safe height from ABB
 
                 cout << "Brick No. " << i << endl;
@@ -977,7 +977,7 @@ void OperationMode(){
                 if(!CheckContinue()) break;
                 if(!robot.MoveToParaBlend(goalPos, robot.safeT * 1.2, true)) break;
 
-                Sleep(600); //////////// FOR TESTING ONYL, delete later!!!!!!!!!!!!!!!!!!
+                // Sleep(600); //////////// FOR TESTING ONYL, delete later!!!!!!!!!!!!!!!!!!
                 robot.gripper.Close();
                 Sleep(800); // wait for grippper to close
 
@@ -991,8 +991,10 @@ void OperationMode(){
                 if(!CheckContinue()) break;
                 if(!robot.MoveToParaBlend(goalPos, robot.safeT, true)) break;
 
-                // move to safe point
+                // rotate gripper to target rotation
                 robot.gripper.Rotate((int)(brickPos[4] + 92.2 - brickPos[3]/3.1415965*180)); // <-+27, constant frame to gripper offset; - yaw rotation in EE
+
+                // move to safe point                
                 copy(safePt, safePt+6, begin(goalPos)); // safe point
                 cout << "====== Brick No. " << i << endl;
                 cout << "====== Moving to safe position." << endl;
@@ -1034,11 +1036,22 @@ void OperationMode(){
                 //     if(!robot.MoveToParaBlend(goalPos, false)) break;
                 // }
                 */
-
+                
+                if(robot.endEffectorPos[2] < brickPos[2] + robot.GetEEToGroundOffsett() + safeH){ // if current position is below target brick height, then raise brick first // need this?
+                    goalPos[0] = robot.endEffectorPos[0];
+                    goalPos[1] = robot.endEffectorPos[1];
+                    goalPos[2] = brickPos[2] + safeH + robot.GetEEToGroundOffset();
+                    cout << "====== Brick No. " << i << endl;
+                    cout << "====== Rise Brick before Moving to brick position." << endl;
+                    cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
+                    cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
+                    if(!CheckContinue()) break;
+                    if(!robot.MoveToParaBlend(goalPos, true)) break;
+                }
                 // Go to brick placing position
                 goalPos[0] = brickPos[0];
                 goalPos[1] = brickPos[1];
-                goalPos[2] = brickPos[2] + safeH;
+                goalPos[2] = brickPos[2] + safeH + robot.GetEEToGroundOffset();
                 goalPos[5] = brickPos[3]; // Include yaw angle
                 cout << "====== Brick No. " << i << endl;
                 cout << "====== Moving to brick position." << endl;
@@ -1075,7 +1088,7 @@ void OperationMode(){
                 cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
                 cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
                 if(!CheckContinue()) break;
-                if(robot.endEffectorPos[2] > safePt[2]){ // if current position is above safe point, then return to safe point within lowering z-height
+                if(robot.endEffectorPos[2] > safePt[2]){ // if current position is above safe point, then return to point above safe point then lowering z-height
                     goalPos[2] = robot.endEffectorPos[2];
                     if(!robot.MoveToParaBlend(goalPos, true)) break;
                 }                
