@@ -1037,7 +1037,7 @@ void OperationMode(){
                 // }
                 */
                 
-                if(robot.endEffectorPos[2] < brickPos[2] + robot.GetEEToGroundOffsett() + safeH){ // if current position is below target brick height, then raise brick first // need this?
+                if(robot.endEffectorPos[2] < brickPos[2] + robot.GetEEToGroundOffset() + safeH){ // if current position is below target brick height, then raise brick first // need this?
                     goalPos[0] = robot.endEffectorPos[0];
                     goalPos[1] = robot.endEffectorPos[1];
                     goalPos[2] = brickPos[2] + safeH + robot.GetEEToGroundOffset();
