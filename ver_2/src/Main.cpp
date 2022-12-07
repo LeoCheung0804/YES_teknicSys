@@ -1003,7 +1003,7 @@ void OperationMode(){
                 if(!CheckContinue()) break;
                 if(!robot.MoveToParaBlend(goalPos, true)) break;
 
-                double safeH = 0.12; // meter, safety height from building brick level
+                double safeH = 0.3; // meter, safety height from building brick level
                 // avoid the 5th pole
                 /*
                 double lowPole = -2.9; // lowest 5th pole z-value
