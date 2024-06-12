@@ -20,9 +20,9 @@
         "yaw": 0.3
     },
     "brickPickUpPos": {
-        "x": 9.921,
+        "x": 9.891,
         "y":  6.705, 
-        "z": -2.963,
+        "z": -2.93,
         "roll":  0, 
         "pitch": 0, 
         "yaw": 0.0148
@@ -35,8 +35,8 @@
     "cableMotorScale": 509295.8179,
     "railMotorScale": -73885.256197,
     "pulleyRadius": 0.045, 
-    "rotationalAngleOffset": -36.1289,
-    "rotationalDistanceOffset": 0.013,
+    "rotationalAngleOffset": 71.5,
+    "rotationalDistanceOffset": 0.00158,
     "pulleyZdir": [-1, -1, -1, -1, 1, 1, 1, 1],
     "frameAttachments":[
         [-0.1182, 0.2852, -3.3929],
@@ -58,7 +58,7 @@
         [0.180, 0.220, -0.100],
         [-0.180, 0.220, -0.100]
     ],
-    "gripperCommPort": "\\\\.\\COM13",
+    "gripperCommPort": "\\\\.\\COM15",
     "railBrakeCommPort": "\\\\.\\COM14",
     "useGripper": true,
     "useCableMotor": false,

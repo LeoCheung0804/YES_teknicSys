@@ -57,6 +57,11 @@ void setup() {
   dxl.setOperatingMode(DXL_ID_R, OP_EXTENDED_POSITION);
   dxl.torqueOn(DXL_ID_L);
   dxl.torqueOn(DXL_ID_R);
+  if(EEPROM.read(1) - EEPROM.read(3) > 1000 || EEPROM.read(1) - EEPROM.read(3) < -1000)
+  mapStartDegree = (int8_t)EEPROM.read(0);
+  mapStartPWM = (int8_t)EEPROM.read(1);
+  mapEndDegree = (int8_t)EEPROM.read(2);
+  mapEndPWM = (int8_t)EEPROM.read(3);
  }
 
 void loop() {
