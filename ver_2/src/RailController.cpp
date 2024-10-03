@@ -35,11 +35,12 @@ void RailController::SelectWorkingMotor(int index){
     workingMotor = index;
 }
 
-void RailController::MoveSelectedMotorCmd(int32_t cmd, bool absulote){
+void RailController::MoveSelectedMotorCmd(double cmd, bool absulote){
     if(!this->useRail) return;
     if(!absulote) return;
     this->motorNode.WriteReq("MAIN.Axis_GoalPos", cmd);
-    this->motorNode.WriteReq("MAIN.Axis_GoalPos", this->bArry);
+    this->motorNode.WriteReq("MAIN.startMove[" + to_string(workingMotor) + "]", true);
+
 }
 
 void RailController::CalibrationMotor(int index, int32_t currentCmdPos){
@@ -51,7 +52,7 @@ void RailController::CalibrationMotor(int index, int32_t currentCmdPos){
         busyFlag[i] = false;
         homeFlag[i] = false;
     }
-    this->motorNode.WriteReq("MAIN.Axis1_GoalPos", currentCmdPos); // write "MAIN.Axis1_GoalPos"
+    this->motorNode.WriteReq("MAIN.Axis_GoalPos", currentCmdPos); // write "MAIN.Axis1_GoalPos"
     homeFlag[index] = true; // signal targeted rail motor for homing
     this->motorNode.WriteReq("MAIN.bHomeSwitch", homeFlag); // write "MAIN.bHomeSwitch"
     homeFlag[index] = false; // return to false

@@ -9,7 +9,7 @@
                 "/Zi",
                 "/EHsc",
                 "/Fo${workspaceFolder}\\temp\\",
-                "/Fe${workspaceFolder}\\bin\\${fileBasenameNoExtension}.exe",
+                "/Fe${workspaceFolder}\\bin\\main.exe",
                 "${workspaceFolder}\\src\\*.cpp",
                 "${workspaceFolder}\\Dependencies\\sFoundation20\\win32\\sFoundation20.lib",
                 "${workspaceFolder}\\Dependencies\\TcAdsDll\\Lib\\TcAdsDll.lib"
