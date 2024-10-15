@@ -2,6 +2,10 @@
 #include <iostream>
 #include <assert.h>
 
+float startAngle = 0;
+float endAngle = 180;
+float startAngleTmp = 0;
+float endAngleTmp = 0;
 GripperController::GripperController(bool isOnline, bool useGripper){
     this->node = COMPortNode(isOnline);
     this->useGripper = useGripper;
@@ -53,6 +57,7 @@ void GripperController::Release(){
 void GripperController::Rotate(int angle){
     if(!this->useGripper) return;
     // assert(angle >= -180 && angle <= 180);
+    angle = startAngle + (endAngle - startAngle) * angle / 180;
     this->sendStr = "(d,";
     this->sendStr += to_string(angle);
     while(this->sendStr.length() < 7){
@@ -65,10 +70,10 @@ void GripperController::Rotate(int angle){
 }
 void GripperController::SetCalibrateStartAngle(int angle){
     if(!this->useGripper) return;
-    if(angle >= 180 || angle <= -180){
-        cout << "Angle too large" << endl;
-        return;
-    }
+    // if(angle >= 200 || angle <= -200){
+    //     cout << "Angle too large" << endl;
+    //     return;
+    // }
     this->sendStr = "(x,";
     this->sendStr += to_string(angle);
     while(this->sendStr.length() < 7){
@@ -77,14 +82,15 @@ void GripperController::SetCalibrateStartAngle(int angle){
     this->sendStr += ")";
     // cout << "Sending Command: " << this->sendStr << " to gripper" << endl;
     node.Send(this->sendStr);
+    startAngleTmp = angle;
     cout << "Gripper Rotated to: " << angle << endl;
 }
 void GripperController::SetCalibrateEndAngle(int angle){
     if(!this->useGripper) return;
-    if(angle >= 180 || angle <= -180){
-        cout << "Angle too large" << endl;
-        return;
-    }
+    // if(angle >= 200 || angle <= -200){
+        // cout << "Angle too large" << endl;
+        // return;
+    // }
     this->sendStr = "(y,";
     this->sendStr += to_string(angle);
     while(this->sendStr.length() < 7){
@@ -93,6 +99,7 @@ void GripperController::SetCalibrateEndAngle(int angle){
     this->sendStr += ")";
     // cout << "Sending Command: " << this->sendStr << " to gripper" << endl;
     node.Send(this->sendStr);
+    endAngleTmp = angle;
     cout << "Gripper Rotated to: " << angle << endl;
 }
 
@@ -106,5 +113,7 @@ void GripperController::Calibrate(){
     this->sendStr += ")";
     // cout << "Sending Command: " << this->sendStr << " to gripper" << endl;
     node.Send(this->sendStr);
+    startAngle = startAngleTmp;
+    endAngle = endAngleTmp;
     cout << "Gripper Calibrated " << endl;
 }

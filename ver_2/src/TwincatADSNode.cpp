@@ -10,21 +10,27 @@ bool TwincatADSNode::Connect(int port){
 
     cout << "Connecting to Twincat ADS Nodes." << endl;
     // Open communication port on the ADS router
+    cout<<"Opening Ads Port"<<endl;
     nPort = AdsPortOpen();
+    pAddr = &Addr;
+    cout<<"Getting Local Address"<<endl;
     nErr = AdsGetLocalAddress(pAddr);
+    cout<<"Address Get"<<endl;
     if (nErr){ cout << "Error: AdsGetLocalAddress: " << nErr << '\n'; return false; }
-    pAddr->port = port;
-
+    pAddr->port = 851;
     // Enable power for motors, start state machine
     // Get handle of the request
     nErr = AdsSyncReadWriteReq(pAddr, ADSIGRP_SYM_HNDBYNAME, 0x0, sizeof(lHdlVar), &lHdlVar, sizeof("MAIN.power"), "MAIN.power");
     if (nErr){ cout << "Error: AdsSyncReadWriteReq: " << nErr << '\n'; return false; }
     // Use the handle to write data
+    cout << "MAIN.power handler: " << lHdlVar << endl;
+    cout << "Enabling power for motors" << endl;
     nErr = AdsSyncWriteReq(pAddr,ADSIGRP_SYM_VALBYHND, lHdlVar, sizeof(TRUE_FLAG), &TRUE_FLAG);
     if (nErr){ cout << "Error: AdsSyncWriteReq: " << nErr << '\n'; return false; }
     else { cout << "Linear rail motors enabled.\n"; }
     // Release the handle
     nErr = AdsSyncWriteReq(pAddr,ADSIGRP_SYM_RELEASEHND, 0,sizeof(lHdlVar),&lHdlVar);
+    cout<<"1"<<endl;
 
     // Create list of handler by name
 
@@ -52,20 +58,22 @@ void TwincatADSNode::Disconnect(){
     if ( AdsPortClose() ){ cout << "Error: AdsPortClose: " << nErr << '\n'; }
 }
 
-void TwincatADSNode::WriteReq(string handle, int32_t pData){
+void TwincatADSNode::WriteReq(string handle, double Data){
     if(!this->isOnline);
-    long nErr = AdsSyncWriteReq(this->pAddr,ADSIGRP_SYM_VALBYHND, handlers[handle], sizeof(pData), &pData); 
+    long nErr = AdsSyncWriteReq(this->pAddr,ADSIGRP_SYM_VALBYHND, handlers[handle], sizeof(double), &Data); 
     if (nErr) { cout << "Error: AdsSyncWriteReq: " << nErr << '\n'; }
 }
 
-void TwincatADSNode::WriteReq(string handle, bool* pData){
+
+void TwincatADSNode::WriteReq(string handle, bool Data){
     if(!this->isOnline);
-    long nErr = AdsSyncWriteReq(this->pAddr,ADSIGRP_SYM_VALBYHND, handlers[handle], sizeof(pData), &pData[0]); 
+    long nErr = AdsSyncWriteReq(this->pAddr,ADSIGRP_SYM_VALBYHND, handlers[handle], sizeof(bool), &Data); 
     if (nErr) { cout << "Error: AdsSyncWriteReq: " << nErr << '\n'; }
 }
 
-void TwincatADSNode::ReadReq(string handle, bool* pData){
+void TwincatADSNode::ReadReq(string handle, bool Data){
+    return;
     if(!this->isOnline);
-    long nErr = AdsSyncReadReq(this->pAddr, ADSIGRP_SYM_VALBYHND, handlers[handle], sizeof(pData), &pData[0]);
+    long nErr = AdsSyncReadReq(this->pAddr, ADSIGRP_SYM_VALBYHND, handlers[handle], sizeof(bool), &Data);
     if (nErr) { cout << "Error: AdsSyncReadReq: " << nErr << '\n';}
 }

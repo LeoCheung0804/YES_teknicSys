@@ -22,7 +22,7 @@ public:
     void Connect(int motorPortNumber, int railNumber);
     void Disconnect();
     bool IsConnected();
-    void CalibrationMotor(int index, int32_t currentCmdPos);
+    void CalibrationMotor(int index, double currentCmdPos);
     void SelectWorkingMotor(int index);
     void MoveSelectedMotorCmd(double cmd, bool absolute=true);
     vector<int> GetMotorPosMeasured();

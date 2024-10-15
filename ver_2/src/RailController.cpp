@@ -39,11 +39,11 @@ void RailController::MoveSelectedMotorCmd(double cmd, bool absulote){
     if(!this->useRail) return;
     if(!absulote) return;
     this->motorNode.WriteReq("MAIN.Axis_GoalPos", cmd);
-    this->motorNode.WriteReq("MAIN.startMove[" + to_string(workingMotor) + "]", true);
+    this->motorNode.WriteReq("MAIN.startMove[" + to_string(workingMotor + 1) + "]", true);
 
 }
 
-void RailController::CalibrationMotor(int index, int32_t currentCmdPos){
+void RailController::CalibrationMotor(int index, double currentCmdPos){
     if(!this->useRail) return;
     bool *busyFlag = new bool(this->railNumber);
     bool *homeFlag = new bool(this->railNumber);
@@ -59,15 +59,16 @@ void RailController::CalibrationMotor(int index, int32_t currentCmdPos){
     busyFlag[index] = false;
 
     while(!busyFlag[index]){ // wait for motor busy flag on, ie. update current pos started
+        cout << "Waiting for motor " << index << " to home" << endl;
         this->motorNode.ReadReq("MAIN.Axis_Home.Busy", busyFlag);
     }
     while(busyFlag[index]){ // wait for motor busy flag off, ie. completed updated position
+        cout << "Waiting for motor " << index << " to home" << endl;
         this->motorNode.ReadReq("MAIN.Axis_Home.Busy", busyFlag);
     }
 }
 
 vector<int> RailController::GetMotorPosMeasured(){
-    if(!this->useRail) return vector<int>();
     long nErr;
     bool *actPos = new bool(this->railNumber);
     this->motorNode.ReadReq("MAIN.actPos", actPos);

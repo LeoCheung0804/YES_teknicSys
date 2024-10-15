@@ -233,11 +233,11 @@ void Robot::UpdatePosFromFile(string filename, bool calibration){
                     this->cable.CalibrationMotor(index, this->CableMotorLengthToCmd(index, cableLengthList[index]));
                 }
                 // slider motors
-                cout << "Calibrating Rail Motor" << endl;
-                for(int index = 0; index < this->railMotorNum; index++){
-                    this->rail.CalibrationMotor(index, this->RailMotorOffsetToCmd(index, railOffset[index]));
-                } 
-                cout << "Updating motor counts completed" << endl;
+                // cout << "Calibrating Rail Motor" << endl;
+                // for(int index = 0; index < this->railMotorNum; index++){
+                //     this->rail.CalibrationMotor(index, this->RailMotorOffsetToCmd(index, railOffset[index]));
+                // } 
+                // cout << "Updating motor counts completed" << endl;
             }
             this->PrintEEPos();
             // for teknic motors
