@@ -112,7 +112,7 @@ void GripperController::Calibrate(){
     }
     this->sendStr += ")";
     // cout << "Sending Command: " << this->sendStr << " to gripper" << endl;
-    node.Send(this->sendStr);
+    // node.Send(this->sendStr);
     startAngle = startAngleTmp;
     endAngle = endAngleTmp;
     cout << "Gripper Calibrated " << endl;
