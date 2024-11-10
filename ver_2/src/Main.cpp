@@ -14,19 +14,19 @@ Logger logger;
 
 void DrawBricksASCII(int brickType){
     if(brickType  == 1){
-        cout << "  #######################  " << endl;
+        cout << "  ########################  " << endl;
         cout << "  #     ---      ---     #" << endl;
-        cout << "  #    /  \\     /  \\    #" << endl;
-        cout << "  #    \\  /     \\  /    #" << endl;
+        cout << "  #    /   \\    /   \\    #" << endl;
+        cout << "  #    \\   /    \\   /    #" << endl;
         cout << "  #     ---      ---     #" << endl;
-        cout << "  #######################  " << endl;
-    }else if(brickType == 2){
-        cout << "  ####################  " << endl;
-        cout << "  #                  #" << endl;
-        cout << "  #                  #" << endl;
-        cout << "  #                  #" << endl;
-        cout << "  #                  #" << endl;
-        cout << "  ####################  " << endl;
+        cout << "  ########################  " << endl;
+    }else if(brickType == 2){   
+        cout << "  ########################  " << endl;
+        cout << "  #                      #" << endl;
+        cout << "  #                      #" << endl;
+        cout << "  #                      #" << endl;
+        cout << "  #                      #" << endl;
+        cout << "  ########################  " << endl;
     }else if(brickType == 3){
         cout << "  #########  " << endl;
         cout << "  #       #" << endl;
