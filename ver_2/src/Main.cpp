@@ -12,6 +12,30 @@ string userInput;
 Robot robot;
 Logger logger;
 
+void DrawBricksASCII(int brickType){
+    if(brickType  == 1){
+        cout << "  #######################  " << endl;
+        cout << "  #     ---      ---     #" << endl;
+        cout << "  #    /  \\     /  \\    #" << endl;
+        cout << "  #    \\  /     \\  /    #" << endl;
+        cout << "  #     ---      ---     #" << endl;
+        cout << "  #######################  " << endl;
+    }else if(brickType == 2){
+        cout << "  ####################  " << endl;
+        cout << "  #                  #" << endl;
+        cout << "  #                  #" << endl;
+        cout << "  #                  #" << endl;
+        cout << "  #                  #" << endl;
+        cout << "  ####################  " << endl;
+    }else if(brickType == 3){
+        cout << "  #########  " << endl;
+        cout << "  #       #" << endl;
+        cout << "  #       #" << endl;
+        cout << "  #       #" << endl;
+        cout << "  #########  " << endl;
+    }
+}
+
 void ClearConsoleInputBuffer()
 {
     // If you happen to have any trouble clearing already cleared buffer, uncomment the section below.
@@ -972,7 +996,7 @@ void OperationMode(){
             robot.brake.OpenAllCableBrake();
             double safePt[6] = {8.24, 6.51, -2.7, 0, 0, -0.0237}; // a safe area near to the arm // 0.21 safe height from ABB
             bool stop = false;
-            string brickTypes[3] = {"holes", "normal", "half"};
+            string brickTypes[4] = {"??Should not show this, please check", "holes", "normal", "half"};
             int brickType = 0;
             for(int i = brickIndex; i < brickPosList.size(); i++){
             // for(vector<double> brickPos : brickPosList){
@@ -987,6 +1011,7 @@ void OperationMode(){
                 goalPos[2] += 0.21; // 0.21 safe height from ABB
 
                 cout << "Brick No. " << i << " (" << brickTypes[brickType] << ")" << endl;
+                DrawBricksASCII(brickType);
                 cout << "====== Moving to pre pick up position." << endl;
                 cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
                 cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
