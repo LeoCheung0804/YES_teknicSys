@@ -514,6 +514,35 @@ bool Robot::RunCableTraj(vector<vector<double>> posTraj, bool showAtten){
             cout << endl;
         }
     }
+    // check every step to make sure the command is not too large
+    vector<int32_t> lastFrameCmd = {0, 0, 0, 0, 0, 0, 0, 0};
+    vector<double> lastFrameLength = this->EEPoseToCableLength(this->endEffectorPos);
+    for(int i = 0; i < 8; i++){
+        lastFrameCmd[i] = lastFrameLength[i] * this->cableMotorScale;
+    }
+    vector<double> lastFrameEEPos = {this->endEffectorPos[0], this->endEffectorPos[1], this->endEffectorPos[2]};
+    for(int j = 0; j < posTraj.size(); j++){
+        vector<int32_t> frame = cmdTraj[j];
+        for(int i = 0; i < 8; i++){
+            if((frame[i] - lastFrameCmd[i]) / this->cableMotorScale > 0.5 || (frame[i] - lastFrameCmd[i]) / this->cableMotorScale < -0.5){
+                cout << "================================== Trajectory Stopped!! ==================================" << endl;
+                cout << "Motor " << i << endl;
+                cout << "Frame " << index << endl;
+                cout << "Step too large! range should be in -0.5m(" << -0.5 * this->cableMotorScale << ") ~ 0.5m(" << 0.5 * this->cableMotorScale << ")." << endl;
+                cout << "Current command: " << frame[i] << " Length: " << frame[i] / this->cableMotorScale << endl;
+                cout << "Last frame command: " << lastFrameCmd[i] << " Length: " << lastFrameCmd[i] / this->cableMotorScale << endl;
+                cout << "Difference: " << (frame[i] - lastFrameCmd[i]) / this->cableMotorScale << "m" << endl;
+                cout << "Last frame EE Pos: x" << lastFrameEEPos[0] << " y" << lastFrameEEPos[1] << " z" << lastFrameEEPos[2] << endl;
+                cout << "Cmd EE Pos: x" << posTraj[index][0] << " y" << posTraj[index][1] << " z" << posTraj[index][2] << endl;
+                return false;
+            }
+            lastFrameCmd[i] = frame[i];
+        }
+        lastFrameEEPos[0] = posTraj[j][0];
+        lastFrameEEPos[1] = posTraj[j][1];
+        lastFrameEEPos[2] = posTraj[j][2];
+    }
+
     for(vector<int32_t> frame : cmdTraj){
         auto start = chrono::steady_clock::now();
         if(!this->eBrake(true, false)) return false;
