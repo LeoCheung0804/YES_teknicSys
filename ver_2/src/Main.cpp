@@ -108,10 +108,10 @@ void PrintCableMotorControlMenu(){
     cout << "\t4 - Move Selected Cable Relative (Cable Length)" << endl;
     cout << "\t5 - Move ALL Cable Relative (Motor Step)" << endl;
     cout << "\t6 - Move ALL Cable Relative (Cable Length)" << endl;
-    cout << "\t7 - Move Selected Cable Absolute (Motor Step)" << endl;
-    cout << "\t8 - Move Selected Cable Absolute (Cable Length)" << endl;
-    cout << "\t9 - Move ALL Cable Absolute (Motor Step)" << endl;
-    cout << "\t10 - Move ALL Cable Absolute (Cable Length)" << endl;
+    // cout << "\t7 - Move Selected Cable Absolute (Motor Step)" << endl;
+    // cout << "\t8 - Move Selected Cable Absolute (Cable Length)" << endl;
+    // cout << "\t9 - Move ALL Cable Absolute (Motor Step)" << endl;
+    // cout << "\t10 - Move ALL Cable Absolute (Cable Length)" << endl;
     // cout << "\t11 - Open Selected Cable Brake" << endl;
     // cout << "\t12 - Close Selected Cable Brake" << endl;
     // cout << "\t13 - Open ALL Cable Brake" << endl;
@@ -174,7 +174,7 @@ void CableMotorControlMode(){
                     if(!*p) {
                         cout << "Moving Cable " << selectedCable << " By Step: " << step << endl;
                         if(step / robot.GetCableMotorScale() > 0.5 || step / robot.GetCableMotorScale() < -0.5){
-                            cout << "Step too large! range should be in -0.5m ~ 0.5m." << endl;
+                            cout << "Step too large! range should be in -0.5m(" << -0.5 * robot.GetCableMotorScale() << ") ~ 0.5m(" << 0.5 * robot.GetCableMotorScale() << ")." << endl;
                             continue;
                         }
                         robot.cable.MoveSingleMotorCmd(selectedCable, step, false);
@@ -217,6 +217,10 @@ void CableMotorControlMode(){
                     int step = strtol(userInput.c_str(), &p, 10);
                     if(!*p) {
                         cout << "Moving ALL Cable By Step: " << step << endl;
+                        if(step / robot.GetCableMotorScale() > 0.5 || step / robot.GetCableMotorScale() < -0.5){
+                            cout << "Step too large! range should be in -0.5m(" << -0.5 * robot.GetCableMotorScale() << ") ~ 0.5m(" << 0.5 * robot.GetCableMotorScale() << ")." << endl;
+                            continue;
+                        }
                         robot.cable.MoveAllMotorCmd(step, false);
                     }else{
                         cout << "Please enter an intager number!!!" << endl;
@@ -235,84 +239,88 @@ void CableMotorControlMode(){
                     double length = strtod(userInput.c_str(), &p);
                     if(!*p) {
                         cout << "Moving ALL Cable By Length: " << length << endl;
+                        if(length > 0.5 || length < -0.5){
+                            cout << "Step too large! range should be in -0.5m(" << -0.5 * robot.GetCableMotorScale() << ") ~ 0.5m(" << 0.5 * robot.GetCableMotorScale() << ")." << endl;
+                            continue;
+                        }
                         robot.cable.MoveAllMotorCmd(robot.CableMotorLengthToCmdAbsulote(length), false);
                     }else{
                         cout << "Please enter a number!!!" << endl;
                     }
                 }
             }
-        }else if(userInput == "7"){ // Move Selected Cable Absolute By Motor Step
-            while(true){
-                cout << "Move Selected Cable Absolute By Motor Step" << endl;
-                cout << "Please Enter Step (enter q to exit): ";
-                cin >> userInput;
-                if(userInput == "q"){
-                    break;
-                }else{
-                    char* p;
-                    int step = strtol(userInput.c_str(), &p, 10);
-                    if(!*p) {
-                        cout << "Moving Cable " << selectedCable << " To Absolute Step: " << step << endl;
-                        robot.cable.MoveSingleMotorCmd(selectedCable, step, true);
-                    }else{
-                        cout << "Please enter an intager number!!!" << endl;
-                    }
-                }
-            }
-        }else if(userInput == "8"){ // Move Selected Cable Absolute By Cable Length
-            while(true){
-                cout << "Move Selected Cable Absolute By Cable Length" << endl;
-                cout << "Please Enter Length in Meters (enter q to exit): ";
-                cin >> userInput;
-                if(userInput == "q"){
-                    break;
-                }else{
-                    char* p;
-                    double length = strtod(userInput.c_str(), &p);
-                    if(!*p) {
-                        cout << "Moving Cable " << selectedCable << " To Absolute Length: " << length << endl;
-                        robot.cable.MoveSingleMotorCmd(selectedCable, robot.CableMotorLengthToCmdAbsulote(length), true);
-                    }else{
-                        cout << "Please enter a number!!!" << endl;
-                    }
-                }
-            }
-        }else if(userInput == "9"){ // Move ALL Cable Absolute By Motor Step
-            while(true){
-                cout << "Move ALL Cable Absolute By Motor Step" << endl;
-                cout << "Please Enter Step (enter q to exit): ";
-                cin >> userInput;
-                if(userInput == "q"){
-                    break;
-                }else{
-                    char* p;
-                    int step = strtol(userInput.c_str(), &p, 10);
-                    if(!*p) {
-                        cout << "Moving ALL Cable To Absolute Step: " << step << endl;
-                        robot.cable.MoveAllMotorCmd(step, true);
-                    }else{
-                        cout << "Please enter an intager number!!!" << endl;
-                    }
-                }
-            }
-        }else if(userInput == "10"){ // Move ALL Cable Absolute By Cable Length
-            while(true){
-                cout << "Move ALL Cable Absolute By Cable Length" << endl;
-                cout << "Please Enter Length in Meters (enter q to exit): ";
-                cin >> userInput;
-                if(userInput == "q"){
-                    break;
-                }else{
-                    char* p;
-                    double length = strtod(userInput.c_str(), &p);
-                    if(!*p) {
-                        cout << "Moving ALL Cable To Absolute Length: " << length << endl;
-                        robot.cable.MoveAllMotorCmd(robot.CableMotorLengthToCmdAbsulote(length), true);
-                    }else{
-                        cout << "Please enter a number!!!" << endl;
-                    }
-                }
-            }
+        // }else if(userInput == "7"){ // Move Selected Cable Absolute By Motor Step
+        //     while(true){
+        //         cout << "Move Selected Cable Absolute By Motor Step" << endl;
+        //         cout << "Please Enter Step (enter q to exit): ";
+        //         cin >> userInput;
+        //         if(userInput == "q"){
+        //             break;
+        //         }else{
+        //             char* p;
+        //             int step = strtol(userInput.c_str(), &p, 10);
+        //             if(!*p) {
+        //                 cout << "Moving Cable " << selectedCable << " To Absolute Step: " << step << endl;
+        //                 robot.cable.MoveSingleMotorCmd(selectedCable, step, true);
+        //             }else{
+        //                 cout << "Please enter an intager number!!!" << endl;
+        //             }
+        //         }
+        //     }
+        // }else if(userInput == "8"){ // Move Selected Cable Absolute By Cable Length
+        //     while(true){
+        //         cout << "Move Selected Cable Absolute By Cable Length" << endl;
+        //         cout << "Please Enter Length in Meters (enter q to exit): ";
+        //         cin >> userInput;
+        //         if(userInput == "q"){
+        //             break;
+        //         }else{
+        //             char* p;
+        //             double length = strtod(userInput.c_str(), &p);
+        //             if(!*p) {
+        //                 cout << "Moving Cable " << selectedCable << " To Absolute Length: " << length << endl;
+        //                 robot.cable.MoveSingleMotorCmd(selectedCable, robot.CableMotorLengthToCmdAbsulote(length), true);
+        //             }else{
+        //                 cout << "Please enter a number!!!" << endl;
+        //             }
+        //         }
+        //     }
+        // }else if(userInput == "9"){ // Move ALL Cable Absolute By Motor Step
+        //     while(true){
+        //         cout << "Move ALL Cable Absolute By Motor Step" << endl;
+        //         cout << "Please Enter Step (enter q to exit): ";
+        //         cin >> userInput;
+        //         if(userInput == "q"){
+        //             break;
+        //         }else{
+        //             char* p;
+        //             int step = strtol(userInput.c_str(), &p, 10);
+        //             if(!*p) {
+        //                 cout << "Moving ALL Cable To Absolute Step: " << step << endl;
+        //                 robot.cable.MoveAllMotorCmd(step, true);
+        //             }else{
+        //                 cout << "Please enter an intager number!!!" << endl;
+        //             }
+        //         }
+        //     }
+        // }else if(userInput == "10"){ // Move ALL Cable Absolute By Cable Length
+        //     while(true){
+        //         cout << "Move ALL Cable Absolute By Cable Length" << endl;
+        //         cout << "Please Enter Length in Meters (enter q to exit): ";
+        //         cin >> userInput;
+        //         if(userInput == "q"){
+        //             break;
+        //         }else{
+        //             char* p;
+        //             double length = strtod(userInput.c_str(), &p);
+        //             if(!*p) {
+        //                 cout << "Moving ALL Cable To Absolute Length: " << length << endl;
+        //                 robot.cable.MoveAllMotorCmd(robot.CableMotorLengthToCmdAbsulote(length), true);
+        //             }else{
+        //                 cout << "Please enter a number!!!" << endl;
+        //             }
+        //         }
+        //     }
         }
     }
 
@@ -964,9 +972,12 @@ void OperationMode(){
             robot.brake.OpenAllCableBrake();
             double safePt[6] = {8.24, 6.51, -2.7, 0, 0, -0.0237}; // a safe area near to the arm // 0.21 safe height from ABB
             bool stop = false;
+            string brickTypes[3] = {"holes", "normal", "half"};
+            int brickType = 0;
             for(int i = brickIndex; i < brickPosList.size(); i++){
             // for(vector<double> brickPos : brickPosList){
                 vector<double> brickPos = brickPosList[i];
+                brickType = int(brickPos[5]);
                 // Move to pre pick up position
                 robot.gripper.Rotate(90);
                 robot.gripper.Open();
@@ -975,7 +986,7 @@ void OperationMode(){
                 goalPos[5] = 0.0141; // calculated yaw for +0.21 height
                 goalPos[2] += 0.21; // 0.21 safe height from ABB
 
-                cout << "Brick No. " << i << endl;
+                cout << "Brick No. " << i << " (" << brickTypes[brickType] << ")" << endl;
                 cout << "====== Moving to pre pick up position." << endl;
                 cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
                 cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
@@ -986,7 +997,7 @@ void OperationMode(){
 
                 // pickup brick
                 copy(robot.brickPickUpPos, robot.brickPickUpPos + 6, goalPos);
-                cout << "Brick No. " << i << endl;
+                cout << "Brick No. " << i << " (" << brickTypes[brickType] << ")" << endl;
                 cout << "====== Picking up brick." << endl;
                 cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
                 cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
@@ -1000,7 +1011,7 @@ void OperationMode(){
                 // raise brick
                 copy(robot.brickPickUpPos, robot.brickPickUpPos+6, begin(goalPos));
                 goalPos[2] += 0.14;
-                cout << "====== Brick No. " << i << endl;
+                cout << "====== Brick No. " << i << " (" << brickTypes[brickType] << ")" << endl;
                 cout << "====== Raise up brick." << endl;
                 cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
                 cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
@@ -1012,7 +1023,7 @@ void OperationMode(){
 
                 // move to safe point                
                 copy(safePt, safePt+6, begin(goalPos)); // safe point
-                cout << "====== Brick No. " << i << endl;
+                cout << "====== Brick No. " << i << " (" << brickTypes[brickType] << ")" << endl;
                 cout << "====== Moving to safe position." << endl;
                 cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
                 cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
@@ -1057,7 +1068,7 @@ void OperationMode(){
                     goalPos[0] = robot.endEffectorPos[0];
                     goalPos[1] = robot.endEffectorPos[1];
                     goalPos[2] = brickPos[2] + safeH + robot.GetEEToGroundOffset();
-                    cout << "====== Brick No. " << i << endl;
+                    cout << "====== Brick No. " << i << " (" << brickTypes[brickType] << ")" << endl;
                     cout << "====== Rise Brick before Moving to brick position." << endl;
                     cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
                     cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
@@ -1069,7 +1080,7 @@ void OperationMode(){
                 goalPos[1] = brickPos[1];
                 goalPos[2] = brickPos[2] + safeH + robot.GetEEToGroundOffset();
                 goalPos[5] = brickPos[3]; // Include yaw angle
-                cout << "====== Brick No. " << i << endl;
+                cout << "====== Brick No. " << i << " (" << brickTypes[brickType] << ")" << endl;
                 cout << "====== Moving to brick position." << endl;
                 cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
                 cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
@@ -1078,7 +1089,7 @@ void OperationMode(){
                 
                 // Place brick
                 goalPos[2] -= safeH;
-                cout << "====== Brick No. " << i << endl;
+                cout << "====== Brick No. " << i << " (" << brickTypes[brickType] << ")" << endl;
                 cout << "====== Placing brick." << endl;
                 cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
                 cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
@@ -1090,7 +1101,7 @@ void OperationMode(){
 
                 // Rise and leave building area
                 goalPos[2] += safeH;
-                cout << "====== Brick No. " << i << endl;
+                cout << "====== Brick No. " << i << " (" << brickTypes[brickType] << ")" << endl;
                 cout << "====== Moving to stand by position." << endl;
                 cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
                 cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
@@ -1099,7 +1110,7 @@ void OperationMode(){
 
                 // move to safe point
                 copy(begin(safePt), end(safePt), begin(goalPos)); // safe x,y,z position
-                cout << "====== Brick No. " << i << endl;
+                cout << "====== Brick No. " << i << " (" << brickTypes[brickType] << ")" << endl;
                 cout << "====== Moving to safe position." << endl;
                 cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
                 cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;

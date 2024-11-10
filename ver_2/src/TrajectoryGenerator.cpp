@@ -135,23 +135,83 @@ vector<vector<double>> ReadBrickPosFile(string filename, float tempA, float temp
     string line;
     string word;
     string temp;
-
+    int brickType = 0;
     if(file.is_open()){
         while (getline(file, line)){
+            bool isBrickTypeLine = false;
             row.clear();
             stringstream s(line);
             while (s >> word){
-                row.push_back(stod(word)); // convert string to double stod()
+                if (word.find(",") != string::npos){
+                    // split the string by comma    
+                    stringstream ss(word);
+                    while (getline(ss, word, ',')){
+                        try{
+                            row.push_back(stod(word)); // convert string to double stod()
+                            cout << "word: " << word << endl;
+                        }catch(const invalid_argument& e){
+                            if(word.find("holes") != string::npos){
+                                brickType = 1;
+                                isBrickTypeLine = true;
+                            }else if(word.find("NO") != string::npos){
+                                brickType = 2;
+                                isBrickTypeLine = true;
+                            }else if(word.find("half") != string::npos){
+                                brickType = 3;
+                                isBrickTypeLine = true;
+                            }else{
+                                cout << "Invalid brick type: " << word << endl;
+                            }
+                            break;
+                        }
+                    }
+                }else{
+                    try{
+                        row.push_back(stod(word)); // convert string to double stod()
+                        cout << "word: " << word << endl;
+                    }catch(const invalid_argument& e){
+                        if(word.find("holes") != string::npos){
+                            brickType = 1;
+                            isBrickTypeLine = true;
+                        }else if(word.find("NO") != string::npos){
+                            brickType = 2;
+                            isBrickTypeLine = true;
+                        }else if(word.find("half") != string::npos){
+                            brickType = 3;
+                            isBrickTypeLine = true;
+                        }else{
+                            cout << "Invalid brick type: " << word << endl;
+                        }
+                        break;
+                    }
+                }
             }
-            // Convert angles
-            if(row[4]<0){ row[4] += 180; } // convert -ve degs to 180
-            // if(row[4]>180){ row[4] -= 180; } // convert 360 degs to 180
-            // Calculate and add x, y offsets due to rotation mis-alignment
-            row[0] -= tempD*sin((tempA + row[4])*M_PI/180);
-            row[1] += tempD*cos((tempA + row[4])*M_PI/180);
+            // Skip processing if this was a brick type line
+            if (isBrickTypeLine) {
+                continue;
+            }
+            // check if the row has 4 elements
+            if(row.size() == 4){
+                row.push_back(row[3]);
+                row[3] = 0;
+                row[0] -= tempD*sin((tempA + row[3])*M_PI/180);
+                row[1] += tempD*cos((tempA + row[3])*M_PI/180);
+            }else if (row.size() == 5){
+                // Convert angles
+                if(row[4]<0){ row[4] += 180; } // convert -ve degs to 180
+                // if(row[4]>180){ row[4] -= 180; } // convert 360 degs to 180
+                // Calculate and add x, y offsets due to rotation mis-alignment
+                row[0] -= tempD*sin((tempA + row[4])*M_PI/180);
+                row[1] += tempD*cos((tempA + row[4])*M_PI/180);
+            }
+            row.push_back(brickType);
             result.push_back(row);
         }
         cout << "Completed reading brick position input file" << endl;
+        cout << "Brick List: " << endl;
+        for(int i = 0; i < result.size(); i++){
+            cout << "\t" << result[i][0] << ", " << result[i][1] << ", " << result[i][2] << ", " << result[i][3] << ", " << result[i][4] << ", " << result[i][5] << endl;
+        }
         return result;
     }else{ 
         cout << "Failed to read input file. Please check the brick trajectory file: " << filename << endl; 
