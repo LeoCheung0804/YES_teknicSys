@@ -23,6 +23,7 @@ private:
     int railMotorNum{4}; // Typical 4 linear rails
     double endEffToGroundOffset = -0.125; // offset from endeffector to ground, in meters // YES -0.280
     double cableMotorScale = 509295.8179; // 6400 encoder count per revoltion, 25 times gearbox, 50mm spool radias. ie 6400*25/(2*pi*0.05) 
+    double cableMotorScaleIndividual[8] = {509295.8179, 509295.8179, 509295.8179, 509295.8179, 509295.8179, 509295.8179, 509295.8179, 509295.8179}; // 6400 encoder count per revoltion, 25 times gearbox, 50mm spool radias. ie 6400*25/(2*pi*0.05) 
     double railMotorScale = 38400000; // 6400 encoder count per revoltion, 30 times gearbox, linear rail pitch 5mm. ie 6400*30/0.005 
     double pulleyRadius = 0.045; // radius of rotating pulley on frame
     float targetTrq = -2.5; // in %, -ve for tension, also need to UPDATE in switch case 't'!!!!!!!!!
@@ -44,6 +45,7 @@ private:
     bool useRailMotor{ false };
     bool useRailBraker{ false };
     bool useEBrake{true};
+    bool useIndividualCableScale{false};
     Logger posLogger;
     int MILLIS_TO_NEXT_FRAME = 50;
     bool eBrake(bool cableBrake, bool railBrake);
@@ -132,7 +134,7 @@ public:
     /// @brief Convert cable length to absulote motor command 
     /// @param length double, cable length
     /// @return int32_t motor command
-    int32_t CableMotorLengthToCmdAbsulote(double length);
+    int32_t CableMotorLengthToCmdAbsulote(int motorID, double length);
 
     vector<int32_t> EEPoseToCmd(vector<double> eePos);
 
@@ -200,11 +202,11 @@ public:
 
     /// @brief Cable motor scale
     /// @return Cable motor scale
-    int32_t GetCableMotorScale();
+    double GetCableMotorScale(int motorID);
 
     /// @brief Rail motor scale
     /// @return Rail motor scale
-    int32_t GetRailMotorScale();
+    double GetRailMotorScale();
 
     float GetVelLmt();
     void SavePosToFile(string filename);

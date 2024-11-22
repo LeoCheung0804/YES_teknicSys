@@ -142,6 +142,7 @@ void CableController::StopAllMotor(){
 }
 
 bool CableController::MoveSingleMotorCmd(int index, int32_t cmd, bool absolute){
+    cout << "Move Single Motor Cmd: " << index << " to " << cmd << endl;
     if(!this->useCable) return true;
     assert(index >= 0 && index <= cableNumber);
         ofstream myfile;

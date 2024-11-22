@@ -197,8 +197,8 @@ void CableMotorControlMode(){
                     int step = strtol(userInput.c_str(), &p, 10);
                     if(!*p) {
                         cout << "Moving Cable " << selectedCable << " By Step: " << step << endl;
-                        if(step / robot.GetCableMotorScale() > 0.5 || step / robot.GetCableMotorScale() < -0.5){
-                            cout << "Step too large! range should be in -0.5m(" << -0.5 * robot.GetCableMotorScale() << ") ~ 0.5m(" << 0.5 * robot.GetCableMotorScale() << ")." << endl;
+                        if(step / robot.GetCableMotorScale(selectedCable) > 0.5 || step / robot.GetCableMotorScale(selectedCable) < -0.5){
+                            cout << "Step too large! range should be in -0.5m(" << -0.5 * robot.GetCableMotorScale(selectedCable) << ") ~ 0.5m(" << 0.5 * robot.GetCableMotorScale(selectedCable) << ")." << endl;
                             continue;
                         }
                         robot.cable.MoveSingleMotorCmd(selectedCable, step, false);
@@ -223,7 +223,7 @@ void CableMotorControlMode(){
                             cout << "Step too large! range should be in -0.5 ~ 0.5." << endl;
                             continue;
                         }
-                        robot.cable.MoveSingleMotorCmd(selectedCable, robot.CableMotorLengthToCmdAbsulote(length), false);
+                        robot.cable.MoveSingleMotorCmd(selectedCable, robot.CableMotorLengthToCmd(selectedCable, length), false);
                     }else{
                         cout << "Please enter a number!!!" << endl;
                     }
@@ -241,11 +241,13 @@ void CableMotorControlMode(){
                     int step = strtol(userInput.c_str(), &p, 10);
                     if(!*p) {
                         cout << "Moving ALL Cable By Step: " << step << endl;
-                        if(step / robot.GetCableMotorScale() > 0.5 || step / robot.GetCableMotorScale() < -0.5){
-                            cout << "Step too large! range should be in -0.5m(" << -0.5 * robot.GetCableMotorScale() << ") ~ 0.5m(" << 0.5 * robot.GetCableMotorScale() << ")." << endl;
-                            continue;
+                        for(int i = 0; i < robot.GetCableMotorNum(); i++){
+                            if(step / robot.GetCableMotorScale(i) > 0.5 || step / robot.GetCableMotorScale(i) < -0.5){
+                                cout << "Step too large! range should be in -0.5m(" << -0.5 * robot.GetCableMotorScale(i) << ") ~ 0.5m(" << 0.5 * robot.GetCableMotorScale(i) << ")." << endl;
+                                continue;
+                            }
+                            robot.cable.MoveSingleMotorCmd(i, step, false);
                         }
-                        robot.cable.MoveAllMotorCmd(step, false);
                     }else{
                         cout << "Please enter an intager number!!!" << endl;
                     }
@@ -264,10 +266,12 @@ void CableMotorControlMode(){
                     if(!*p) {
                         cout << "Moving ALL Cable By Length: " << length << endl;
                         if(length > 0.5 || length < -0.5){
-                            cout << "Step too large! range should be in -0.5m(" << -0.5 * robot.GetCableMotorScale() << ") ~ 0.5m(" << 0.5 * robot.GetCableMotorScale() << ")." << endl;
+                            cout << "Step too large! range should be in -0.5m(" << -0.5 * robot.GetCableMotorScale(selectedCable) << ") ~ 0.5m(" << 0.5 * robot.GetCableMotorScale(selectedCable) << ")." << endl;
                             continue;
                         }
-                        robot.cable.MoveAllMotorCmd(robot.CableMotorLengthToCmdAbsulote(length), false);
+                        for(int i = 0; i < robot.GetCableMotorNum(); i++){
+                            robot.cable.MoveSingleMotorCmd(i, robot.CableMotorLengthToCmd(i, length), false);
+                        }
                     }else{
                         cout << "Please enter a number!!!" << endl;
                     }
@@ -461,7 +465,7 @@ void RailMotorControlMode(){
                     double length = strtod(userInput.c_str(), &p);
                     if(!*p) {
                         cout << "Moving Rail " << selectedRailMotor << " To Absolute Length: " << length << endl;
-                        robot.rail.MoveSelectedMotorCmd(robot.CableMotorLengthToCmdAbsulote(length), true);
+                        robot.rail.MoveSelectedMotorCmd(robot.CableMotorLengthToCmdAbsulote(selectedRailMotor, length), true);
                     }else{
                         cout << "Please enter a number!!!" << endl;
                     }
@@ -551,7 +555,7 @@ void RailMotorControlMode(){
                         cout << "Moving ALL Rail To Absolute Length: " << length << endl;
                         for(int i = 0; i < robot.GetCableMotorNum(); i++){
                             robot.rail.SelectWorkingMotor(i);
-                            robot.rail.MoveSelectedMotorCmd(robot.CableMotorLengthToCmdAbsulote(length), true);
+                            robot.rail.MoveSelectedMotorCmd(robot.CableMotorLengthToCmdAbsulote(i, length), true);
                         }
                         robot.rail.SelectWorkingMotor(selectedRailMotor);
                     }else{

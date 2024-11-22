@@ -69,8 +69,10 @@
     "gripperCommPort": "\\\\.\\COM12",
     "railBrakeCommPort": "\\\\.\\COM11",
     "useGripper": false,
-    "useCableMotor": true,
-    "useCableBraker": true,
+    "useCableMotor": false,
+    "useCableBraker": false,
     "useRailMotor": false,
-    "useRailBraker": false
+    "useRailBraker": false,
+    "useIndividualCableScale": true,
+    "cableMotorScaleIndividual": [509295.8179, 509295.8179, 509295.8179, 509295.8179, 509295.8179, 509295.8179, 509295.8179, 509295.8179]
 }
