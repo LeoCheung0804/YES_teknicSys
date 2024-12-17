@@ -1,0 +1,701 @@
+<?xml version="1.0"?>
+<TcSmItem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.beckhoff.com/schemas/2012/07/TcSmProject" TcSmVersion="1.0" TcVersion="3.1.4024.17" ClassName="CDevEtherCATDef" SubType="111">
+	<Device Id="2" DevType="111" DevFlags="#x0003" AmsPort="28674" AmsNetId="169.254.233.249.3.1" RemoteName="Device 2 (EtherCAT)" InfoImageId="4">
+		<Name>__FILENAME__</Name>
+		<AddressInfo>
+			<Pnp>
+				<DeviceDesc>Ethernet 2 (TwinCAT-Intel PCI Ethernet Adapter (Gig</DeviceDesc>
+				<DeviceName>\DEVICE\{F30ACB49-C38C-40E5-9C04-70202ADE9559}</DeviceName>
+				<DeviceData>000732608b50</DeviceData>
+			</Pnp>
+		</AddressInfo>
+		<Image Id="3" AddrType="9" ImageType="3">
+			<Name>Image</Name>
+		</Image>
+		<Box Id="1" BoxType="9099" BoxFlags="#x00000020">
+			<Name>Drive 1 (ASDA-A2-E CoE Drive)</Name>
+			<ImageId>38</ImageId>
+			<EtherCAT SlaveType="2" PdiType="#x0008" MboxDataLinkLayer="true" StateMBoxPolling="true" CfgModeSafeOp="true" Unsupported64BitDc="true" CycleMBoxPollingTime="0" CoeType="15" VendorId="#x000001dd" ProductCode="#x10305070" RevisionNo="#x02040608" InfoDataAddr="true" InfoDataSoeDS401="true" InfoDataDcTimes="true" TimeoutMailbox2="2000" PortPhys="17" MaxSlotCount="256" MaxSlotGroupCount="1" SlotPdoIncrement="1" SlotIndexIncrement="16" Type="Delta ASDA-A2-E EtherCAT(CoE) Drive Rev4" Desc="ASDA-A2-E CoE Drive" PortABoxInfo="#x00ffffff">
+				<SyncMan>0010800036000100010000002200c0008000001036010000</SyncMan>
+				<SyncMan>c010800032000100020000002200c0008000c01032010000</SyncMan>
+				<SyncMan>801106002400010003000000010000010600801124010000</SyncMan>
+				<SyncMan>801406000000010004000000010000010600801400010000</SyncMan>
+				<Fmmu>0000000000000000801100020100000001000000000000000000000000000000</Fmmu>
+				<Fmmu>0000000000000000801400010100000002000000000000000000000000000000</Fmmu>
+				<Fmmu>00000000000000000d0800010100000003000000000000000000000000000000</Fmmu>
+				<DcData>0003000000000000000000000000000001000000000000000000000000000000</DcData>
+				<DcMode>4443000000000000000000000000000044432d53796e6368726f6e6f7573000000000000000000000000000000000000000000000000000000000000000000030100000000000000000000000000000000000000000000000000000000000000</DcMode>
+				<DcMode>467265652052756e0000000000000000467265652052756e000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000</DcMode>
+				<MBoxUserCmdData>02000300090000000700000003000000000000000000000000000000000000002060600001000000084f70206d6f646500</MBoxUserCmdData>
+				<MBoxUserCmdData>020003000900000019000000030000000000000000000000000000000000000020c260010100000002496e746572706f6c6174696f6e2074696d6520706572696f6400</MBoxUserCmdData>
+				<MBoxUserCmdData>020003000900000018000000030000000000000000000000000000000000000020c2600201000000fd496e746572706f6c6174696f6e2074696d6520696e64657800</MBoxUserCmdData>
+				<Pdo Name="1st TxPDO Mapping" Index="#x1a00" Flags="#x0000">
+					<ExcludePdo>#x1a01</ExcludePdo>
+					<ExcludePdo>#x1a02</ExcludePdo>
+					<ExcludePdo>#x1a03</ExcludePdo>
+					<Entry Name="Status Word" Index="#x6041">
+						<Type>UINT</Type>
+						<Comment><![CDATA[object 0x6041:0]]></Comment>
+					</Entry>
+					<Entry Name="ActualPosition" Index="#x6064">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x6064:0]]></Comment>
+					</Entry>
+					<Entry Name="Velocity actual value" Index="#x606c">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x606C:0]]></Comment>
+					</Entry>
+					<Entry Name="ActualTorque" Index="#x6077">
+						<Type>INT</Type>
+						<Comment><![CDATA[object 0x6077:0]]></Comment>
+					</Entry>
+					<Entry Name="ModeOfOperationDisplay" Index="#x6061">
+						<Type>SINT</Type>
+						<Comment><![CDATA[object 0x6061:0]]></Comment>
+					</Entry>
+				</Pdo>
+				<Pdo Name="2nd TxPDO Mapping" Index="#x1a01" Flags="#x0000" SyncMan="3">
+					<ExcludePdo>#x1a00</ExcludePdo>
+					<ExcludePdo>#x1a02</ExcludePdo>
+					<ExcludePdo>#x1a03</ExcludePdo>
+					<Entry Name="Status Word" Index="#x6041">
+						<Type>UINT</Type>
+						<Comment><![CDATA[object 0x6041:0]]></Comment>
+					</Entry>
+					<Entry Name="ActualPosition" Index="#x6064">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x6064:0]]></Comment>
+					</Entry>
+				</Pdo>
+				<Pdo Name="3rd TxPDO Mapping" Index="#x1a02" Flags="#x0000">
+					<ExcludePdo>#x1a00</ExcludePdo>
+					<ExcludePdo>#x1a01</ExcludePdo>
+					<ExcludePdo>#x1a03</ExcludePdo>
+					<Entry Name="Status Word" Index="#x6041">
+						<Type>UINT</Type>
+						<Comment><![CDATA[object 0x6041:0]]></Comment>
+					</Entry>
+					<Entry Name="ActualPosition" Index="#x6064">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x6064:0]]></Comment>
+					</Entry>
+					<Entry Name="Velocity actual value" Index="#x606c">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x606C:0]]></Comment>
+					</Entry>
+				</Pdo>
+				<Pdo Name="4th TxPDO Mapping" Index="#x1a03" Flags="#x0000">
+					<ExcludePdo>#x1a00</ExcludePdo>
+					<ExcludePdo>#x1a01</ExcludePdo>
+					<ExcludePdo>#x1a02</ExcludePdo>
+					<Entry Name="Status Word" Index="#x6041">
+						<Type>UINT</Type>
+						<Comment><![CDATA[object 0x6041:0]]></Comment>
+					</Entry>
+					<Entry Name="ActualPosition" Index="#x6064">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x6064:0]]></Comment>
+					</Entry>
+					<Entry Name="ActualTorque" Index="#x6077">
+						<Type>INT</Type>
+						<Comment><![CDATA[object 0x6077:0]]></Comment>
+					</Entry>
+				</Pdo>
+				<Pdo Name="1st RxPDO Mapping" Index="#x1600" InOut="1" Flags="#x0000">
+					<ExcludePdo>#x1601</ExcludePdo>
+					<ExcludePdo>#x1602</ExcludePdo>
+					<ExcludePdo>#x1603</ExcludePdo>
+					<Entry Name="Control Word" Index="#x6040">
+						<Type>UINT</Type>
+						<Comment><![CDATA[object 0x6040:0]]></Comment>
+					</Entry>
+					<Entry Name="TargetPosition" Index="#x607a">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x607A:0]]></Comment>
+					</Entry>
+					<Entry Name="TargetVelocity" Index="#x60ff">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x60FF:0]]></Comment>
+					</Entry>
+					<Entry Name="TargetTorque" Index="#x6071">
+						<Type>INT</Type>
+						<Comment><![CDATA[object 0x6071:0]]></Comment>
+					</Entry>
+					<Entry Name="ModeOfOperation" Index="#x6060">
+						<Type>SINT</Type>
+						<Comment><![CDATA[object 0x6060:0]]></Comment>
+					</Entry>
+				</Pdo>
+				<Pdo Name="2nd RxPDO Mapping" Index="#x1601" InOut="1" Flags="#x0000" SyncMan="2">
+					<ExcludePdo>#x1600</ExcludePdo>
+					<ExcludePdo>#x1602</ExcludePdo>
+					<ExcludePdo>#x1603</ExcludePdo>
+					<Entry Name="Control Word" Index="#x6040">
+						<Type>UINT</Type>
+						<Comment><![CDATA[object 0x6040:0]]></Comment>
+					</Entry>
+					<Entry Name="TargetPosition" Index="#x607a">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x607A:0]]></Comment>
+					</Entry>
+				</Pdo>
+				<Pdo Name="3rd RxPDO Mapping" Index="#x1602" InOut="1" Flags="#x0000">
+					<ExcludePdo>#x1600</ExcludePdo>
+					<ExcludePdo>#x1601</ExcludePdo>
+					<ExcludePdo>#x1603</ExcludePdo>
+					<Entry Name="Control Word" Index="#x6040">
+						<Type>UINT</Type>
+						<Comment><![CDATA[object 0x6040:0]]></Comment>
+					</Entry>
+					<Entry Name="TargetVelocity" Index="#x60ff">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x60FF:0]]></Comment>
+					</Entry>
+				</Pdo>
+				<Pdo Name="4th RxPDO Mapping" Index="#x1603" InOut="1" Flags="#x0000">
+					<ExcludePdo>#x1600</ExcludePdo>
+					<ExcludePdo>#x1601</ExcludePdo>
+					<ExcludePdo>#x1602</ExcludePdo>
+					<Entry Name="Control Word" Index="#x6040">
+						<Type>UINT</Type>
+						<Comment><![CDATA[object 0x6040:0]]></Comment>
+					</Entry>
+					<Entry Name="TargetTorque" Index="#x6071">
+						<Type>INT</Type>
+						<Comment><![CDATA[object 0x6071:0]]></Comment>
+					</Entry>
+				</Pdo>
+				<CoeProfile ProfileNo="402"/>
+			</EtherCAT>
+		</Box>
+		<Box Id="2" BoxType="9099" BoxFlags="#x00000020">
+			<Name>Drive 2 (ASDA-A2-E CoE Drive)</Name>
+			<ImageId>38</ImageId>
+			<EtherCAT SlaveType="2" PdiType="#x0008" MboxDataLinkLayer="true" StateMBoxPolling="true" CfgModeSafeOp="true" Unsupported64BitDc="true" CycleMBoxPollingTime="0" CoeType="15" VendorId="#x000001dd" ProductCode="#x10305070" RevisionNo="#x02040608" InfoDataAddr="true" InfoDataSoeDS401="true" InfoDataDcTimes="true" TimeoutMailbox2="2000" PortPhys="17" MaxSlotCount="256" MaxSlotGroupCount="1" SlotPdoIncrement="1" SlotIndexIncrement="16" Type="Delta ASDA-A2-E EtherCAT(CoE) Drive Rev4" Desc="ASDA-A2-E CoE Drive" PortABoxInfo="#x01000001">
+				<SyncMan>0010800036000100010000002200c0008000001036010000</SyncMan>
+				<SyncMan>c010800032000100020000002200c0008000c01032010000</SyncMan>
+				<SyncMan>801106002400010003000000010000010600801124010000</SyncMan>
+				<SyncMan>801406000000010004000000010000010600801400010000</SyncMan>
+				<Fmmu>0000000000000000801100020100000001000000000000000000000000000000</Fmmu>
+				<Fmmu>0000000000000000801400010100000002000000000000000000000000000000</Fmmu>
+				<Fmmu>00000000000000000d0800010100000003000000000000000000000000000000</Fmmu>
+				<DcData>0003000000000000000000000000000001000000000000000000000000000000</DcData>
+				<DcMode>4443000000000000000000000000000044432d53796e6368726f6e6f7573000000000000000000000000000000000000000000000000000000000000000000030100000000000000000000000000000000000000000000000000000000000000</DcMode>
+				<DcMode>467265652052756e0000000000000000467265652052756e000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000</DcMode>
+				<MBoxUserCmdData>02000300090000000700000003000000000000000000000000000000000000002060600001000000084f70206d6f646500</MBoxUserCmdData>
+				<MBoxUserCmdData>020003000900000019000000030000000000000000000000000000000000000020c260010100000002496e746572706f6c6174696f6e2074696d6520706572696f6400</MBoxUserCmdData>
+				<MBoxUserCmdData>020003000900000018000000030000000000000000000000000000000000000020c2600201000000fd496e746572706f6c6174696f6e2074696d6520696e64657800</MBoxUserCmdData>
+				<Pdo Name="1st TxPDO Mapping" Index="#x1a00" Flags="#x0000">
+					<ExcludePdo>#x1a01</ExcludePdo>
+					<ExcludePdo>#x1a02</ExcludePdo>
+					<ExcludePdo>#x1a03</ExcludePdo>
+					<Entry Name="Status Word" Index="#x6041">
+						<Type>UINT</Type>
+						<Comment><![CDATA[object 0x6041:0]]></Comment>
+					</Entry>
+					<Entry Name="ActualPosition" Index="#x6064">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x6064:0]]></Comment>
+					</Entry>
+					<Entry Name="Velocity actual value" Index="#x606c">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x606C:0]]></Comment>
+					</Entry>
+					<Entry Name="ActualTorque" Index="#x6077">
+						<Type>INT</Type>
+						<Comment><![CDATA[object 0x6077:0]]></Comment>
+					</Entry>
+					<Entry Name="ModeOfOperationDisplay" Index="#x6061">
+						<Type>SINT</Type>
+						<Comment><![CDATA[object 0x6061:0]]></Comment>
+					</Entry>
+				</Pdo>
+				<Pdo Name="2nd TxPDO Mapping" Index="#x1a01" Flags="#x0000" SyncMan="3">
+					<ExcludePdo>#x1a00</ExcludePdo>
+					<ExcludePdo>#x1a02</ExcludePdo>
+					<ExcludePdo>#x1a03</ExcludePdo>
+					<Entry Name="Status Word" Index="#x6041">
+						<Type>UINT</Type>
+						<Comment><![CDATA[object 0x6041:0]]></Comment>
+					</Entry>
+					<Entry Name="ActualPosition" Index="#x6064">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x6064:0]]></Comment>
+					</Entry>
+				</Pdo>
+				<Pdo Name="3rd TxPDO Mapping" Index="#x1a02" Flags="#x0000">
+					<ExcludePdo>#x1a00</ExcludePdo>
+					<ExcludePdo>#x1a01</ExcludePdo>
+					<ExcludePdo>#x1a03</ExcludePdo>
+					<Entry Name="Status Word" Index="#x6041">
+						<Type>UINT</Type>
+						<Comment><![CDATA[object 0x6041:0]]></Comment>
+					</Entry>
+					<Entry Name="ActualPosition" Index="#x6064">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x6064:0]]></Comment>
+					</Entry>
+					<Entry Name="Velocity actual value" Index="#x606c">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x606C:0]]></Comment>
+					</Entry>
+				</Pdo>
+				<Pdo Name="4th TxPDO Mapping" Index="#x1a03" Flags="#x0000">
+					<ExcludePdo>#x1a00</ExcludePdo>
+					<ExcludePdo>#x1a01</ExcludePdo>
+					<ExcludePdo>#x1a02</ExcludePdo>
+					<Entry Name="Status Word" Index="#x6041">
+						<Type>UINT</Type>
+						<Comment><![CDATA[object 0x6041:0]]></Comment>
+					</Entry>
+					<Entry Name="ActualPosition" Index="#x6064">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x6064:0]]></Comment>
+					</Entry>
+					<Entry Name="ActualTorque" Index="#x6077">
+						<Type>INT</Type>
+						<Comment><![CDATA[object 0x6077:0]]></Comment>
+					</Entry>
+				</Pdo>
+				<Pdo Name="1st RxPDO Mapping" Index="#x1600" InOut="1" Flags="#x0000">
+					<ExcludePdo>#x1601</ExcludePdo>
+					<ExcludePdo>#x1602</ExcludePdo>
+					<ExcludePdo>#x1603</ExcludePdo>
+					<Entry Name="Control Word" Index="#x6040">
+						<Type>UINT</Type>
+						<Comment><![CDATA[object 0x6040:0]]></Comment>
+					</Entry>
+					<Entry Name="TargetPosition" Index="#x607a">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x607A:0]]></Comment>
+					</Entry>
+					<Entry Name="TargetVelocity" Index="#x60ff">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x60FF:0]]></Comment>
+					</Entry>
+					<Entry Name="TargetTorque" Index="#x6071">
+						<Type>INT</Type>
+						<Comment><![CDATA[object 0x6071:0]]></Comment>
+					</Entry>
+					<Entry Name="ModeOfOperation" Index="#x6060">
+						<Type>SINT</Type>
+						<Comment><![CDATA[object 0x6060:0]]></Comment>
+					</Entry>
+				</Pdo>
+				<Pdo Name="2nd RxPDO Mapping" Index="#x1601" InOut="1" Flags="#x0000" SyncMan="2">
+					<ExcludePdo>#x1600</ExcludePdo>
+					<ExcludePdo>#x1602</ExcludePdo>
+					<ExcludePdo>#x1603</ExcludePdo>
+					<Entry Name="Control Word" Index="#x6040">
+						<Type>UINT</Type>
+						<Comment><![CDATA[object 0x6040:0]]></Comment>
+					</Entry>
+					<Entry Name="TargetPosition" Index="#x607a">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x607A:0]]></Comment>
+					</Entry>
+				</Pdo>
+				<Pdo Name="3rd RxPDO Mapping" Index="#x1602" InOut="1" Flags="#x0000">
+					<ExcludePdo>#x1600</ExcludePdo>
+					<ExcludePdo>#x1601</ExcludePdo>
+					<ExcludePdo>#x1603</ExcludePdo>
+					<Entry Name="Control Word" Index="#x6040">
+						<Type>UINT</Type>
+						<Comment><![CDATA[object 0x6040:0]]></Comment>
+					</Entry>
+					<Entry Name="TargetVelocity" Index="#x60ff">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x60FF:0]]></Comment>
+					</Entry>
+				</Pdo>
+				<Pdo Name="4th RxPDO Mapping" Index="#x1603" InOut="1" Flags="#x0000">
+					<ExcludePdo>#x1600</ExcludePdo>
+					<ExcludePdo>#x1601</ExcludePdo>
+					<ExcludePdo>#x1602</ExcludePdo>
+					<Entry Name="Control Word" Index="#x6040">
+						<Type>UINT</Type>
+						<Comment><![CDATA[object 0x6040:0]]></Comment>
+					</Entry>
+					<Entry Name="TargetTorque" Index="#x6071">
+						<Type>INT</Type>
+						<Comment><![CDATA[object 0x6071:0]]></Comment>
+					</Entry>
+				</Pdo>
+				<CoeProfile ProfileNo="402"/>
+			</EtherCAT>
+		</Box>
+		<Box Id="3" BoxType="9099" BoxFlags="#x00000020">
+			<Name>Drive 3 (ASDA-A2-E CoE Drive)</Name>
+			<ImageId>38</ImageId>
+			<EtherCAT SlaveType="2" PdiType="#x0008" MboxDataLinkLayer="true" StateMBoxPolling="true" CfgModeSafeOp="true" Unsupported64BitDc="true" CycleMBoxPollingTime="0" CoeType="15" VendorId="#x000001dd" ProductCode="#x10305070" RevisionNo="#x02040608" InfoDataAddr="true" InfoDataSoeDS401="true" InfoDataDcTimes="true" TimeoutMailbox2="2000" PortPhys="17" MaxSlotCount="256" MaxSlotGroupCount="1" SlotPdoIncrement="1" SlotIndexIncrement="16" Type="Delta ASDA-A2-E EtherCAT(CoE) Drive Rev4" Desc="ASDA-A2-E CoE Drive" PortABoxInfo="#x01000002">
+				<SyncMan>0010800036000100010000002200c0008000001036010000</SyncMan>
+				<SyncMan>c010800032000100020000002200c0008000c01032010000</SyncMan>
+				<SyncMan>801106002400010003000000010000010600801124010000</SyncMan>
+				<SyncMan>801406000000010004000000010000010600801400010000</SyncMan>
+				<Fmmu>0000000000000000801100020100000001000000000000000000000000000000</Fmmu>
+				<Fmmu>0000000000000000801400010100000002000000000000000000000000000000</Fmmu>
+				<Fmmu>00000000000000000d0800010100000003000000000000000000000000000000</Fmmu>
+				<DcData>0003000000000000000000000000000001000000000000000000000000000000</DcData>
+				<DcMode>4443000000000000000000000000000044432d53796e6368726f6e6f7573000000000000000000000000000000000000000000000000000000000000000000030100000000000000000000000000000000000000000000000000000000000000</DcMode>
+				<DcMode>467265652052756e0000000000000000467265652052756e000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000</DcMode>
+				<MBoxUserCmdData>02000300090000000700000003000000000000000000000000000000000000002060600001000000084f70206d6f646500</MBoxUserCmdData>
+				<MBoxUserCmdData>020003000900000019000000030000000000000000000000000000000000000020c260010100000002496e746572706f6c6174696f6e2074696d6520706572696f6400</MBoxUserCmdData>
+				<MBoxUserCmdData>020003000900000018000000030000000000000000000000000000000000000020c2600201000000fd496e746572706f6c6174696f6e2074696d6520696e64657800</MBoxUserCmdData>
+				<Pdo Name="1st TxPDO Mapping" Index="#x1a00" Flags="#x0000">
+					<ExcludePdo>#x1a01</ExcludePdo>
+					<ExcludePdo>#x1a02</ExcludePdo>
+					<ExcludePdo>#x1a03</ExcludePdo>
+					<Entry Name="Status Word" Index="#x6041">
+						<Type>UINT</Type>
+						<Comment><![CDATA[object 0x6041:0]]></Comment>
+					</Entry>
+					<Entry Name="ActualPosition" Index="#x6064">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x6064:0]]></Comment>
+					</Entry>
+					<Entry Name="Velocity actual value" Index="#x606c">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x606C:0]]></Comment>
+					</Entry>
+					<Entry Name="ActualTorque" Index="#x6077">
+						<Type>INT</Type>
+						<Comment><![CDATA[object 0x6077:0]]></Comment>
+					</Entry>
+					<Entry Name="ModeOfOperationDisplay" Index="#x6061">
+						<Type>SINT</Type>
+						<Comment><![CDATA[object 0x6061:0]]></Comment>
+					</Entry>
+				</Pdo>
+				<Pdo Name="2nd TxPDO Mapping" Index="#x1a01" Flags="#x0000" SyncMan="3">
+					<ExcludePdo>#x1a00</ExcludePdo>
+					<ExcludePdo>#x1a02</ExcludePdo>
+					<ExcludePdo>#x1a03</ExcludePdo>
+					<Entry Name="Status Word" Index="#x6041">
+						<Type>UINT</Type>
+						<Comment><![CDATA[object 0x6041:0]]></Comment>
+					</Entry>
+					<Entry Name="ActualPosition" Index="#x6064">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x6064:0]]></Comment>
+					</Entry>
+				</Pdo>
+				<Pdo Name="3rd TxPDO Mapping" Index="#x1a02" Flags="#x0000">
+					<ExcludePdo>#x1a00</ExcludePdo>
+					<ExcludePdo>#x1a01</ExcludePdo>
+					<ExcludePdo>#x1a03</ExcludePdo>
+					<Entry Name="Status Word" Index="#x6041">
+						<Type>UINT</Type>
+						<Comment><![CDATA[object 0x6041:0]]></Comment>
+					</Entry>
+					<Entry Name="ActualPosition" Index="#x6064">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x6064:0]]></Comment>
+					</Entry>
+					<Entry Name="Velocity actual value" Index="#x606c">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x606C:0]]></Comment>
+					</Entry>
+				</Pdo>
+				<Pdo Name="4th TxPDO Mapping" Index="#x1a03" Flags="#x0000">
+					<ExcludePdo>#x1a00</ExcludePdo>
+					<ExcludePdo>#x1a01</ExcludePdo>
+					<ExcludePdo>#x1a02</ExcludePdo>
+					<Entry Name="Status Word" Index="#x6041">
+						<Type>UINT</Type>
+						<Comment><![CDATA[object 0x6041:0]]></Comment>
+					</Entry>
+					<Entry Name="ActualPosition" Index="#x6064">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x6064:0]]></Comment>
+					</Entry>
+					<Entry Name="ActualTorque" Index="#x6077">
+						<Type>INT</Type>
+						<Comment><![CDATA[object 0x6077:0]]></Comment>
+					</Entry>
+				</Pdo>
+				<Pdo Name="1st RxPDO Mapping" Index="#x1600" InOut="1" Flags="#x0000">
+					<ExcludePdo>#x1601</ExcludePdo>
+					<ExcludePdo>#x1602</ExcludePdo>
+					<ExcludePdo>#x1603</ExcludePdo>
+					<Entry Name="Control Word" Index="#x6040">
+						<Type>UINT</Type>
+						<Comment><![CDATA[object 0x6040:0]]></Comment>
+					</Entry>
+					<Entry Name="TargetPosition" Index="#x607a">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x607A:0]]></Comment>
+					</Entry>
+					<Entry Name="TargetVelocity" Index="#x60ff">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x60FF:0]]></Comment>
+					</Entry>
+					<Entry Name="TargetTorque" Index="#x6071">
+						<Type>INT</Type>
+						<Comment><![CDATA[object 0x6071:0]]></Comment>
+					</Entry>
+					<Entry Name="ModeOfOperation" Index="#x6060">
+						<Type>SINT</Type>
+						<Comment><![CDATA[object 0x6060:0]]></Comment>
+					</Entry>
+				</Pdo>
+				<Pdo Name="2nd RxPDO Mapping" Index="#x1601" InOut="1" Flags="#x0000" SyncMan="2">
+					<ExcludePdo>#x1600</ExcludePdo>
+					<ExcludePdo>#x1602</ExcludePdo>
+					<ExcludePdo>#x1603</ExcludePdo>
+					<Entry Name="Control Word" Index="#x6040">
+						<Type>UINT</Type>
+						<Comment><![CDATA[object 0x6040:0]]></Comment>
+					</Entry>
+					<Entry Name="TargetPosition" Index="#x607a">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x607A:0]]></Comment>
+					</Entry>
+				</Pdo>
+				<Pdo Name="3rd RxPDO Mapping" Index="#x1602" InOut="1" Flags="#x0000">
+					<ExcludePdo>#x1600</ExcludePdo>
+					<ExcludePdo>#x1601</ExcludePdo>
+					<ExcludePdo>#x1603</ExcludePdo>
+					<Entry Name="Control Word" Index="#x6040">
+						<Type>UINT</Type>
+						<Comment><![CDATA[object 0x6040:0]]></Comment>
+					</Entry>
+					<Entry Name="TargetVelocity" Index="#x60ff">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x60FF:0]]></Comment>
+					</Entry>
+				</Pdo>
+				<Pdo Name="4th RxPDO Mapping" Index="#x1603" InOut="1" Flags="#x0000">
+					<ExcludePdo>#x1600</ExcludePdo>
+					<ExcludePdo>#x1601</ExcludePdo>
+					<ExcludePdo>#x1602</ExcludePdo>
+					<Entry Name="Control Word" Index="#x6040">
+						<Type>UINT</Type>
+						<Comment><![CDATA[object 0x6040:0]]></Comment>
+					</Entry>
+					<Entry Name="TargetTorque" Index="#x6071">
+						<Type>INT</Type>
+						<Comment><![CDATA[object 0x6071:0]]></Comment>
+					</Entry>
+				</Pdo>
+				<CoeProfile ProfileNo="402"/>
+			</EtherCAT>
+		</Box>
+		<Box Id="4" BoxType="9099" BoxFlags="#x00000020">
+			<Name>Drive 4 (ASDA-A2-E CoE Drive)</Name>
+			<ImageId>38</ImageId>
+			<EtherCAT SlaveType="2" PdiType="#x0008" MboxDataLinkLayer="true" StateMBoxPolling="true" CfgModeSafeOp="true" Unsupported64BitDc="true" CycleMBoxPollingTime="0" CoeType="15" VendorId="#x000001dd" ProductCode="#x10305070" RevisionNo="#x02040608" InfoDataAddr="true" InfoDataSoeDS401="true" InfoDataDcTimes="true" TimeoutMailbox2="2000" PortPhys="17" MaxSlotCount="256" MaxSlotGroupCount="1" SlotPdoIncrement="1" SlotIndexIncrement="16" Type="Delta ASDA-A2-E EtherCAT(CoE) Drive Rev4" Desc="ASDA-A2-E CoE Drive" PortABoxInfo="#x01000003">
+				<SyncMan>0010800036000100010000002200c0008000001036010000</SyncMan>
+				<SyncMan>c010800032000100020000002200c0008000c01032010000</SyncMan>
+				<SyncMan>801106002400010003000000010000010600801124010000</SyncMan>
+				<SyncMan>801406000000010004000000010000010600801400010000</SyncMan>
+				<Fmmu>0000000000000000801100020100000001000000000000000000000000000000</Fmmu>
+				<Fmmu>0000000000000000801400010100000002000000000000000000000000000000</Fmmu>
+				<Fmmu>00000000000000000d0800010100000003000000000000000000000000000000</Fmmu>
+				<DcData>0003000000000000000000000000000001000000000000000000000000000000</DcData>
+				<DcMode>4443000000000000000000000000000044432d53796e6368726f6e6f7573000000000000000000000000000000000000000000000000000000000000000000030100000000000000000000000000000000000000000000000000000000000000</DcMode>
+				<DcMode>467265652052756e0000000000000000467265652052756e000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000</DcMode>
+				<MBoxUserCmdData>02000300090000000700000003000000000000000000000000000000000000002060600001000000084f70206d6f646500</MBoxUserCmdData>
+				<MBoxUserCmdData>020003000900000019000000030000000000000000000000000000000000000020c260010100000002496e746572706f6c6174696f6e2074696d6520706572696f6400</MBoxUserCmdData>
+				<MBoxUserCmdData>020003000900000018000000030000000000000000000000000000000000000020c2600201000000fd496e746572706f6c6174696f6e2074696d6520696e64657800</MBoxUserCmdData>
+				<Pdo Name="1st TxPDO Mapping" Index="#x1a00" Flags="#x0000">
+					<ExcludePdo>#x1a01</ExcludePdo>
+					<ExcludePdo>#x1a02</ExcludePdo>
+					<ExcludePdo>#x1a03</ExcludePdo>
+					<Entry Name="Status Word" Index="#x6041">
+						<Type>UINT</Type>
+						<Comment><![CDATA[object 0x6041:0]]></Comment>
+					</Entry>
+					<Entry Name="ActualPosition" Index="#x6064">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x6064:0]]></Comment>
+					</Entry>
+					<Entry Name="Velocity actual value" Index="#x606c">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x606C:0]]></Comment>
+					</Entry>
+					<Entry Name="ActualTorque" Index="#x6077">
+						<Type>INT</Type>
+						<Comment><![CDATA[object 0x6077:0]]></Comment>
+					</Entry>
+					<Entry Name="ModeOfOperationDisplay" Index="#x6061">
+						<Type>SINT</Type>
+						<Comment><![CDATA[object 0x6061:0]]></Comment>
+					</Entry>
+				</Pdo>
+				<Pdo Name="2nd TxPDO Mapping" Index="#x1a01" Flags="#x0000" SyncMan="3">
+					<ExcludePdo>#x1a00</ExcludePdo>
+					<ExcludePdo>#x1a02</ExcludePdo>
+					<ExcludePdo>#x1a03</ExcludePdo>
+					<Entry Name="Status Word" Index="#x6041">
+						<Type>UINT</Type>
+						<Comment><![CDATA[object 0x6041:0]]></Comment>
+					</Entry>
+					<Entry Name="ActualPosition" Index="#x6064">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x6064:0]]></Comment>
+					</Entry>
+				</Pdo>
+				<Pdo Name="3rd TxPDO Mapping" Index="#x1a02" Flags="#x0000">
+					<ExcludePdo>#x1a00</ExcludePdo>
+					<ExcludePdo>#x1a01</ExcludePdo>
+					<ExcludePdo>#x1a03</ExcludePdo>
+					<Entry Name="Status Word" Index="#x6041">
+						<Type>UINT</Type>
+						<Comment><![CDATA[object 0x6041:0]]></Comment>
+					</Entry>
+					<Entry Name="ActualPosition" Index="#x6064">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x6064:0]]></Comment>
+					</Entry>
+					<Entry Name="Velocity actual value" Index="#x606c">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x606C:0]]></Comment>
+					</Entry>
+				</Pdo>
+				<Pdo Name="4th TxPDO Mapping" Index="#x1a03" Flags="#x0000">
+					<ExcludePdo>#x1a00</ExcludePdo>
+					<ExcludePdo>#x1a01</ExcludePdo>
+					<ExcludePdo>#x1a02</ExcludePdo>
+					<Entry Name="Status Word" Index="#x6041">
+						<Type>UINT</Type>
+						<Comment><![CDATA[object 0x6041:0]]></Comment>
+					</Entry>
+					<Entry Name="ActualPosition" Index="#x6064">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x6064:0]]></Comment>
+					</Entry>
+					<Entry Name="ActualTorque" Index="#x6077">
+						<Type>INT</Type>
+						<Comment><![CDATA[object 0x6077:0]]></Comment>
+					</Entry>
+				</Pdo>
+				<Pdo Name="1st RxPDO Mapping" Index="#x1600" InOut="1" Flags="#x0000">
+					<ExcludePdo>#x1601</ExcludePdo>
+					<ExcludePdo>#x1602</ExcludePdo>
+					<ExcludePdo>#x1603</ExcludePdo>
+					<Entry Name="Control Word" Index="#x6040">
+						<Type>UINT</Type>
+						<Comment><![CDATA[object 0x6040:0]]></Comment>
+					</Entry>
+					<Entry Name="TargetPosition" Index="#x607a">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x607A:0]]></Comment>
+					</Entry>
+					<Entry Name="TargetVelocity" Index="#x60ff">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x60FF:0]]></Comment>
+					</Entry>
+					<Entry Name="TargetTorque" Index="#x6071">
+						<Type>INT</Type>
+						<Comment><![CDATA[object 0x6071:0]]></Comment>
+					</Entry>
+					<Entry Name="ModeOfOperation" Index="#x6060">
+						<Type>SINT</Type>
+						<Comment><![CDATA[object 0x6060:0]]></Comment>
+					</Entry>
+				</Pdo>
+				<Pdo Name="2nd RxPDO Mapping" Index="#x1601" InOut="1" Flags="#x0000" SyncMan="2">
+					<ExcludePdo>#x1600</ExcludePdo>
+					<ExcludePdo>#x1602</ExcludePdo>
+					<ExcludePdo>#x1603</ExcludePdo>
+					<Entry Name="Control Word" Index="#x6040">
+						<Type>UINT</Type>
+						<Comment><![CDATA[object 0x6040:0]]></Comment>
+					</Entry>
+					<Entry Name="TargetPosition" Index="#x607a">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x607A:0]]></Comment>
+					</Entry>
+				</Pdo>
+				<Pdo Name="3rd RxPDO Mapping" Index="#x1602" InOut="1" Flags="#x0000">
+					<ExcludePdo>#x1600</ExcludePdo>
+					<ExcludePdo>#x1601</ExcludePdo>
+					<ExcludePdo>#x1603</ExcludePdo>
+					<Entry Name="Control Word" Index="#x6040">
+						<Type>UINT</Type>
+						<Comment><![CDATA[object 0x6040:0]]></Comment>
+					</Entry>
+					<Entry Name="TargetVelocity" Index="#x60ff">
+						<Type>DINT</Type>
+						<Comment><![CDATA[object 0x60FF:0]]></Comment>
+					</Entry>
+				</Pdo>
+				<Pdo Name="4th RxPDO Mapping" Index="#x1603" InOut="1" Flags="#x0000">
+					<ExcludePdo>#x1600</ExcludePdo>
+					<ExcludePdo>#x1601</ExcludePdo>
+					<ExcludePdo>#x1602</ExcludePdo>
+					<Entry Name="Control Word" Index="#x6040">
+						<Type>UINT</Type>
+						<Comment><![CDATA[object 0x6040:0]]></Comment>
+					</Entry>
+					<Entry Name="TargetTorque" Index="#x6071">
+						<Type>INT</Type>
+						<Comment><![CDATA[object 0x6071:0]]></Comment>
+					</Entry>
+				</Pdo>
+				<CoeProfile ProfileNo="402"/>
+			</EtherCAT>
+		</Box>
+		<EtherCAT DcSyncMode="3"/>
+	</Device>
+	<Mappings>
+		<OwnerA Name="__THIS__">
+			<OwnerB Name="TINC^NC-Task 1 SAF^Axes^Axis 1">
+				<Link VarA="Drive 1 (ASDA-A2-E CoE Drive)^2nd RxPDO Mapping^Control Word" VarB="Drive^Outputs^Out^nCtrl1"/>
+				<Link VarA="Drive 1 (ASDA-A2-E CoE Drive)^2nd RxPDO Mapping^Control Word" VarB="Drive^Outputs^Out^nCtrl2" Size="8" OffsA="8"/>
+				<Link VarA="Drive 1 (ASDA-A2-E CoE Drive)^2nd RxPDO Mapping^TargetPosition" VarB="Drive^Outputs^Out^nDataOut1"/>
+				<Link VarA="Drive 1 (ASDA-A2-E CoE Drive)^2nd TxPDO Mapping^ActualPosition" VarB="Enc^Inputs^In^nDataIn1"/>
+				<Link VarA="Drive 1 (ASDA-A2-E CoE Drive)^2nd TxPDO Mapping^Status Word" VarB="Drive^Inputs^In^nState1"/>
+				<Link VarA="Drive 1 (ASDA-A2-E CoE Drive)^2nd TxPDO Mapping^Status Word" VarB="Drive^Inputs^In^nState2" Size="8" OffsA="8"/>
+				<Link VarA="Drive 1 (ASDA-A2-E CoE Drive)^InfoData^DcInputShift" VarB="Enc^Inputs^In^nDcInputTime"/>
+				<Link VarA="Drive 1 (ASDA-A2-E CoE Drive)^InfoData^DcOutputShift" VarB="Drive^Inputs^In^nDcOutputTime"/>
+				<Link VarA="Drive 1 (ASDA-A2-E CoE Drive)^WcState^InputToggle" VarB="Drive^Inputs^In^nState4" Size="1" OffsB="1"/>
+				<Link VarA="Drive 1 (ASDA-A2-E CoE Drive)^WcState^InputToggle" VarB="Enc^Inputs^In^nState4" Size="1" OffsB="1"/>
+				<Link VarA="Drive 1 (ASDA-A2-E CoE Drive)^WcState^WcState" VarB="Drive^Inputs^In^nState4"/>
+				<Link VarA="Drive 1 (ASDA-A2-E CoE Drive)^WcState^WcState" VarB="Enc^Inputs^In^nState4"/>
+			</OwnerB>
+			<OwnerB Name="TINC^NC-Task 1 SAF^Axes^Axis 2">
+				<Link VarA="Drive 2 (ASDA-A2-E CoE Drive)^2nd RxPDO Mapping^Control Word" VarB="Drive^Outputs^Out^nCtrl1"/>
+				<Link VarA="Drive 2 (ASDA-A2-E CoE Drive)^2nd RxPDO Mapping^Control Word" VarB="Drive^Outputs^Out^nCtrl2" Size="8" OffsA="8"/>
+				<Link VarA="Drive 2 (ASDA-A2-E CoE Drive)^2nd RxPDO Mapping^TargetPosition" VarB="Drive^Outputs^Out^nDataOut1"/>
+				<Link VarA="Drive 2 (ASDA-A2-E CoE Drive)^2nd TxPDO Mapping^ActualPosition" VarB="Enc^Inputs^In^nDataIn1"/>
+				<Link VarA="Drive 2 (ASDA-A2-E CoE Drive)^2nd TxPDO Mapping^Status Word" VarB="Drive^Inputs^In^nState1"/>
+				<Link VarA="Drive 2 (ASDA-A2-E CoE Drive)^2nd TxPDO Mapping^Status Word" VarB="Drive^Inputs^In^nState2" Size="8" OffsA="8"/>
+				<Link VarA="Drive 2 (ASDA-A2-E CoE Drive)^InfoData^DcInputShift" VarB="Enc^Inputs^In^nDcInputTime"/>
+				<Link VarA="Drive 2 (ASDA-A2-E CoE Drive)^InfoData^DcOutputShift" VarB="Drive^Inputs^In^nDcOutputTime"/>
+				<Link VarA="Drive 2 (ASDA-A2-E CoE Drive)^WcState^InputToggle" VarB="Drive^Inputs^In^nState4" Size="1" OffsB="1"/>
+				<Link VarA="Drive 2 (ASDA-A2-E CoE Drive)^WcState^InputToggle" VarB="Enc^Inputs^In^nState4" Size="1" OffsB="1"/>
+				<Link VarA="Drive 2 (ASDA-A2-E CoE Drive)^WcState^WcState" VarB="Drive^Inputs^In^nState4"/>
+				<Link VarA="Drive 2 (ASDA-A2-E CoE Drive)^WcState^WcState" VarB="Enc^Inputs^In^nState4"/>
+			</OwnerB>
+			<OwnerB Name="TINC^NC-Task 1 SAF^Axes^Axis 3">
+				<Link VarA="Drive 3 (ASDA-A2-E CoE Drive)^2nd RxPDO Mapping^Control Word" VarB="Drive^Outputs^Out^nCtrl1"/>
+				<Link VarA="Drive 3 (ASDA-A2-E CoE Drive)^2nd RxPDO Mapping^Control Word" VarB="Drive^Outputs^Out^nCtrl2" Size="8" OffsA="8"/>
+				<Link VarA="Drive 3 (ASDA-A2-E CoE Drive)^2nd RxPDO Mapping^TargetPosition" VarB="Drive^Outputs^Out^nDataOut1"/>
+				<Link VarA="Drive 3 (ASDA-A2-E CoE Drive)^2nd TxPDO Mapping^ActualPosition" VarB="Enc^Inputs^In^nDataIn1"/>
+				<Link VarA="Drive 3 (ASDA-A2-E CoE Drive)^2nd TxPDO Mapping^Status Word" VarB="Drive^Inputs^In^nState1"/>
+				<Link VarA="Drive 3 (ASDA-A2-E CoE Drive)^2nd TxPDO Mapping^Status Word" VarB="Drive^Inputs^In^nState2" Size="8" OffsA="8"/>
+				<Link VarA="Drive 3 (ASDA-A2-E CoE Drive)^InfoData^DcInputShift" VarB="Enc^Inputs^In^nDcInputTime"/>
+				<Link VarA="Drive 3 (ASDA-A2-E CoE Drive)^InfoData^DcOutputShift" VarB="Drive^Inputs^In^nDcOutputTime"/>
+				<Link VarA="Drive 3 (ASDA-A2-E CoE Drive)^WcState^InputToggle" VarB="Drive^Inputs^In^nState4" Size="1" OffsB="1"/>
+				<Link VarA="Drive 3 (ASDA-A2-E CoE Drive)^WcState^InputToggle" VarB="Enc^Inputs^In^nState4" Size="1" OffsB="1"/>
+				<Link VarA="Drive 3 (ASDA-A2-E CoE Drive)^WcState^WcState" VarB="Drive^Inputs^In^nState4"/>
+				<Link VarA="Drive 3 (ASDA-A2-E CoE Drive)^WcState^WcState" VarB="Enc^Inputs^In^nState4"/>
+			</OwnerB>
+			<OwnerB Name="TINC^NC-Task 1 SAF^Axes^Axis 4">
+				<Link VarA="Drive 4 (ASDA-A2-E CoE Drive)^2nd RxPDO Mapping^Control Word" VarB="Drive^Outputs^Out^nCtrl1"/>
+				<Link VarA="Drive 4 (ASDA-A2-E CoE Drive)^2nd RxPDO Mapping^Control Word" VarB="Drive^Outputs^Out^nCtrl2" Size="8" OffsA="8"/>
+				<Link VarA="Drive 4 (ASDA-A2-E CoE Drive)^2nd RxPDO Mapping^TargetPosition" VarB="Drive^Outputs^Out^nDataOut1"/>
+				<Link VarA="Drive 4 (ASDA-A2-E CoE Drive)^2nd TxPDO Mapping^ActualPosition" VarB="Enc^Inputs^In^nDataIn1"/>
+				<Link VarA="Drive 4 (ASDA-A2-E CoE Drive)^2nd TxPDO Mapping^Status Word" VarB="Drive^Inputs^In^nState1"/>
+				<Link VarA="Drive 4 (ASDA-A2-E CoE Drive)^2nd TxPDO Mapping^Status Word" VarB="Drive^Inputs^In^nState2" Size="8" OffsA="8"/>
+				<Link VarA="Drive 4 (ASDA-A2-E CoE Drive)^InfoData^DcInputShift" VarB="Enc^Inputs^In^nDcInputTime"/>
+				<Link VarA="Drive 4 (ASDA-A2-E CoE Drive)^InfoData^DcOutputShift" VarB="Drive^Inputs^In^nDcOutputTime"/>
+				<Link VarA="Drive 4 (ASDA-A2-E CoE Drive)^WcState^InputToggle" VarB="Drive^Inputs^In^nState4" Size="1" OffsB="1"/>
+				<Link VarA="Drive 4 (ASDA-A2-E CoE Drive)^WcState^InputToggle" VarB="Enc^Inputs^In^nState4" Size="1" OffsB="1"/>
+				<Link VarA="Drive 4 (ASDA-A2-E CoE Drive)^WcState^WcState" VarB="Drive^Inputs^In^nState4"/>
+				<Link VarA="Drive 4 (ASDA-A2-E CoE Drive)^WcState^WcState" VarB="Enc^Inputs^In^nState4"/>
+			</OwnerB>
+		</OwnerA>
+	</Mappings>
+</TcSmItem>
