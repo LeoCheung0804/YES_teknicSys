@@ -57,6 +57,7 @@ void PrintGripperControlMenu(){
     cout << "\t3 - Rotate Gripper" << endl;
     cout << "\t4 - Release Gripper" << endl;
     cout << "\t5 - Write Calibration Data to Gripper" << endl;
+    cout << "\t6 - Reset" << endl;
     cout << "\tq - Exit" << endl;
     cout << "Please Select Mode: ";
 }
@@ -115,6 +116,9 @@ void GripperControlMode(){
             system("pause");
         }else if(userInput == "5"){
             robot.gripper.Calibrate();
+            system("pause");
+        }else if(userInput == "6"){
+            robot.gripper.Reset();
             system("pause");
         }
     }

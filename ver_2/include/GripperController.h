@@ -29,5 +29,6 @@ public:
     void SetCalibrateStartAngle(int angle);
     void SetCalibrateEndAngle(int angle);
     void Calibrate();
+    void Reset();
 };
 #endif
