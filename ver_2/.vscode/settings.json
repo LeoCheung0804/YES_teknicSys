@@ -86,5 +86,6 @@
         "bvh": "cpp",
         "arduinoblenode.h": "c"
     },
-    "C_Cpp.errorSquiggles": "Disabled"
+    "C_Cpp.errorSquiggles": "Disabled",
+    "cmake.sourceDirectory": "D:/Galad_ws/YES_teknicSys/ver_2/Dependencies/eigen-3.3.7"
 }

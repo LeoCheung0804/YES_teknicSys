@@ -168,6 +168,7 @@ void Robot::UpdateModelFromFile(string filename, bool reconnect){ // Read model.
         this->railBrakeCommPort = model.value("railBrakeCommPort", "\\\\.\\COM26");
         this->brickPickUpOffset = model.value("brickPickUpOffset", 0.12);
         this->velLmt = model.value("velLmt", 0.45);
+        this->useIndividualCableScale = model.value("useIndividualCableScale", false);
         this->useGripper = model.value("useGripper", false);
         this->useCableMotor = model.value("useCableMotor", false );
         this->useCableBraker = model.value("useCableBraker", false );
@@ -188,6 +189,17 @@ void Robot::UpdateModelFromFile(string filename, bool reconnect){ // Read model.
             for(int j=0; j<3; j++){ // for each xyz coordinates
                 this->frmOut[i][j] = model["frameAttachments"][i][j];
                 this->endOut[i][j] = model["endEffectorAttachments"][i][j];
+            }
+        }
+        if(this->useIndividualCableScale){
+            if(model.contains("cableMotorScaleIndividual")){
+                for(int i = 0; i < this->cableMotorNum; i++){
+                    this->cableMotorScaleIndividual[i] = (float) model["cableMotorScaleIndividual"][i];
+                }
+            }
+        }else{
+            for(int i = 0; i < this->cableMotorNum; i++){
+                this->cableMotorScaleIndividual[i] = this->cableMotorScale;
             }
         }
         if(!this->isOnline)
@@ -433,20 +445,20 @@ string Robot::GetRailBrakeCommPort(){ return railBrakeCommPort; }
 
 string Robot::GetCableBrakeCommPort(){ return cableBrakeCommPort; }
 
-int32_t Robot::GetCableMotorScale(){ return cableMotorScale; }
+double Robot::GetCableMotorScale(int motorID){ return cableMotorScaleIndividual[motorID]; }
 
-int32_t Robot::GetRailMotorScale(){ return railMotorScale; }
+double Robot::GetRailMotorScale(){ return railMotorScale; }
 
 float Robot::GetVelLmt(){ return velLmt; }
 
 int Robot::GetCableMotorBrakeNum(){ return cableMotorBrakeNum; }
 
-int32_t Robot::CableMotorLengthToCmdAbsulote(double length){
-    return length * cableMotorScale;
+int32_t Robot::CableMotorLengthToCmdAbsulote(int motorID, double length){
+    return length * cableMotorScaleIndividual[motorID];
 }
 
 int32_t Robot::CableMotorLengthToCmd(int motorID, double length){
-    return (length - this->robotOffset[motorID]) * cableMotorScale;
+    return (length - this->robotOffset[motorID]) * cableMotorScaleIndividual[motorID];
 }
 
 int32_t Robot::RailMotorOffsetToCmd(int motorID, double length){
@@ -476,7 +488,7 @@ vector<int32_t> Robot::EEPoseToCmd(double eePos[], double railOffset[]){
     int index = 0;
     for(double length : lengthList){
         //result.push_back(this->CableMotorLengthToCmd(index, length));
-        result.push_back(this->CableMotorLengthToCmdAbsulote(length));
+        result.push_back(this->CableMotorLengthToCmdAbsulote(index, length));
         index++;
     }
     return result;
@@ -515,6 +527,38 @@ bool Robot::RunCableTraj(vector<vector<double>> posTraj, bool showAtten){
             cout << endl;
         }
     }
+    // check every step to make sure the command is not too large
+    vector<int32_t> lastFrameCmd = {0, 0, 0, 0, 0, 0, 0, 0};
+    vector<double> lastFrameLength = this->EEPoseToCableLength(this->endEffectorPos);
+    
+    for(int i = 0; i < 8; i++){
+        lastFrameCmd[i] = lastFrameLength[i] * this->cableMotorScaleIndividual[i];
+    }
+    cout << "Last Frame Length: " << lastFrameLength[0] << " " << lastFrameLength[1] << " " << lastFrameLength[2] << " " << lastFrameLength[3] << " " << lastFrameLength[4] << " " << lastFrameLength[5] << " " << lastFrameLength[6] << " " << lastFrameLength[7] << endl;
+    cout << "Last Frame Cmd: " << lastFrameCmd[0] << " " << lastFrameCmd[1] << " " << lastFrameCmd[2] << " " << lastFrameCmd[3] << " " << lastFrameCmd[4] << " " << lastFrameCmd[5] << " " << lastFrameCmd[6] << " " << lastFrameCmd[7] << endl;
+    vector<double> lastFrameEEPos = {this->endEffectorPos[0], this->endEffectorPos[1], this->endEffectorPos[2]};
+    for(int j = 0; j < posTraj.size(); j++){
+        vector<int32_t> frame = cmdTraj[j];
+        for(int i = 0; i < 8; i++){
+            if((frame[i] - lastFrameCmd[i]) / this->cableMotorScaleIndividual[i] > 0.5 || (frame[i] - lastFrameCmd[i]) / this->cableMotorScaleIndividual[i] < -0.5){
+                cout << "================================== Trajectory Stopped!! ==================================" << endl;
+                cout << "Motor " << i << endl;
+                cout << "Frame " << index << endl;
+                cout << "Step too large! range should be in -0.5m(" << -0.5 * this->cableMotorScaleIndividual[i] << ") ~ 0.5m(" << 0.5 * this->cableMotorScaleIndividual[i] << ")." << endl;
+                cout << "Current command: " << frame[i] << " Length: " << frame[i] / this->cableMotorScaleIndividual[i] << endl;
+                cout << "Last frame command: " << lastFrameCmd[i] << " Length: " << lastFrameCmd[i] / this->cableMotorScaleIndividual[i] << endl;
+                cout << "Difference: " << (frame[i] - lastFrameCmd[i]) / this->cableMotorScaleIndividual[i] << "m" << endl;
+                cout << "Last frame EE Pos: x" << lastFrameEEPos[0] << " y" << lastFrameEEPos[1] << " z" << lastFrameEEPos[2] << endl;
+                cout << "Cmd EE Pos: x" << posTraj[index][0] << " y" << posTraj[index][1] << " z" << posTraj[index][2] << endl;
+                return false;
+            }
+            lastFrameCmd[i] = frame[i];
+        }
+        lastFrameEEPos[0] = posTraj[j][0];
+        lastFrameEEPos[1] = posTraj[j][1];
+        lastFrameEEPos[2] = posTraj[j][2];
+    }
+
     for(vector<int32_t> frame : cmdTraj){
         auto start = chrono::steady_clock::now();
         if(!this->eBrake(true, false)) return false;
