@@ -584,113 +584,6 @@ void RailMotorControlMode(){
 
 }
 
-void PrintCalibrationMenu(){
-    system("CLS");
-    cout << "====================== Calibration Mode  ======================" << endl;
-    cout << "\t1 - Set Cables Torque" << endl;
-    cout << "\t2 - Request current cable motor torque readings" << endl;
-    cout << "\t3 - Control Cable Motor " << endl;
-    cout << "\t4 - Update Robot Pos" << endl;
-    cout << "\t5 - Reset EE Rotation to Zero" << endl;
-    cout << "\t6 - Control Linear Rail Motor" << endl;
-    cout << "\t7 - Control Gripper " << endl;
-    cout << "\t8 - Update Robot Config" << endl;
-    cout << "\t9 - Print Robot Status " << endl;
-    cout << "\t10 - Clear Exception " << endl;
-    cout << "\tq - Finish Calibration" << endl;
-    cout << "Please Select Operation: " << endl;
-}
-
-void CalibrationMode(){ 
-    while(true){
-        PrintCalibrationMenu();
-        cin >> userInput;
-        if(userInput == "q"){ // Quit Calibration Mode
-            break;
-        }else if(userInput == "1"){ // Set Cable Trq
-            cout << "Please Enter Target Torque (Default " << robot.GetWorkingTrq() << "): ";
-            getchar();
-            getline(cin, userInput);
-            char* p;
-            double targetTrq = strtod(userInput.c_str(), &p);
-            if(!*p) {
-                if(!userInput.length())
-                    targetTrq = robot.GetWorkingTrq();
-                if(targetTrq < -10 || targetTrq > 2){
-                    cout << "Target Torque Invalid." << endl;
-                    system("pause");
-                    continue;
-                }
-                cout << "Setting to Target Torque: " << targetTrq << endl;
-                robot.brake.OpenAllCableBrake();
-                robot.cable.SetCableTrq(targetTrq, 4);
-                robot.brake.CloseAllCableBrake();
-            }else{
-                cout << "Please enter a number !!!" << endl;
-            }
-            system("pause");
-        }else if(userInput == "2"){ // requst current torque readings
-            cout << "Current Measured Cable Motor Trq: " << endl;
-            robot.brake.OpenAllCableBrake();
-            for(int i = 0; i < robot.GetCableMotorNum(); i++){
-                cout << "\tCable " << i << ": " << robot.cable.GetMotorTorqueMeasured(i) << endl;
-            }
-            robot.brake.CloseAllCableBrake();
-            system("pause");
-        }else if(userInput == "3"){ // Control Cable Individual
-            robot.brake.OpenAllCableBrake();
-            CableMotorControlMode();
-            robot.brake.CloseAllCableBrake();
-        }else if(userInput == "4"){ // Update Robot Pos By File
-            string robotPosPath;
-            cout << "Please Enter Robot Position File Path (Default lastPos.txt): ";
-            getchar();
-            getline(cin, robotPosPath);
-            robot.UpdatePosFromFile(robotPosPath  != "" ? robotPosPath : "lastPos.txt");
-            logger.LogPos(robot.endEffectorPos, robot.railOffset);
-            if(!robot.CheckLimits()){
-                logger.LogWarning("New Position is beyond robot limit.");
-                cout << "Warning: New Position is beyond robot limit. " << endl;
-            }
-            system("pause");
-        }else if(userInput == "5"){ // Reset End Effector Rotation to 0,0,0
-            double targetPos[6] = {robot.endEffectorPos[0], robot.endEffectorPos[1], robot.endEffectorPos[2], 0, 0,0 };
-            robot.brake.OpenAllCableBrake();
-            robot.MoveToParaBlend(targetPos, 3500, true);
-            robot.brake.CloseAllCableBrake();
-            system("pause");
-        }else if(userInput == "6"){ // Control Linear Rail Motor
-            robot.brake.OpenAllRailBrake();
-            RailMotorControlMode();
-            robot.brake.CloseAllRailBrake();
-        }else if(userInput == "7"){ // Control Gripper
-            GripperControlMode();
-        }else if(userInput == "8"){ // Update Robot Config
-            string robotConfigPath;
-            cout << "Please Enter Robot Config File Path (Default RobotConfig.json): ";
-            getchar();
-            getline(cin, robotConfigPath);
-            robot.UpdateModelFromFile(robotConfigPath  != "" ? robotConfigPath : "RobotConfig.json");
-            while(!robot.IsValid()){
-                cout << "Config file invalid, please use correct config file." << endl;
-                string robotConfigFile;
-                cout << "Please Enter Robot Configuration File Path (Default RobotConfig.json): ";
-                getline(cin, robotConfigFile);
-                robot.UpdateModelFromFile(robotConfigFile != "" ? robotConfigFile : "RobotConfig.json");
-            }
-            system("pause");
-        }else if(userInput == "9"){ // print current status
-            robot.PrintEEPos();
-            robot.PrintRailOffset();
-            robot.PrintCableLength();
-            system("pause");
-        }else if(userInput == "10"){ // clear motor alert
-            robot.cable.ClearAlert();
-            system("pause");
-        }
-    }
-}
-
 void PrintRobotPosControlMenu(){
     system("CLS");
     cout << "====================== Robot Pos Control Mode  ======================" << endl;
@@ -904,8 +797,9 @@ void PrintRobotControlMenu(){
     cout << "====================== Robot Control Mode  ======================" << endl;
     cout << "\t1 - Robot Position Control" << endl;
     cout << "\t2 - Move Robot to Home Position" << endl;
-    cout << "\t3 - Gripper Control" << endl;
-    cout << "\t4 - Rail Control " << endl;
+    cout << "\t3 - Move Robot to Pre-Pickup Position" << endl;
+    cout << "\t4 - Gripper Control" << endl;
+    cout << "\t5 - Rail Control " << endl;
     cout << "\tq - Exit" << endl;
     cout << "Please Select Mode: ";
 }
@@ -927,14 +821,134 @@ void RobotControlMode(){
             robot.MoveToParaBlend(robot.homePos, true);
             robot.brake.CloseAllCableBrake();
             system("pause");
-        }else if(userInput == "3"){ // gripper control mode
+        }else if(userInput == "3"){ // move robot to pre-pickup position
+            // robot.PrintPrePickupPos();
+            robot.brake.OpenAllCableBrake();
+            double goalPos[6] = {0};
+            copy(robot.brickPickUpPos, robot.brickPickUpPos + 6, goalPos);
+            goalPos[5] = 0.0141; // calculated yaw for +0.21 height
+            goalPos[2] += 0.21; // 0.21 safe height from ABB
+            robot.MoveToParaBlend(goalPos, true);
+            robot.brake.CloseAllCableBrake();
+            system("pause");
+        }else if(userInput == "4"){ // gripper control mode
             GripperControlMode();
-        }else if(userInput == "4"){ // Rail Control
+        }else if(userInput == "5"){ // Rail Control
             robot.brake.OpenAllCableBrake();
             robot.brake.OpenAllRailBrake();
             RailControlMode();
             robot.brake.CloseAllCableBrake();
             robot.brake.CloseAllRailBrake();
+        }
+    }
+}
+
+void PrintCalibrationMenu(){
+    system("CLS");
+    cout << "====================== Calibration Mode  ======================" << endl;
+    cout << "\t1 - Set Cables Torque" << endl;
+    cout << "\t2 - Request current cable motor torque readings" << endl;
+    cout << "\t3 - Control Cable Motor " << endl;
+    cout << "\t4 - Update Robot Pos" << endl;
+    cout << "\t5 - Reset EE Rotation to Zero" << endl;
+    cout << "\t6 - Control Linear Rail Motor" << endl;
+    cout << "\t7 - Control Gripper " << endl;
+    cout << "\t8 - Update Robot Config" << endl;
+    cout << "\t9 - Print Robot Status " << endl;
+    cout << "\t10 - Clear Exception " << endl;
+    cout << "\t11 - Robot Control Mode" << endl;
+    cout << "\tq - Finish Calibration" << endl;
+    cout << "Please Select Operation: " << endl;
+}
+
+void CalibrationMode(){ 
+    while(true){
+        PrintCalibrationMenu();
+        cin >> userInput;
+        if(userInput == "q"){ // Quit Calibration Mode
+            break;
+        }else if(userInput == "1"){ // Set Cable Trq
+            cout << "Please Enter Target Torque (Default " << robot.GetWorkingTrq() << "): ";
+            getchar();
+            getline(cin, userInput);
+            char* p;
+            double targetTrq = strtod(userInput.c_str(), &p);
+            if(!*p) {
+                if(!userInput.length())
+                    targetTrq = robot.GetWorkingTrq();
+                if(targetTrq < -10 || targetTrq > 2){
+                    cout << "Target Torque Invalid." << endl;
+                    system("pause");
+                    continue;
+                }
+                cout << "Setting to Target Torque: " << targetTrq << endl;
+                robot.brake.OpenAllCableBrake();
+                robot.cable.SetCableTrq(targetTrq, 4);
+                robot.brake.CloseAllCableBrake();
+            }else{
+                cout << "Please enter a number !!!" << endl;
+            }
+            system("pause");
+        }else if(userInput == "2"){ // requst current torque readings
+            cout << "Current Measured Cable Motor Trq: " << endl;
+            robot.brake.OpenAllCableBrake();
+            for(int i = 0; i < robot.GetCableMotorNum(); i++){
+                cout << "\tCable " << i << ": " << robot.cable.GetMotorTorqueMeasured(i) << endl;
+            }
+            robot.brake.CloseAllCableBrake();
+            system("pause");
+        }else if(userInput == "3"){ // Control Cable Individual
+            robot.brake.OpenAllCableBrake();
+            CableMotorControlMode();
+            robot.brake.CloseAllCableBrake();
+        }else if(userInput == "4"){ // Update Robot Pos By File
+            string robotPosPath;
+            cout << "Please Enter Robot Position File Path (Default lastPos.txt): ";
+            getchar();
+            getline(cin, robotPosPath);
+            robot.UpdatePosFromFile(robotPosPath  != "" ? robotPosPath : "lastPos.txt");
+            logger.LogPos(robot.endEffectorPos, robot.railOffset);
+            if(!robot.CheckLimits()){
+                logger.LogWarning("New Position is beyond robot limit.");
+                cout << "Warning: New Position is beyond robot limit. " << endl;
+            }
+            system("pause");
+        }else if(userInput == "5"){ // Reset End Effector Rotation to 0,0,0
+            double targetPos[6] = { robot.endEffectorPos[0], robot.endEffectorPos[1], robot.endEffectorPos[2], 0, 0, 0 };
+            robot.brake.OpenAllCableBrake();
+            robot.MoveToParaBlend(targetPos, 3500, true);
+            robot.brake.CloseAllCableBrake();
+            system("pause");
+        }else if(userInput == "6"){ // Control Linear Rail Motor
+            robot.brake.OpenAllRailBrake();
+            RailMotorControlMode();
+            robot.brake.CloseAllRailBrake();
+        }else if(userInput == "7"){ // Control Gripper
+            GripperControlMode();
+        }else if(userInput == "8"){ // Update Robot Config
+            string robotConfigPath;
+            cout << "Please Enter Robot Config File Path (Default RobotConfig.json): ";
+            getchar();
+            getline(cin, robotConfigPath);
+            robot.UpdateModelFromFile(robotConfigPath  != "" ? robotConfigPath : "RobotConfig.json");
+            while(!robot.IsValid()){
+                cout << "Config file invalid, please use correct config file." << endl;
+                string robotConfigFile;
+                cout << "Please Enter Robot Configuration File Path (Default RobotConfig.json): ";
+                getline(cin, robotConfigFile);
+                robot.UpdateModelFromFile(robotConfigFile != "" ? robotConfigFile : "RobotConfig.json");
+            }
+            system("pause");
+        }else if(userInput == "9"){ // print current status
+            robot.PrintEEPos();
+            robot.PrintRailOffset();
+            robot.PrintCableLength();
+            system("pause");
+        }else if(userInput == "10"){ // clear motor alert
+            robot.cable.ClearAlert();
+            system("pause");
+        }else if(userInput == "11"){ // Robot Control Mode
+            RobotControlMode();
         }
     }
 }
@@ -966,6 +980,7 @@ bool CheckContinue(){
         }
     }
 }
+
 void OperationMode(){
     while(true){
         PrintOperationMenu();
@@ -1024,7 +1039,7 @@ void OperationMode(){
                 
                 Sleep(100); // wait for brick
 
-                // pickup brick
+                // lower the ee to pickup brick
                 copy(robot.brickPickUpPos, robot.brickPickUpPos + 6, goalPos);
                 cout << "Brick No. " << i << " (" << brickTypes[brickType] << ")" << endl;
                 cout << "====== Picking up brick." << endl;
@@ -1047,9 +1062,6 @@ void OperationMode(){
                 if(!CheckContinue()) break;
                 if(!robot.MoveToParaBlend(goalPos, robot.safeT, true)) break;
 
-                // rotate gripper to target rotation
-                robot.gripper.Rotate((int)(brickPos[4] + 92.2 - brickPos[3]/3.1415965*180)); // <-+27, constant frame to gripper offset; - yaw rotation in EE
-
                 // move to safe point                
                 copy(safePt, safePt+6, begin(goalPos)); // safe point
                 cout << "====== Brick No. " << i << " (" << brickTypes[brickType] << ")" << endl;
@@ -1058,6 +1070,9 @@ void OperationMode(){
                 cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
                 if(!CheckContinue()) break;
                 if(!robot.MoveToParaBlend(goalPos, true)) break;
+
+                // rotate gripper to target rotation
+                robot.gripper.Rotate((int)(brickPos[4] + 92.2 - brickPos[3]/3.1415965*180)); // <-+27, constant frame to gripper offset; - yaw rotation in EE
 
                 double safeH = 0.3; // meter, safety height from building brick level
                 // avoid the 5th pole
@@ -1223,7 +1238,11 @@ void MainMenu(){
         }else if(userInput == "2"){
             OperationMode();
         }else if(userInput == "q"){
-            break;
+            cout << "Are you sure to exit? (y/n): ";
+            cin >> userInput;
+            if(userInput == "y" || userInput == "q"){
+                break;
+            }
         }
     }
 }
