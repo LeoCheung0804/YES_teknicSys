@@ -2,10 +2,10 @@
 #include <iostream>
 #include <assert.h>
 
-float startAngle = 0;
-float endAngle = 180;
-float startAngleTmp = 0;
-float endAngleTmp = 0;
+float startAngle = -137;
+float endAngle = startAngle + 180;
+float startAngleTmp = startAngle;
+float endAngleTmp = endAngle;
 GripperController::GripperController(bool isOnline, bool useGripper){
     this->node = COMPortNode(isOnline);
     this->useGripper = useGripper;
@@ -81,7 +81,7 @@ void GripperController::SetCalibrateStartAngle(int angle){
     }
     this->sendStr += ")";
     // cout << "Sending Command: " << this->sendStr << " to gripper" << endl;
-    node.Send(this->sendStr);
+    // node.Send(this->sendStr);
     startAngleTmp = angle;
     cout << "Gripper Rotated to: " << angle << endl;
 }
@@ -98,7 +98,7 @@ void GripperController::SetCalibrateEndAngle(int angle){
     }
     this->sendStr += ")";
     // cout << "Sending Command: " << this->sendStr << " to gripper" << endl;
-    node.Send(this->sendStr);
+    // node.Send(this->sendStr);
     endAngleTmp = angle;
     cout << "Gripper Rotated to: " << angle << endl;
 }
@@ -111,8 +111,8 @@ void GripperController::Calibrate(){
         this->sendStr += ' ';
     }
     this->sendStr += ")";
-    cout << "Sending Command: " << this->sendStr << " to gripper" << endl;
-    node.Send(this->sendStr);
+    // cout << "Sending Command: " << this->sendStr << " to gripper" << endl;
+    // node.Send(this->sendStr);
     startAngle = startAngleTmp;
     endAngle = endAngleTmp;
     cout << "Gripper Calibrated " << endl;
@@ -120,7 +120,13 @@ void GripperController::Calibrate(){
 
 void GripperController::Reset(){
     if(!this->useGripper) return;
-    this->sendStr = "(h,    )";
+    this->sendStr = "(h,  0 )";
     node.Send(this->sendStr);
     cout << "Sending Command: " << sendStr << " to gripper" << endl;
+}
+
+void GripperController::Reconnect(){
+    if(!this->useGripper) return;
+    this->node.Connect();
+    cout << "Gripper Controller Online." << endl;
 }
