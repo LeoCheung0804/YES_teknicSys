@@ -5,7 +5,11 @@
 #include <iostream>
 #include <string>
 #include <fstream>
-#include <Windows.h>
+#include "..\tools\json.hpp"
+
+#pragma comment(lib, "ws2_32.lib")
+
+using json = nlohmann::json;
 using namespace std;
 
 string userInput;
@@ -861,6 +865,7 @@ void PrintCalibrationMenu(){
     cout << "\t9 - Print Robot Status " << endl;
     cout << "\t10 - Clear Exception " << endl;
     cout << "\t11 - Robot Control Mode" << endl;
+    cout << "\t12 - Request Current Position from RPi" << endl;
     cout << "\tq - Finish Calibration" << endl;
     cout << "Please Select Operation: " << endl;
 }
@@ -953,6 +958,82 @@ void CalibrationMode(){
             system("pause");
         }else if(userInput == "11"){ // Robot Control Mode
             RobotControlMode();
+        }else if(userInput == "12"){ // Request Current Position from RPi
+            WSADATA wsaData;
+            if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+                cout << "Failed to initialize Winsock" << endl;
+                return ;
+            }
+
+            // Create UDP socket
+            SOCKET udpSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+            if (udpSocket == INVALID_SOCKET) {
+                cout << "Failed to create socket" << endl;
+                system("pause");
+                continue;
+            }
+
+            // Set up server address
+            sockaddr_in serverAddr;
+            serverAddr.sin_family = AF_INET;
+            serverAddr.sin_port = htons(robot.RPiPort); // Use appropriate port number
+            serverAddr.sin_addr.s_addr = inet_addr(robot.RPiIP.c_str()); // Use RPi's IP address
+
+            // Send request
+            const char* request = "get_position";
+            if (sendto(udpSocket, request, strlen(request), 0, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
+                cout << "Failed to send request" << endl;
+                closesocket(udpSocket);
+                system("pause");
+            }
+
+            // Receive response
+            char buffer[1024];
+            int serverAddrLen = sizeof(serverAddr);
+            int bytesReceived = recvfrom(udpSocket, buffer, sizeof(buffer), 0, (sockaddr*)&serverAddr, &serverAddrLen);
+            
+            if (bytesReceived == SOCKET_ERROR) {
+                cout << "Failed to receive response" << endl;
+                closesocket(udpSocket);
+                system("pause");
+                continue;
+            }
+
+            // Null terminate the received data
+            buffer[bytesReceived] = '\0';
+            cout << "Received position data: " << buffer << endl;
+
+            // Close socket
+            closesocket(udpSocket);
+            // parse the buffer to json
+            json jsonData;
+            try{
+                jsonData = json::parse(buffer);
+            }catch(const json::parse_error& e){
+                cout << "Error parsing JSON: " << e.what() << endl;
+                system("pause");
+                return;
+            }
+            cout << "==========================================================" << endl;
+            cout << "Data from RPi | Current Position: " << endl;
+            cout << "x: " << jsonData["x"] << " | " << robot.endEffectorPos[0] << endl;
+            cout << "y: " << jsonData["y"] << " | " << robot.endEffectorPos[1] << endl;
+            cout << "z: " << jsonData["z"] << " | " << robot.endEffectorPos[2] << endl;
+            cout << "roll: " << jsonData["roll"] << " | " << robot.endEffectorPos[3] << endl;
+            cout << "pitch: " << jsonData["pitch"] << " | " << robot.endEffectorPos[4] << endl;
+            cout << "yaw: " << jsonData["yaw"] << " | " << robot.endEffectorPos[5] << endl;
+            cout << "Update robot position? (y/n): ";
+            cin >> userInput;
+            if(userInput == "y"){
+                // update robot position
+                robot.endEffectorPos[0] = jsonData["x"];
+                robot.endEffectorPos[1] = jsonData["y"];
+                robot.endEffectorPos[2] = jsonData["z"];
+                robot.endEffectorPos[3] = jsonData["roll"];
+                robot.endEffectorPos[4] = jsonData["pitch"];
+                robot.endEffectorPos[5] = jsonData["yaw"];
+            }
+            WSACleanup();
         }
     }
 }

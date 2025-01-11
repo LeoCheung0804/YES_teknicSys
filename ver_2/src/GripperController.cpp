@@ -18,6 +18,7 @@ void GripperController::Connect(string portName){
         this->isConnected = false;
         return;
     }
+    this->portName = portName;
     cout << "Gripper Controller Online." << endl;
     this->isConnected = true;
 }
@@ -127,6 +128,6 @@ void GripperController::Reset(){
 
 void GripperController::Reconnect(){
     if(!this->useGripper) return;
-    this->node.Connect();
+    this->node.Connect(this->portName);
     cout << "Gripper Controller Online." << endl;
 }
