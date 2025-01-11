@@ -37,7 +37,7 @@ void setup() {
   
   //declare Serial2 for bluetooth
   //Plug HC-05 bluetooth module into Serial2 TX2/RX2 pin16&17
-  Serial2.begin(57600);
+  Serial2.begin(9600);
   
   // Use UART port of DYNAMIXEL Shield to debug.
   DEBUG_SERIAL.begin(115200);
@@ -67,7 +67,8 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   if(Serial2.available())
-  {     
+  {   
+      //DEBUG_SERIAL.print("123start");  
       //**Bluetooth
       // reading the data received from the bluetooth module
       //Please input command in the format: (x,000)*
