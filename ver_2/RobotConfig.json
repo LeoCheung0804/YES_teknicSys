@@ -60,7 +60,7 @@
     ],
     "gripperCommPort": "\\\\.\\COM15",
     "railBrakeCommPort": "\\\\.\\COM14",
-    "useGripper": true,
+    "useGripper": false,
     "useCableMotor": false,
     "useCableBraker": false,
     "useRailMotor": false,
