@@ -49,6 +49,7 @@ private:
     Logger posLogger;
     int MILLIS_TO_NEXT_FRAME = 50;
     bool eBrake(bool cableBrake, bool railBrake);
+
 public:
     double rotationalAngleOffset{0}; // rotational angel offset
     double rotationalDistanceOffset{0}; // rotational distance offset
@@ -64,6 +65,8 @@ public:
     RailController rail;
     GripperController gripper;
     BrakeController brake;
+    string RPiIP = "192.168.50.138";
+    int RPiPort = 5000;
 
     int safeT = 1500;
 // Constructor

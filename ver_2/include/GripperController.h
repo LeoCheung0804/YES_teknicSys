@@ -15,6 +15,7 @@ private:
     int MILLIS_TO_NEXT_FRAME = 50;
     string sendStr = "";
     bool isConnected;
+    string portName;
 public:
     GripperController(bool isOnline=false, bool useGripper=false);
 
@@ -30,5 +31,6 @@ public:
     void SetCalibrateEndAngle(int angle);
     void Calibrate();
     void Reset();
+    void Reconnect();
 };
 #endif

@@ -64,5 +64,8 @@
     "useCableMotor": false,
     "useCableBraker": false,
     "useRailMotor": false,
-    "useRailBraker": false
+    "useRailBraker": false,
+    "cableMotorScaleIndividual": [509295.8179, 509295.8179, 509295.8179, 509295.8179, 509295.8179, 509295.8179, 509295.8179, 509295.8179],
+    "RPiIP": "192.168.50.138",
+    "RPiPort": 5000
 }

@@ -176,6 +176,8 @@ void Robot::UpdateModelFromFile(string filename, bool reconnect){ // Read model.
         this->useRailBraker = model.value("useRailBraker", false );
         this->cable.SetTrqLmt(this->absTrqLmt);
         this->MILLIS_TO_NEXT_FRAME = model.value("controlFreq", 50);
+        this->RPiIP = model.value("RPiIP", "192.168.1.100");
+        this->RPiPort = model.value("RPiPort", 8080);
         string posLabel[] = {"x", "y", "z", "roll", "pitch", "yaw"};
 
         // Interate through arrays
