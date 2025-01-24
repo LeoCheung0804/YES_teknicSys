@@ -35,9 +35,14 @@ void RailController::SelectWorkingMotor(int index){
     workingMotor = index;
 }
 
-void RailController::MoveSelectedMotorCmd(double cmd, bool absulote){
+void RailController::MoveMotorCmdAbsuloteById(int id, double cmd){
     if(!this->useRail) return;
-    if(!absulote) return;
+    this->motorNode.WriteReq("MAIN.Axis_GoalPos", cmd);
+    this->motorNode.WriteReq("MAIN.startMove[" + to_string(id + 1) + "]", true);
+}
+
+void RailController::MoveSelectedMotorCmdAbsulote(double cmd){
+    if(!this->useRail) return;
     this->motorNode.WriteReq("MAIN.Axis_GoalPos", cmd);
     this->motorNode.WriteReq("MAIN.startMove[" + to_string(workingMotor + 1) + "]", true);
 
@@ -52,7 +57,7 @@ void RailController::CalibrationMotor(int index, double currentCmdPos){
         busyFlag[i] = false;
         homeFlag[i] = false;
     }
-    this->motorNode.WriteReq("MAIN.Axis_GoalPos", currentCmdPos); // write "MAIN.Axis1_GoalPos"
+    this->motorNode.WriteReq("MAIN.Axis_GoalPos", currentCmdPos); // write "MAIN.Axis_GoalPos"
     homeFlag[index] = true; // signal targeted rail motor for homing
     this->motorNode.WriteReq("MAIN.bHomeSwitch", homeFlag); // write "MAIN.bHomeSwitch"
     homeFlag[index] = false; // return to false
@@ -74,4 +79,11 @@ vector<int> RailController::GetMotorPosMeasured(){
     this->motorNode.ReadReq("MAIN.actPos", actPos);
     vector<int> result(actPos, actPos + sizeof(actPos) / sizeof(actPos[0]));
     return result;
+}
+
+int RailController::GetMotorPosMeasuredById(int id){
+    long nErr;
+    bool *actPos = new bool(this->railNumber);
+    this->motorNode.ReadReq("MAIN.actPos", actPos);
+    return actPos[id];
 }

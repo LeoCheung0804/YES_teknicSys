@@ -6,6 +6,7 @@
 #include <string>
 #include <fstream>
 #include "..\tools\json.hpp"
+#include "..\include\utils.h"
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -315,7 +316,7 @@ void CableMotorControlMode(){
         //             double length = strtod(userInput.c_str(), &p);
         //             if(!*p) {
         //                 cout << "Moving Cable " << selectedCable << " To Absolute Length: " << length << endl;
-        //                 robot.cable.MoveSingleMotorCmd(selectedCable, robot.CableMotorLengthToCmdAbsulote(length), true);
+        //                 robot.cable.MoveSingleMotorCmd(selectedCable, robot.CableMotorLengthToCmd(length), true);
         //             }else{
         //                 cout << "Please enter a number!!!" << endl;
         //             }
@@ -351,7 +352,7 @@ void CableMotorControlMode(){
         //             double length = strtod(userInput.c_str(), &p);
         //             if(!*p) {
         //                 cout << "Moving ALL Cable To Absolute Length: " << length << endl;
-        //                 robot.cable.MoveAllMotorCmd(robot.CableMotorLengthToCmdAbsulote(length), true);
+        //                 robot.cable.MoveAllMotorCmd(robot.CableMotorLengthToCmd(length), true);
         //             }else{
         //                 cout << "Please enter a number!!!" << endl;
         //             }
@@ -368,18 +369,14 @@ void PrintRailMotorControlMenu(int selectedRailMotor){
     cout << "Beware that there is no soft emergency stop in this mode. " << endl;
     cout << "Current Selected Rail: " << selectedRailMotor << endl;
     cout << "\t1 - Select Rail" << endl;
-    // cout << "\t2 - Move Selected Rail Relative (Motor Step)" << endl;
-    cout << "\t3 - Move Selected Rail Absolute (Motor Step)" << endl;
-    // cout << "\t4 - Move Selected Rail Relative (Rail Length)" << endl;
-    cout << "\t5 - Move Selected Rail Absolute (Rail Length)" << endl;
-    // cout << "\t6 - Move ALL Rail Relative (Motor Step)" << endl;
-    cout << "\t7 - Move ALL Rail Absolute (Motor Step)" << endl;
-    // cout << "\t8 - Move ALL Rail Relative (Rail Length)" << endl;
-    cout << "\t9 - Move ALL Rail Absolute (Rail Length)" << endl;
-    cout << "\t10 - Open Selected Rail Brake" << endl;
-    cout << "\t11 - Close Selected Rail Brake" << endl;
-    cout << "\t12 - Open ALL Rail Brake" << endl;
-    cout << "\t13 - Close ALL Rail Brake" << endl;
+    cout << "\t2 - Move Selected Rail Absolute (Motor Step)" << endl;
+    cout << "\t3 - Move Selected Rail Absolute (Rail Length)" << endl;
+    cout << "\t4 - Move ALL Rail Absolute (Motor Step)" << endl;
+    cout << "\t5 - Move ALL Rail Absolute (Rail Length)" << endl;
+    cout << "\t6 - Open Selected Rail Brake" << endl;
+    cout << "\t7 - Close Selected Rail Brake" << endl;
+    cout << "\t8 - Open ALL Rail Brake" << endl;
+    cout << "\t9 - Close ALL Rail Brake" << endl;
     cout << "\tq - Back To Pervioue Menu" << endl;
     cout << "Please Select Operation: " << endl;
 }
@@ -407,25 +404,7 @@ void RailMotorControlMode(){
                 }
             }
             system("pause");
-        // }else if(userInput == "2"){ // Move Selected Rail Relative By Motor Step
-        //     while(true){
-        //         cout << "Move Selected Rail Relative By Motor Step" << endl;
-        //         cout << "Please Enter Step (enter q to exit): ";
-        //         cin >> userInput;
-        //         if(userInput == "q"){
-        //             break;
-        //         }else{
-        //             char* p;
-        //             int step = strtol(userInput.c_str(), &p, 10);
-        //             if(!*p) {
-        //                 cout << "Moving Rail " << selectedRailMotor << " By Step: " << step << endl;
-        //                 robot.rail.MoveSelectedMotorCmd(step, false);
-        //             }else{
-        //                 cout << "Please enter an intager number!!!" << endl;
-        //             }
-        //         }
-        //     }
-        }else if(userInput == "3"){ // Move Selected Rail Absolute By Motor Step
+        }else if(userInput == "2"){ // Move Selected Rail Absolute By Motor Step
             while(true){
                 cout << "Move Selected Rail Absolute By Motor Step" << endl;
                 cout << "Please Enter Step (enter q to exit): ";
@@ -437,31 +416,14 @@ void RailMotorControlMode(){
                     int step = strtol(userInput.c_str(), &p, 10);
                     if(!*p) {
                         cout << "Moving Rail " << selectedRailMotor << " To Absolute Step: " << step << endl;
-                        robot.rail.MoveSelectedMotorCmd(step, true);
+                        robot.rail.MoveSelectedMotorCmdAbsulote(step);
+                        robot.railOffset[selectedRailMotor] = step;
                     }else{
                         cout << "Please enter an intager number!!!" << endl;
                     }
                 }
             }
-        // }else if(userInput == "4"){ // Move Selected Rail Relative By Rail Length
-        //     while(true){
-        //         cout << "Move Selected Rail Relative By Rail Length" << endl;
-        //         cout << "Please Enter Length in Meters (enter q to exit): ";
-        //         cin >> userInput;
-        //         if(userInput == "q"){
-        //             break;
-        //         }else{
-        //             char* p;
-        //             double length = strtod(userInput.c_str(), &p);
-        //             if(!*p) {
-        //                 cout << "Moving Rail " << selectedRailMotor << " By Length: " << length << endl;
-        //                 robot.rail.MoveSelectedMotorCmd(robot.CableMotorLengthToCmdAbsulote(length), false);
-        //             }else{
-        //                 cout << "Please enter a number!!!" << endl;
-        //             }
-        //         }
-        //     }
-        }else if(userInput == "5"){ // Move Selected Rail Absolute By Rail Length
+        }else if(userInput == "3"){ // Move Selected Rail Absolute By Rail Length
             while(true){
                 cout << "Move Selected Rail Absolute By Rail Length" << endl;
                 cout << "Please Enter Length in Meters (enter q to exit): ";
@@ -473,37 +435,14 @@ void RailMotorControlMode(){
                     double length = strtod(userInput.c_str(), &p);
                     if(!*p) {
                         cout << "Moving Rail " << selectedRailMotor << " To Absolute Length: " << length << endl;
-                        robot.rail.MoveSelectedMotorCmd(robot.CableMotorLengthToCmdAbsulote(selectedRailMotor, length), true);
+                        robot.rail.MoveSelectedMotorCmdAbsulote(robot.RailMotorLengthToCmd(selectedRailMotor, length));
+                        robot.railOffset[selectedRailMotor] = length;
                     }else{
                         cout << "Please enter a number!!!" << endl;
                     }
                 }
             }
-        // }else if(userInput == "6"){ // Move ALL Rail Relative By Motor Step
-        //     // cout << "Currently not supported." << endl;
-        //     while(true){
-        //         cout << "Move ALL Rail Relative By Motor Step" << endl;
-        //         cout << "Please Enter Step (enter q to exit): ";
-        //         cin >> userInput;
-        //         if(userInput == "q"){
-        //             break;
-        //         }else{
-        //             char* p;
-        //             int step = strtol(userInput.c_str(), &p, 10);
-        //             if(!*p) {
-        //                 cout << "Moving ALL Rail By Step: " << step << endl;
-        //                 for(int i = 0; i < robot.GetCableMotorNum(); i++){
-        //                     robot.rail.SelectWorkingMotor(i);
-        //                     robot.rail.MoveSelectedMotorCmd(step, false);
-        //                 }
-        //                 robot.rail.SelectWorkingMotor(selectedRailMotor);
-        //             }else{
-        //                 cout << "Please enter an intager number!!!" << endl;
-        //             }
-        //         }
-        //     }
-        }else if(userInput == "7"){ // Move ALL Rail Absolute By Motor Step
-            // cout << "Currently not supported." << endl;
+        }else if(userInput == "4"){ // Move ALL Rail Absolute By Motor Step
             while(true){
                 cout << "Move ALL Rail Absolute By Motor Step" << endl;
                 cout << "Please Enter Step (enter q to exit): ";
@@ -517,7 +456,7 @@ void RailMotorControlMode(){
                         cout << "Moving ALL Rail To Absolute Step: " << step << endl;
                         for(int i = 0; i < robot.GetCableMotorNum(); i++){
                             robot.rail.SelectWorkingMotor(i);
-                            robot.rail.MoveSelectedMotorCmd(step, true);
+                            robot.rail.MoveSelectedMotorCmdAbsulote(step);
                         }
                         robot.rail.SelectWorkingMotor(selectedRailMotor);
                     }else{
@@ -525,31 +464,7 @@ void RailMotorControlMode(){
                     }
                 }
             }
-        // }else if(userInput == "8"){ // Move ALL Rail Relative By Rail Length
-        //     // cout << "Currently not supported." << endl;
-        //     while(true){
-        //         cout << "Move ALL Rail Relative By Rail Length" << endl;
-        //         cout << "Please Enter Length in Meters (enter q to exit): ";
-        //         cin >> userInput;
-        //         if(userInput == "q"){
-        //             break;
-        //         }else{
-        //             char* p;
-        //             double length = strtod(userInput.c_str(), &p);
-        //             if(!*p) {
-        //                 cout << "Moving ALL Rail By Length: " << length << endl;
-        //                 for(int i = 0; i < robot.GetCableMotorNum(); i++){
-        //                     robot.rail.SelectWorkingMotor(i);
-        //                     robot.rail.MoveSelectedMotorCmd(robot.CableMotorLengthToCmdAbsulote(length), false);
-        //                 }
-        //                 robot.rail.SelectWorkingMotor(selectedRailMotor);
-        //             }else{
-        //                 cout << "Please enter a number!!!" << endl;
-        //             }
-        //         }
-        //     }
-        }else if(userInput == "9"){ // Move ALL Rail Absolute By Rail Length
-            // cout << "Currently not supported." << endl;
+        }else if(userInput == "5"){ // Move ALL Rail Absolute By Rail Length
             while(true){
                 cout << "Move ALL Rail Absolute By Rail Length" << endl;
                 cout << "Please Enter Length in Meters (enter q to exit): ";
@@ -563,7 +478,8 @@ void RailMotorControlMode(){
                         cout << "Moving ALL Rail To Absolute Length: " << length << endl;
                         for(int i = 0; i < robot.GetCableMotorNum(); i++){
                             robot.rail.SelectWorkingMotor(i);
-                            robot.rail.MoveSelectedMotorCmd(robot.CableMotorLengthToCmdAbsulote(i, length), true);
+                            robot.rail.MoveSelectedMotorCmdAbsulote(robot.RailMotorLengthToCmd(i, length));
+                            robot.railOffset[i] = length;
                         }
                         robot.rail.SelectWorkingMotor(selectedRailMotor);
                     }else{
@@ -571,19 +487,19 @@ void RailMotorControlMode(){
                     }
                 }
             }
-        }else if(userInput == "10"){ // Open Selected Rail Brake
+        }else if(userInput == "6"){ // Open Selected Rail Brake
             cout << "Opening Rail " << selectedRailMotor << " Brake" << endl;
             robot.brake.OpenRailBrakeByIndex(selectedRailMotor);
             system("pause");
-        }else if(userInput == "11"){ // Close Selected Rail Brake
+        }else if(userInput == "7"){ // Close Selected Rail Brake
             cout << "Closing Rail " << selectedRailMotor << " Brake" << endl;
             robot.brake.CloseRailBrakeByIndex(selectedRailMotor);
             system("pause");
-        }else if(userInput == "12"){ // Open ALL Rail Brake
+        }else if(userInput == "8"){ // Open ALL Rail Brake
             cout << "Opening ALL Rail Brake" << endl;
             robot.brake.OpenAllRailBrake();
             system("pause");
-        }else if(userInput == "13"){ // Close ALL Rail Brake
+        }else if(userInput == "9"){ // Close ALL Rail Brake
             cout << "Closing ALL Rail Brake" << endl;
             robot.brake.CloseAllRailBrake();
             system("pause");
@@ -596,10 +512,10 @@ void PrintRobotPosControlMenu(){
     system("CLS");
     cout << "====================== Robot Pos Control Mode  ======================" << endl;
     cout << "Beware that there is no soft emergency stop in this mode. " << endl;
-    cout << "\tw - Move the robot on +x direction." << endl;
-    cout << "\ta - Move the robot on +y direction." << endl;
-    cout << "\ts - Move the robot on -x direction." << endl;
-    cout << "\td - Move the robot on -y direction." << endl;
+    cout << "\tw - Move the robot on +y direction." << endl;
+    cout << "\ta - Move the robot on +x direction." << endl;
+    cout << "\ts - Move the robot on -y direction." << endl;
+    cout << "\td - Move the robot on -x direction." << endl;
     cout << "\tr - Move the robot on +z direction." << endl;
     cout << "\tf - Move the robot on -z direction." << endl;
     cout << "\tq - Exit Robot Pos Control Mode." << endl;
@@ -678,10 +594,8 @@ void PrintRailControlMenu(int selectedRail){
     cout << "====================== Rail Control Mode  ======================" << endl;
     cout << "Current Selected Rail: " << selectedRail << endl;
     cout << "\t1 - Select Rail" << endl;
-    // cout << "\t2 - Move Selected Rail Relative (Rail Length)" << endl;
-    cout << "\t3 - Move Selected Rail Absolute (Rail Length)" << endl;
-    // cout << "\t4 - Move ALL Rail Relative (Rail Length)" << endl;
-    cout << "\t5 - Move ALL Rail Absolute (Rail Length)" << endl;
+    cout << "\t2 - Move Selected Rail Absolute (Rail Length)" << endl;
+    cout << "\t3 - Move ALL Rail Absolute (Rail Length)" << endl;
     cout << "\tq - Back To Pervioue Menu" << endl;
     cout << "Please Select Operation: " << endl;
 }
@@ -710,26 +624,7 @@ void RailControlMode(){
                 }
             }
             system("pause");
-        // }else if(userInput == "2"){ // Move Selected Rail Relative By Rail Length
-        //     while(true){
-        //         cout << "Move Selected Rail Relative By Rail Length" << endl;
-        //         cout << "Please Enter Length in Meters (enter q to exit): ";
-        //         cin >> userInput;
-        //         if(userInput == "q"){
-        //             break;
-        //         }else{
-        //             char* p;
-        //             double length = strtod(userInput.c_str(), &p);
-        //             if(!*p) {
-        //                 cout << "Moving Rail " << selectedRail << " By Length: " << length << endl;
-        //                 robot.MoveRail(selectedRail, length, false);
-        //                 logger.LogInfo("Raise rail " + to_string(selectedRail) + " by " + to_string(length));
-        //             }else{
-        //                 cout << "Please enter a number!!!" << endl;
-        //             }
-        //         }
-        //     }
-        }else if(userInput == "3"){ // Move Selected Rail Absolute By Rail Length
+        }else if(userInput == "2"){ // Move Selected Rail Absolute By Rail Length
             while(true){
                 cout << "Move Selected Rail Absolute By Rail Length" << endl;
                 cout << "Please Enter Length in Meters (enter q to exit): ";
@@ -740,40 +635,16 @@ void RailControlMode(){
                     char* p;
                     double length = strtod(userInput.c_str(), &p);
                     if(!*p) {
-                        cout << "Moving Rail " << selectedRail << " To Absolute Length: " << length << endl;
-                        robot.MoveRail(selectedRail, length, true);
+                        cout << "Moving Rail " << selectedRail << " To Absolute Length: " << length << " Count: " << robot.RailMotorLengthToCmd(selectedRail, length) << endl;
+                        int cableIndex = (selectedRail + robot.railMotorCableMotorOffset) % 4;
+                        robot.RaiseRailWithCableByLengthAbsulote(selectedRail, cableIndex, length);
                         logger.LogInfo("Raise rail " + to_string(selectedRail) + " to " + to_string(length));
                     }else{
                         cout << "Please enter a number!!!" << endl;
                     }
                 }
             }
-        // }else if(userInput == "4"){ // Move ALL Rail Relative By Rail Length
-        //     // cout << "Currently not supported." << endl;
-        //     while(true){
-        //         cout << "Move ALL Rail Relative By Rail Length" << endl;
-        //         cout << "Please Enter Length in Meters (enter q to exit): ";
-        //         cin >> userInput;
-        //         if(userInput == "q"){
-        //             break;
-        //         }else{
-        //             char* p;
-        //             double length = strtod(userInput.c_str(), &p);
-        //             if(!*p) {
-        //                 cout << "Moving ALL Rail By Length: " << length << endl;
-        //                 for(int i = 0; i < robot.GetCableMotorNum(); i++){
-        //                     robot.rail.SelectWorkingMotor(i);
-        //                     robot.MoveRail(i, length, false);
-        //                     logger.LogInfo("Raise rail " + to_string(i) + " by " + to_string(length));
-        //                 }
-        //                 robot.rail.SelectWorkingMotor(selectedRail);
-        //             }else{
-        //                 cout << "Please enter a number!!!" << endl;
-        //             }
-        //         }
-        //     }
-        }else if(userInput == "5"){ // Move ALL Rail Absolute By Rail Length
-            // cout << "Currently not supported." << endl;
+        }else if(userInput == "3"){ // Move ALL Rail Absolute By Rail Length
             while(true){
                 cout << "Move ALL Rail Absolute By Rail Length" << endl;
                 cout << "Please Enter Length in Meters (enter q to exit): ";
@@ -784,10 +655,11 @@ void RailControlMode(){
                     char* p;
                     double length = strtod(userInput.c_str(), &p);
                     if(!*p) {
-                        cout << "Moving ALL Rail To Absolute Length: " << length << endl;
-                        for(int i = 0; i < robot.GetCableMotorNum(); i++){
+                        cout << "Moving ALL Rail To Absolute Length: " << length << " Count: " << robot.RailMotorLengthToCmd(selectedRail, length) << endl;
+                        for(int i = 0; i < robot.GetRailMotorNum(); i++){
                             robot.rail.SelectWorkingMotor(i);
-                            robot.MoveRail(i, length, true);
+                            int cableIndex = (i + robot.railMotorCableMotorOffset) % 4;
+                            robot.RaiseRailWithCableByLengthAbsulote(i, cableIndex, length);
                             logger.LogInfo("Raise rail " + to_string(i) + " to " + to_string(length));
                         }
                         robot.rail.SelectWorkingMotor(selectedRail);
@@ -1032,6 +904,14 @@ void CalibrationMode(){
                 robot.endEffectorPos[3] = jsonData["roll"];
                 robot.endEffectorPos[4] = jsonData["pitch"];
                 robot.endEffectorPos[5] = jsonData["yaw"];
+                
+                vector<double> cableLengthList = robot.GetCableLength();
+                // cable motors
+                cout << "Calibrating Cable Motor" << endl;
+                for (int index = 0; index < robot.GetCableMotorNum(); index++)
+                {
+                    robot.cable.CalibrationMotor(index, robot.CableMotorLengthToCmd(index, cableLengthList[index]));
+                }
             }
             WSACleanup();
         }
@@ -1052,19 +932,19 @@ void PrintOperationMenu(){
     cout << "Please Select Mode: ";
 }
 
-bool CheckContinue(){
-    while(true){
-        cout << "Continue? (Y/n): ";
-        getline(cin, userInput);
-        if(userInput == "" || userInput == "y"){
-            return true;
-        }
-        if(userInput == "n") {
-            return false;
-            break;
-        }
-    }
-}
+// bool CheckContinue(){
+//     while(true){
+//         cout << "Continue? (Y/n): ";
+//         getline(cin, userInput);
+//         if(userInput == "" || userInput == "y"){
+//             return true;
+//         }
+//         if(userInput == "n") {
+//             return false;
+//             break;
+//         }
+//     }
+// }
 
 void OperationMode(){
     while(true){
@@ -1095,7 +975,7 @@ void OperationMode(){
             }
             robot.PrintEEPos();
             robot.PrintBrickPickUpPos();
-            cout << "Speed Limit: " << robot.GetVelLmt() << "m/s" << endl;
+            cout << "Speed Limit: " << robot.GetEffVelLmt() << "m/s" << endl;
             double goalPos[6] = {0};
             robot.brake.OpenAllCableBrake();
             double safePt[6] = {8.24, 6.51, -2.7, 0, 0, -0.0237}; // a safe area near to the arm // 0.21 safe height from ABB

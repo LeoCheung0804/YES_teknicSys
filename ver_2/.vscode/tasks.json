@@ -22,6 +22,7 @@
                 "${workspaceFolder}\\src\\TeknicNode.cpp",
                 "${workspaceFolder}\\src\\TrajectoryGenerator.cpp",
                 "${workspaceFolder}\\src\\TwincatADSNode.cpp",
+                "${workspaceFolder}\\src\\utils.cpp",
                 "${workspaceFolder}\\Dependencies\\sFoundation20\\win32\\sFoundation20.lib",
                 "${workspaceFolder}\\Dependencies\\TcAdsDll\\Lib\\TcAdsDll.lib",
             ],
