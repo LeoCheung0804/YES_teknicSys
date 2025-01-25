@@ -13,7 +13,14 @@ class MyFrame : public wxFrame {
 public:
     MyFrame(const wxString& title);
     void OnClose(wxCloseEvent& event);
+    void OnSetCablesTorque(wxCommandEvent& event);
     void OnControlCableMotor(wxCommandEvent& event);
+    void OnControlLinearRailMotor(wxCommandEvent& event);
+    void OnControlRobot(wxCommandEvent& event);
+    void OnRequestCurrentPositionFromRPi(wxCommandEvent& event);
+    void OnUpdateRobotPosFromFile(wxCommandEvent& event);
+    void OnUpdateRobotConfigFromFile(wxCommandEvent& event);
+    void OnClearException(wxCommandEvent& event);
 };
 
 wxIMPLEMENT_APP(MyApp);
@@ -44,15 +51,24 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, wxID_ANY, title, wxDefau
     wxBoxSizer* calibrationVBoxSizer = new wxBoxSizer(wxVERTICAL);
 
     // Add the torqueSizer to the main calibrationVBoxSizer
-    calibrationVBoxSizer->Add(new wxButton(calibrationPanel, wxID_ANY, "Set Cables Torque"), 1, wxEXPAND | wxALL, 5);
+    wxButton* setCablesTorqueButton = new wxButton(calibrationPanel, wxID_ANY, "Set Cables Torque");
     wxButton* controlCableMotorButton = new wxButton(calibrationPanel, wxID_ANY, "Control Cable Motor");
+    wxButton* controlLinearRailMotorButton = new wxButton(calibrationPanel, wxID_ANY, "Control Linear Rail Motor");
+    wxButton* controlRobotButton = new wxButton(calibrationPanel, wxID_ANY, "Control Robot");
+    wxButton* requestCurrentPositionButton = new wxButton(calibrationPanel, wxID_ANY, "Request Current Position from RPi");
+    wxButton* updateRobotPosFromFileButton = new wxButton(calibrationPanel, wxID_ANY, "Update Robot Pos from File");
+    wxButton* updateRobotConfigFromFileButton = new wxButton(calibrationPanel, wxID_ANY, "Update Robot Config from File");
+    wxButton* clearExceptionButton = new wxButton(calibrationPanel, wxID_ANY, "Clear Exception");
+    
+    
+    calibrationVBoxSizer->Add(setCablesTorqueButton, 1, wxEXPAND | wxALL, 5);
     calibrationVBoxSizer->Add(controlCableMotorButton, 1, wxEXPAND | wxALL, 5);
-    calibrationVBoxSizer->Add(new wxButton(calibrationPanel, wxID_ANY, "Control Linear Rail Motor"), 1, wxEXPAND | wxALL, 5);
-    calibrationVBoxSizer->Add(new wxButton(calibrationPanel, wxID_ANY, "Control Robot"), 1, wxEXPAND | wxALL, 5);
-    calibrationVBoxSizer->Add(new wxButton(calibrationPanel, wxID_ANY, "Request Current Position from RPi"), 1, wxEXPAND | wxALL, 5);
-    calibrationVBoxSizer->Add(new wxButton(calibrationPanel, wxID_ANY, "Update Robot Pos from File"), 1, wxEXPAND | wxALL, 5);
-    calibrationVBoxSizer->Add(new wxButton(calibrationPanel, wxID_ANY, "Update Robot Config from File"), 1, wxEXPAND | wxALL, 5);
-    calibrationVBoxSizer->Add(new wxButton(calibrationPanel, wxID_ANY, "Clear Exception"), 1, wxEXPAND | wxALL, 5);
+    calibrationVBoxSizer->Add(controlLinearRailMotorButton, 1, wxEXPAND | wxALL, 5);
+    calibrationVBoxSizer->Add(controlRobotButton, 1, wxEXPAND | wxALL, 5);
+    calibrationVBoxSizer->Add(requestCurrentPositionButton, 1, wxEXPAND | wxALL, 5);
+    calibrationVBoxSizer->Add(updateRobotPosFromFileButton, 1, wxEXPAND | wxALL, 5);
+    calibrationVBoxSizer->Add(updateRobotConfigFromFileButton, 1, wxEXPAND | wxALL, 5);
+    calibrationVBoxSizer->Add(clearExceptionButton, 1, wxEXPAND | wxALL, 5);
 
     // Set the sizer for the calibration panel
     calibrationPanel->SetSizer(calibrationVBoxSizer);
@@ -150,7 +166,15 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, wxID_ANY, title, wxDefau
     Bind(wxEVT_CLOSE_WINDOW, &MyFrame::OnClose, this);
 
     // Bind the button click event to a handler
+    setCablesTorqueButton->Bind(wxEVT_BUTTON, &MyFrame::OnSetCablesTorque, this);
     controlCableMotorButton->Bind(wxEVT_BUTTON, &MyFrame::OnControlCableMotor, this);
+    controlLinearRailMotorButton->Bind(wxEVT_BUTTON, &MyFrame::OnControlLinearRailMotor, this);
+    controlRobotButton->Bind(wxEVT_BUTTON, &MyFrame::OnControlRobot, this);
+    requestCurrentPositionButton->Bind(wxEVT_BUTTON, &MyFrame::OnRequestCurrentPositionFromRPi, this);
+    updateRobotPosFromFileButton->Bind(wxEVT_BUTTON, &MyFrame::OnUpdateRobotPosFromFile, this);
+    updateRobotConfigFromFileButton->Bind(wxEVT_BUTTON, &MyFrame::OnUpdateRobotConfigFromFile, this);
+    clearExceptionButton->Bind(wxEVT_BUTTON, &MyFrame::OnClearException, this);
+
 }
 
 // Custom close event handler
@@ -171,17 +195,66 @@ void MyFrame::OnClose(wxCloseEvent& event) {
     }
 }
 
-// Define the event handler in the MyFrame class
+
+//Define the event handler for the Cable Torque Control
+void MyFrame::OnSetCablesTorque(wxCommandEvent& event) {
+    // Create a new frame or dialog
+    wxFrame* newWindow = new wxFrame(this, wxID_ANY, "Cable Torque Control", wxDefaultPosition, wxSize(300, 200));
+    
+    
+}
+
+//Define the event handler for the Cable Motor Control
 void MyFrame::OnControlCableMotor(wxCommandEvent& event) {
     // Create a new frame or dialog
     wxFrame* newWindow = new wxFrame(this, wxID_ANY, "Cable Motor Control", wxDefaultPosition, wxSize(300, 200));
     
-    // Optionally, add content to the new window
-    wxPanel* panel = new wxPanel(newWindow, wxID_ANY);
-    wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
-    sizer->Add(new wxStaticText(panel, wxID_ANY, "Cable Motor Control Options"), 0, wxALL, 10);
-    panel->SetSizer(sizer);
+    
+}
 
-    // Show the new window
-    newWindow->Show();
+//Define the event handler for the Linear Rail Motor Control
+void MyFrame::OnControlLinearRailMotor(wxCommandEvent& event) {
+    // Create a new frame or dialog
+    wxFrame* newWindow = new wxFrame(this, wxID_ANY, "Linear Rail Motor Control", wxDefaultPosition, wxSize(300, 200));
+    
+    
+}
+
+//Define the event handler for the Robot Control
+void MyFrame::OnControlRobot(wxCommandEvent& event) {
+    // Create a new frame or dialog
+    wxFrame* newWindow = new wxFrame(this, wxID_ANY, "Robot Control", wxDefaultPosition, wxSize(300, 200));
+    
+    
+}
+
+//Define the event handler for the Request Current Position from RPi
+void MyFrame::OnRequestCurrentPositionFromRPi(wxCommandEvent& event) {
+    // Create a new frame or dialog
+    wxFrame* newWindow = new wxFrame(this, wxID_ANY, "Request Current Position from RPi", wxDefaultPosition, wxSize(300, 200));
+    
+    
+}
+
+//Define the event handler for the Update Robot Pos from File
+void MyFrame::OnUpdateRobotPosFromFile(wxCommandEvent& event) {
+    // Create a new frame or dialog
+    wxFrame* newWindow = new wxFrame(this, wxID_ANY, "Update Robot Pos from File", wxDefaultPosition, wxSize(300, 200));
+    
+    
+}
+
+//Define the event handler for the Update Robot Config from File
+void MyFrame::OnUpdateRobotConfigFromFile(wxCommandEvent& event) {
+    // Create a new frame or dialog
+    wxFrame* newWindow = new wxFrame(this, wxID_ANY, "Update Robot Config from File", wxDefaultPosition, wxSize(300, 200));
+    
+    
+}
+
+//Define the event handler for the Clear Exception
+void MyFrame::OnClearException(wxCommandEvent& event) {
+    // Create a new frame or dialog
+    wxFrame* newWindow = new wxFrame(this, wxID_ANY, "Clear Exception", wxDefaultPosition, wxSize(300, 200));
+    
 }

@@ -7,6 +7,7 @@
 #include "CableController.h"
 #include "BrakeController.h"
 #include "Logger.h"
+#include "utils.h"
 #include <string>
 #include <vector>
 using namespace Eigen;
@@ -29,9 +30,9 @@ private:
     float targetTrq = -2.5; // in %, -ve for tension, also need to UPDATE in switch case 't'!!!!!!!!!
     float absTrqLmt = 60.0; // Absolute torque limit, to be checked before commanding 8 motors to move simutaneously in length command
     float endEffectorPosLimit[6]{-0.1, 11.5, -0.02, 13.8, -3.3, 0.3}; // Rough boundaries of the cable robot
-    float velLmt = 0.45;
+    float endEffVelLmt = 0.45;
+    float railVelLmt = 0.01;
     float brickPickUpOffset = 0.21;
-    static const double defaultRailOffset[4]; // default rail Position
     Vector3d frmOut[8]; // coordinates of the attachment points on frame at the beginning
     Vector3d endOut[8]; // local coordinates of cable attachment points on end-effector, ie ^er_B
     Vector3d frmOutUnitV[8]; // unit vectors/directions of the fixed cable attachments on frame
@@ -51,6 +52,7 @@ private:
     bool eBrake(bool cableBrake, bool railBrake);
 
 public:
+    int railMotorCableMotorOffset = 2; // offset from rail motor to cable motor, in index
     double rotationalAngleOffset{0}; // rotational angel offset
     double rotationalDistanceOffset{0}; // rotational distance offset
     
@@ -58,7 +60,6 @@ public:
     double endEffectorPos[6]{}; // end-effector task-space position {x,y,z, alpha, beta, gama}, in meter and radian
     // double cableLength[8]{}; // cable lengths in meter //12 assume there are 8 motors + 4 linear rails
     double railOffset[4]{}; // individual heights or positions of the rails
-    double robotOffset[12]{}; //12 //L0, from "zero position", will be updated by "set home" command
     double brickPickUpPos[6]{}; // position at 5th pole for brick pick up with possible z-rotaion
     double brickPrePickUpPos[6]{}; // position at 5th pole for brick pick up with possible z-rotaion
     CableController cable;
@@ -132,16 +133,23 @@ public:
     /// @return int32_t motor command
     int32_t CableMotorLengthToCmd(int motorID, double length);
 
+    /// @brief Convert cable motor command to length
+    /// @param motorID int, motor ID
+    /// @param cmd int32_t, motor command
+    /// @return double, cable length
+    double CableMotorCmdToLength(int motorID, int cmd);
+
     /// @brief Convert rail height to motor command
     /// @param motorID int, motor ID
     /// @param length double, cable length
     /// @return int32_t motor command
-    int32_t RailMotorOffsetToCmd(int motorID, double length);
+    int32_t RailMotorLengthToCmd(int motorID, double length);
 
-    /// @brief Convert cable length to absulote motor command 
-    /// @param length double, cable length
-    /// @return int32_t motor command
-    int32_t CableMotorLengthToCmdAbsulote(int motorID, double length);
+    /// @brief Convert rail motor command to length
+    /// @param motorID int, motor ID
+    /// @param cmd int32_t, motor command
+    /// @return double, rail length
+    double RailMotorCmdToLength(int motorID, int cmd);
 
     vector<int32_t> EEPoseToCmd(vector<double> eePos);
 
@@ -215,7 +223,7 @@ public:
     /// @return Rail motor scale
     double GetRailMotorScale();
 
-    float GetVelLmt();
+    float GetEffVelLmt();
     void SavePosToFile(string filename);
     int GetCableMotorBrakeNum();
 
@@ -227,7 +235,7 @@ public:
     bool MoveToParaBlend(double dest[], int time, bool showAtten=true);
     bool MoveToParaBlend(double dest[], bool showAtten=true);
     bool MoveToLinear(double dest[], int time, bool showAtten=true, bool useEBrake=true);;
-    void MoveRail(int index, float target, bool absulote);
+    void RaiseRailWithCableByLengthAbsulote(int railIndex, int cableIndex, float length);
 };
 
 #endif

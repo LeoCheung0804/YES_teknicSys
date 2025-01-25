@@ -28,7 +28,7 @@
         "yaw": 0.0148
     },
     "brickPickUpOffset": 0.21,
-    "velLmt": 0.45,
+    "endEffVelLmt": 0.45,
     "endEffToGroundOffset": -0.0816,
     "targetTorque": -3.5,
     "absTrqLmt": 4,

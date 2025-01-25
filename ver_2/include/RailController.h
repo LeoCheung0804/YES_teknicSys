@@ -24,7 +24,9 @@ public:
     bool IsConnected();
     void CalibrationMotor(int index, double currentCmdPos);
     void SelectWorkingMotor(int index);
-    void MoveSelectedMotorCmd(double cmd, bool absolute=true);
+    void MoveSelectedMotorCmdAbsulote(double cmd);
+    void MoveMotorCmdAbsuloteById(int id, double cmd);
     vector<int> GetMotorPosMeasured();
+    int GetMotorPosMeasuredById(int id);
 };
 #endif

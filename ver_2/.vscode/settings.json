@@ -84,7 +84,9 @@
         "xlocmes": "cpp",
         "alignedvector3": "cpp",
         "bvh": "cpp",
-        "arduinoblenode.h": "c"
+        "arduinoblenode.h": "c",
+        "hash_map": "cpp",
+        "hash_set": "cpp"
     },
     "C_Cpp.errorSquiggles": "Disabled",
     "cmake.sourceDirectory": "D:/Galad_ws/YES_teknicSys/ver_2/Dependencies/eigen-3.3.7"
