@@ -327,12 +327,12 @@ void Robot::UpdatePosFromFile(string filename, bool calibration){
                     } // convert string to double stod() for the first 6 inputs
                     else if (count < 10)
                     {
-                        // this->railOffset[count - 6] = stod(temp);
+                        this->railOffset[count - 6] = stod(temp);
                         // skip this because the rail offset is read by the rail controller
                     } // reading the rail offset, then break while loop
                     else
                     {
-                        break;
+                        break; 
                     }
                     count++;
                 }
