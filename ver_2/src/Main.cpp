@@ -640,8 +640,8 @@ void RailControlMode(){
                     double length = strtod(userInput.c_str(), &p);
                     if(!*p) {
                         cout << "Moving Rail " << selectedRail << " To Absolute Length: " << length << " Count: " << robot.RailMotorLengthToCmd(selectedRail, length) << endl;
-                        int cableIndex = (selectedRail + robot.railMotorCableMotorOffset) % 4;
-                        robot.RaiseRailWithCableByLengthAbsulote(selectedRail, cableIndex, length);
+                        // int cableIndex = (selectedRail + robot.railMotorCableMotorOffset) % 4;
+                        robot.RaiseRailWithCableByLengthAbsulote(selectedRail, selectedRail, length);
                         logger.LogInfo("Raise rail " + to_string(selectedRail) + " to " + to_string(length));
                     }else{
                         cout << "Please enter a number!!!" << endl;
@@ -662,8 +662,8 @@ void RailControlMode(){
                         cout << "Moving ALL Rail To Absolute Length: " << length << " Count: " << robot.RailMotorLengthToCmd(selectedRail, length) << endl;
                         for(int i = 0; i < robot.GetRailMotorNum(); i++){
                             robot.rail.SelectWorkingMotor(i);
-                            int cableIndex = (i + robot.railMotorCableMotorOffset) % 4;
-                            robot.RaiseRailWithCableByLengthAbsulote(i, cableIndex, length);
+                            // int cableIndex = (i + robot.railMotorCableMotorOffset) % 4;
+                            robot.RaiseRailWithCableByLengthAbsulote(i, i, length);
                             logger.LogInfo("Raise rail " + to_string(i) + " to " + to_string(length));
                         }
                         robot.rail.SelectWorkingMotor(selectedRail);

@@ -839,6 +839,7 @@ void Robot::RaiseRailWithCableByLengthAbsulote(int railIndex, int cableIndex, fl
     while (t <= dura)
     {
         railOffset[railIndex] = a + b * t * t + c * t * t * t; // update new rail offset
+        // cout << "Rail offset: " << railOffset[railIndex] << endl;
         int32_t cableFrame = this->EEPoseToCmd(this->endEffectorPos, railOffset)[cableIndex];
         cableTraj.push_back(cableFrame);
         int32_t railFrame = this->RailMotorLengthToCmd(railIndex, railOffset[railIndex]);

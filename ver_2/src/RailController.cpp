@@ -29,6 +29,7 @@ void RailController::Disconnect(){
 bool RailController::IsConnected(){ return this->isConnected; }
 
 void RailController::SelectWorkingMotor(int index){
+    index = (index + 2) % 4;
     if(!this->useRail) return;
     this->bArry[workingMotor] = false;
     this->bArry[index] = true;
