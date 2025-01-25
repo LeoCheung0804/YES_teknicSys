@@ -37,6 +37,8 @@ void GripperController::Open(){
     this->sendStr = "(o,    )";
     // cout << "Sending Command: " << sendStr << " to gripper" << endl;
     node.Send(this->sendStr);
+    node.Send(this->sendStr);
+    node.Send(this->sendStr);
     cout << "Gripper Opened. " << endl;
 }
 
@@ -45,12 +47,16 @@ void GripperController::Close(){
     this->sendStr = "(c,    )";
     // cout << "Sending Command: " << sendStr << " to gripper" << endl;
     node.Send(this->sendStr);
+    node.Send(this->sendStr);
+    node.Send(this->sendStr);
     cout << "Gripper Closed. " << endl;
 }
 void GripperController::Release(){
     if(!this->useGripper) return;
     this->sendStr = "(r,    )";
     // cout << "Sending Command: " << sendStr << " to gripper" << endl;
+    node.Send(this->sendStr);
+    node.Send(this->sendStr);
     node.Send(this->sendStr);
     cout << "Gripper Released. " << endl;
 }
@@ -66,6 +72,8 @@ void GripperController::Rotate(int angle){
     }
     this->sendStr += ")";
     // cout << "Sending Command: " << this->sendStr << " to gripper" << endl;
+    node.Send(this->sendStr);
+    node.Send(this->sendStr);
     node.Send(this->sendStr);
     cout << "Gripper Rotated to: " << angle << endl;
 }
@@ -128,6 +136,14 @@ void GripperController::Reset(){
 
 void GripperController::Reconnect(){
     if(!this->useGripper) return;
-    this->node.Connect(this->portName);
+    this->node.Disconnect();
+    cout << "Gripper Controller Offline." << endl;
+    Sleep(1000);
+    cout << "Reconnecting Gripper Controller..." << endl;
+    if(!this->node.Connect(this->portName)) {
+        cout << "Error: Failed to reconnect gripper. \n"; 
+        this->isConnected = false;
+        return;
+    }
     cout << "Gripper Controller Online." << endl;
 }

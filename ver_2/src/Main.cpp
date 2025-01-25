@@ -62,6 +62,7 @@ void PrintGripperControlMenu(){
     cout << "\t4 - Release Gripper" << endl;
     cout << "\t5 - Write Calibration Data to Gripper" << endl;
     cout << "\t6 - Reset" << endl;
+    cout << "\t7 - Reconnect" << endl;
     cout << "\tq - Exit" << endl;
     cout << "Please Select Mode: ";
 }
@@ -123,6 +124,9 @@ void GripperControlMode(){
             system("pause");
         }else if(userInput == "6"){
             robot.gripper.Reset();
+            system("pause");
+        }else if(userInput == "7"){
+            robot.gripper.Reconnect();
             system("pause");
         }
     }
@@ -1026,12 +1030,8 @@ void CalibrationMode(){
             cin >> userInput;
             if(userInput == "y"){
                 // update robot position
-                robot.endEffectorPos[0] = jsonData["x"];
-                robot.endEffectorPos[1] = jsonData["y"];
-                robot.endEffectorPos[2] = jsonData["z"];
-                robot.endEffectorPos[3] = jsonData["roll"];
-                robot.endEffectorPos[4] = jsonData["pitch"];
-                robot.endEffectorPos[5] = jsonData["yaw"];
+                double measuredPos[6] = {jsonData["x"], jsonData["y"], jsonData["z"], jsonData["roll"], jsonData["pitch"], jsonData["yaw"]};
+                robot.UpdatePos(measuredPos);
             }
             WSACleanup();
         }

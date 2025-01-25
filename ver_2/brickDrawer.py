@@ -49,7 +49,7 @@ def draw_brick(image, x, y, z, rotation, index, brick_color=(0, 0, 255)):
 
 def main():
     # Read CSV file without headers
-    filename = r'/Users/kazuki/galad_ws/YES_teknicSys/ver_2/bin/NOHOLE01.csv'
+    filename = r'bin/NOHOLE06.csv'
     try:
         df = pd.read_csv(filename, header=None, names=['x', 'y', 'z', 'rotation'])
     except FileNotFoundError:

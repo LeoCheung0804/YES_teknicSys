@@ -219,6 +219,37 @@ void Robot::UpdateModelFromFile(string filename, bool reconnect){ // Read model.
     
 }
 
+void Robot::UpdatePos(double pos[6]){
+    for(int i = 0; i < 6; i++){
+        this->endEffectorPos[i] = pos[i];
+    }
+    
+    vector<double> cableLengthList = this->GetCableLength();
+    // calibration motors
+    if(this->isOnline){
+        // cable motors
+        cout << "Calibrating Cable Motor" << endl;
+        for(int index = 0; index < this->cableMotorNum; index++){
+            this->cable.CalibrationMotor(index, this->CableMotorLengthToCmd(index, cableLengthList[index]));
+        }
+        // slider motors
+        // cout << "Calibrating Rail Motor" << endl;
+        // for(int index = 0; index < this->railMotorNum; index++){
+        //     this->rail.CalibrationMotor(index, this->RailMotorOffsetToCmd(index, railOffset[index]));
+        // } 
+        // cout << "Updating motor counts completed" << endl;
+    }
+    this->PrintEEPos();
+    // for teknic motors
+    if(this->useCableMotor){
+        cout << "Cable Motor length / internal counts: " << endl;
+        for (int i = 0; i < this->cableMotorNum; i++){
+            cout << "\t" << "Cable " << i << ": " << cableLengthList[i] << " / " << this->cable.GetMotorPosMeasured(i)  << "    " << endl;
+        }
+
+    }
+}
+
 void Robot::UpdatePosFromFile(string filename, bool calibration){
     try{
         ifstream file (filename); //"lastPos.txt" or "currentPos.csv"
