@@ -42,7 +42,7 @@
     "targetTorque": -3.5,
     "absTrqLmt": 6,
     "cableMotorScale": 509295.8179,
-    "railMotorScale": -73885.256197,
+    "railMotorScale": -7388.5256197,
     "pulleyRadius": 0.045, 
     "rotationalAngleOffset": 71.5,
     "rotationalDistanceOffset": 0.00158,
@@ -68,15 +68,15 @@
         [-0.180, 0.220, -0.100]
     ],
     "gripperCommPort": "\\\\.\\COM16",
-    "railBrakeCommPort": "\\\\.\\COM7",
+    "railBrakeCommPort": "\\\\.\\COM23",
     "useGripper": false,
-    "useCableMotor": false,
-    "useCableBraker": false,
-    "useRailMotor": false,
-    "useRailBraker": false,
+    "useCableMotor": true,
+    "useCableBraker": true,
+    "useRailMotor": true,
+    "useRailBraker": true,
     "useIndividualCableScale": true,
     "cableMotorScaleIndividual": [509295.8179, 509295.8179, 509295.8179, 509295.8179, 509295.8179, 509295.8179, 509295.8179, 509295.8179],
-    "RPiIP": "192.168.50.138",
+    "RPiIP": "192.168.101.30",
     "RPiPort": 5000
     
 }
