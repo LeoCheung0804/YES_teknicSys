@@ -63,6 +63,7 @@ void PrintGripperControlMenu(){
     cout << "\t4 - Release Gripper" << endl;
     cout << "\t5 - Write Calibration Data to Gripper" << endl;
     cout << "\t6 - Reset" << endl;
+    cout << "\t7 - Reconnect" << endl;
     cout << "\tq - Exit" << endl;
     cout << "Please Select Mode: ";
 }
@@ -124,6 +125,9 @@ void GripperControlMode(){
             system("pause");
         }else if(userInput == "6"){
             robot.gripper.Reset();
+            system("pause");
+        }else if(userInput == "7"){
+            robot.gripper.Reconnect();
             system("pause");
         }
     }
@@ -636,8 +640,8 @@ void RailControlMode(){
                     double length = strtod(userInput.c_str(), &p);
                     if(!*p) {
                         cout << "Moving Rail " << selectedRail << " To Absolute Length: " << length << " Count: " << robot.RailMotorLengthToCmd(selectedRail, length) << endl;
-                        int cableIndex = (selectedRail + robot.railMotorCableMotorOffset) % 4;
-                        robot.RaiseRailWithCableByLengthAbsulote(selectedRail, cableIndex, length);
+                        // int cableIndex = (selectedRail + robot.railMotorCableMotorOffset) % 4;
+                        robot.RaiseRailWithCableByLengthAbsulote(selectedRail, selectedRail, length);
                         logger.LogInfo("Raise rail " + to_string(selectedRail) + " to " + to_string(length));
                     }else{
                         cout << "Please enter a number!!!" << endl;
@@ -658,8 +662,8 @@ void RailControlMode(){
                         cout << "Moving ALL Rail To Absolute Length: " << length << " Count: " << robot.RailMotorLengthToCmd(selectedRail, length) << endl;
                         for(int i = 0; i < robot.GetRailMotorNum(); i++){
                             robot.rail.SelectWorkingMotor(i);
-                            int cableIndex = (i + robot.railMotorCableMotorOffset) % 4;
-                            robot.RaiseRailWithCableByLengthAbsulote(i, cableIndex, length);
+                            // int cableIndex = (i + robot.railMotorCableMotorOffset) % 4;
+                            robot.RaiseRailWithCableByLengthAbsulote(i, i, length);
                             logger.LogInfo("Raise rail " + to_string(i) + " to " + to_string(length));
                         }
                         robot.rail.SelectWorkingMotor(selectedRail);
@@ -898,20 +902,8 @@ void CalibrationMode(){
             cin >> userInput;
             if(userInput == "y"){
                 // update robot position
-                robot.endEffectorPos[0] = jsonData["x"];
-                robot.endEffectorPos[1] = jsonData["y"];
-                robot.endEffectorPos[2] = jsonData["z"];
-                robot.endEffectorPos[3] = jsonData["roll"];
-                robot.endEffectorPos[4] = jsonData["pitch"];
-                robot.endEffectorPos[5] = jsonData["yaw"];
-                
-                vector<double> cableLengthList = robot.GetCableLength();
-                // cable motors
-                cout << "Calibrating Cable Motor" << endl;
-                for (int index = 0; index < robot.GetCableMotorNum(); index++)
-                {
-                    robot.cable.CalibrationMotor(index, robot.CableMotorLengthToCmd(index, cableLengthList[index]));
-                }
+                double measuredPos[6] = {jsonData["x"], jsonData["y"], jsonData["z"], jsonData["roll"], jsonData["pitch"], jsonData["yaw"]};
+                robot.UpdatePos(measuredPos);
             }
             WSACleanup();
         }

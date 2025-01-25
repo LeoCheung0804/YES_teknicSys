@@ -64,6 +64,8 @@ bool COMPortNode::Connect(string portName){
 void COMPortNode::Disconnect(){
     if(!this->isOnline) return;
     this->Send("(z,    )");
+    
+    CloseHandle(this->hComm);
 }
 
 string COMPortNode::Send(string Ard_char){

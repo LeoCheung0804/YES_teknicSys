@@ -90,6 +90,10 @@ public:
     /// @param filename string. Position file name
     void UpdatePosFromLog(string filename);
 
+    /// @brief Update end effector pos
+    /// @param pos double array, end effector pos
+    void UpdatePos(double pos[6]);
+
 
 // Verify
     /// @brief Check whether the robot is valid, ususally used after load the robot config.

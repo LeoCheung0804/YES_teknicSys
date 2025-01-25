@@ -20,12 +20,12 @@
         "yaw": 0.3
     },
     "brickPickUpPos": {
-        "x": 9.89718,
-        "y": 6.6959, 
-        "z": -3.15,
+        "x": 9.91,
+        "y": 6.71, 
+        "z": -3.21,
         "roll":  1.75929e-07, 
         "pitch": 8.89684e-07, 
-        "yaw": 0.0140997
+        "yaw": 0.0130997
     },
     "brickPickUpPosNew": {
         "x": 6.7104,
@@ -77,6 +77,7 @@
     "useIndividualCableScale": true,
     "cableMotorScaleIndividual": [509295.8179, 509295.8179, 509295.8179, 509295.8179, 509295.8179, 509295.8179, 509295.8179, 509295.8179],
     "RPiIP": "192.168.101.30",
-    "RPiPort": 5000
-    
+    "RPiPort": 5000,
+    "LastBrickFile": "nohole02.csv",
+    "LastBrickIndex": 25
 }
