@@ -696,32 +696,32 @@ void RobotControlMode(){
         if(userInput == "q"){ // back to last page
             break;
         }else if(userInput == "1"){ // robot position control mode
-            robot.brake.OpenAllCableBrake();
+            // robot.brake.OpenAllCableBrake();
             RobotPosControlMode();
-            robot.brake.CloseAllCableBrake();
+            // robot.brake.CloseAllCableBrake();
         }else if(userInput == "2"){ // move robot to home position
             robot.PrintHomePos();
-            robot.brake.OpenAllCableBrake();
+            // robot.brake.OpenAllCableBrake();
             robot.MoveToParaBlend(robot.homePos, true);
-            robot.brake.CloseAllCableBrake();
+            // robot.brake.CloseAllCableBrake();
             system("pause");
         }else if(userInput == "3"){ // move robot to pre-pickup position
             // robot.PrintPrePickupPos();
-            robot.brake.OpenAllCableBrake();
+            // robot.brake.OpenAllCableBrake();
             double goalPos[6] = {0};
             copy(robot.brickPickUpPos, robot.brickPickUpPos + 6, goalPos);
             goalPos[5] = 0.0141; // calculated yaw for +0.21 height
             goalPos[2] += 0.21; // 0.21 safe height from ABB
             robot.MoveToParaBlend(goalPos, true);
-            robot.brake.CloseAllCableBrake();
+            // robot.brake.CloseAllCableBrake();
             system("pause");
         }else if(userInput == "4"){ // gripper control mode
             GripperControlMode();
         }else if(userInput == "5"){ // Rail Control
-            robot.brake.OpenAllCableBrake();
+            // robot.brake.OpenAllCableBrake();
             robot.brake.OpenAllRailBrake();
             RailControlMode();
-            robot.brake.CloseAllCableBrake();
+            // robot.brake.CloseAllCableBrake();
             robot.brake.CloseAllRailBrake();
         }
     }
@@ -767,25 +767,25 @@ void CalibrationMode(){
                     continue;
                 }
                 cout << "Setting to Target Torque: " << targetTrq << endl;
-                robot.brake.OpenAllCableBrake();
+                // robot.brake.OpenAllCableBrake();
                 robot.cable.SetCableTrq(targetTrq, 4);
-                robot.brake.CloseAllCableBrake();
+                // robot.brake.CloseAllCableBrake();
             }else{
                 cout << "Please enter a number !!!" << endl;
             }
             system("pause");
         }else if(userInput == "2"){ // requst current torque readings
             cout << "Current Measured Cable Motor Trq: " << endl;
-            robot.brake.OpenAllCableBrake();
+            // robot.brake.OpenAllCableBrake();
             for(int i = 0; i < robot.GetCableMotorNum(); i++){
                 cout << "\tCable " << i << ": " << robot.cable.GetMotorTorqueMeasured(i) << endl;
             }
-            robot.brake.CloseAllCableBrake();
+            // robot.brake.CloseAllCableBrake();
             system("pause");
         }else if(userInput == "3"){ // Control Cable Individual
-            robot.brake.OpenAllCableBrake();
+            // robot.brake.OpenAllCableBrake();
             CableMotorControlMode();
-            robot.brake.CloseAllCableBrake();
+            // robot.brake.CloseAllCableBrake();
         }else if(userInput == "4"){ // Update Robot Pos By File
             string robotPosPath;
             cout << "Please Enter Robot Position File Path (Default lastPos.txt): ";
@@ -800,9 +800,9 @@ void CalibrationMode(){
             system("pause");
         }else if(userInput == "5"){ // Reset End Effector Rotation to 0,0,0
             double targetPos[6] = { robot.endEffectorPos[0], robot.endEffectorPos[1], robot.endEffectorPos[2], 0, 0, 0 };
-            robot.brake.OpenAllCableBrake();
+            // robot.brake.OpenAllCableBrake();
             robot.MoveToParaBlend(targetPos, 3500, true);
-            robot.brake.CloseAllCableBrake();
+            // robot.brake.CloseAllCableBrake();
             system("pause");
         }else if(userInput == "6"){ // Control Linear Rail Motor
             robot.brake.OpenAllRailBrake();
@@ -1126,7 +1126,7 @@ void OperationMode(){
                 cout << "----------Completed brick #" << i <<"----------" << endl;
                 if(!CheckContinue()) break;
             }
-            robot.brake.CloseAllCableBrake();
+            // robot.brake.CloseAllCableBrake();
             system("pause");
         }else if(userInput == "3"){ // read point to point file, gen and run para blend traj
             string ptnFileName;
@@ -1136,11 +1136,11 @@ void OperationMode(){
             vector<vector<double>> pointList = ReadPointFile(ptnFileName != "" ? ptnFileName : "points.csv"); // Read "bricks.csv"
             cout << "The file contains " << pointList.size() << " points." << endl;
             if(!CheckContinue()) continue;
-            robot.brake.OpenAllCableBrake();
+            // robot.brake.OpenAllCableBrake();
             for(vector<double> point : pointList){
                 if(!robot.MoveToParaBlend(&point[0], true)) break;
             }
-            robot.brake.CloseAllCableBrake();
+            // robot.brake.CloseAllCableBrake();
             system("pause");
         }else if(userInput == "4"){ // read and run traj file
             string trajFileName;
@@ -1150,10 +1150,10 @@ void OperationMode(){
             vector<vector<double>> trajList = ReadTrajFile(trajFileName != "" ? trajFileName : "traj.csv"); // Read "bricks.csv"
             cout << "The file contains " << trajList.size() << " points." << endl;
             if(!CheckContinue()) continue;
-            robot.brake.OpenAllCableBrake();
+            // robot.brake.OpenAllCableBrake();
             robot.MoveToParaBlend(&(trajList[0])[0]);
             robot.RunCableTraj(trajList);
-            robot.brake.CloseAllCableBrake();
+            // robot.brake.CloseAllCableBrake();
             system("pause");
         }else if(userInput == "5"){ // requst current torque readings
             cout << "Current Measured Cable Motor Trq: " << endl;
@@ -1225,6 +1225,12 @@ int main(){
     }
 
     
+    // recover last pos
+    if(fstream("lastPos.txt").good()){
+        cout << "lastPos.txt found. Recover last position of robot." << endl;
+        robot.UpdatePosFromFile("lastPos.txt", true);
+        logger.LogInfo("Reading Last Pos from pos log file");
+    }
     logger.LogInfo("Connecting to robot.");
     // connect to robot
     robot.Connect();
@@ -1233,11 +1239,6 @@ int main(){
         cout << "All motors, all brakes and gripper connected success." << endl;
         logger.LogInfo("All motors, all brakes and gripper connected success.");
         
-        if(fstream("lastPos.txt").good()){
-            cout << "lastPos.txt found. Recover last position of robot." << endl;
-            robot.UpdatePosFromFile("lastPos.txt", true);
-            logger.LogInfo("Reading Last Pos from pos log file");
-        }
         system("pause");
         // start main program
         MainMenu();

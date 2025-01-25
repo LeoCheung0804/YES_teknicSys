@@ -71,12 +71,12 @@ void Robot::Connect()
         for(int i = 0; i < this->railMotorNum; i++){
             int currentPos = railMotorCmd[i]; // in internal counts
             cout << "Rail " << i << " current pos: " << currentPos << endl;
-            this->rail.MoveMotorCmdAbsuloteById(i, currentPos);
+            // this->rail.MoveMotorCmdAbsuloteById(i, currentPos);
             this->brake.OpenRailBrakeByIndex(i);
             int targetPos = this->RailMotorLengthToCmd(i, this->railOffset[i]); // length offset to internal counts
             cout << "Rail " << i << " target pos: " << targetPos << endl;
             this->rail.MoveMotorCmdAbsuloteById(i, targetPos);
-            this->brake.CloseRailBrakeByIndex(i);
+            // this->brake.CloseRailBrakeByIndex(i);
         }
 
     }
@@ -288,12 +288,6 @@ void Robot::UpdatePos(double pos[6]){
         for(int index = 0; index < this->cableMotorNum; index++){
             this->cable.CalibrationMotor(index, this->CableMotorLengthToCmd(index, cableLengthList[index]));
         }
-        // slider motors
-        // cout << "Calibrating Rail Motor" << endl;
-        // for(int index = 0; index < this->railMotorNum; index++){
-        //     this->rail.CalibrationMotor(index, this->RailMotorOffsetToCmd(index, railOffset[index]));
-        // } 
-        // cout << "Updating motor counts completed" << endl;
     }
     this->PrintEEPos();
     // for teknic motors
@@ -327,8 +321,7 @@ void Robot::UpdatePosFromFile(string filename, bool calibration){
                     } // convert string to double stod() for the first 6 inputs
                     else if (count < 10)
                     {
-                        // this->railOffset[count - 6] = stod(temp);
-                        // skip this because the rail offset is read by the rail controller
+                        this->railOffset[count - 6] = stod(temp);
                     } // reading the rail offset, then break while loop
                     else
                     {
