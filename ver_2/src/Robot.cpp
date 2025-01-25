@@ -104,6 +104,10 @@ void Robot::Disconnect()
         this->cable.Disconnect();
     if (this->rail.IsConnected())
         this->rail.Disconnect();
+    if (this->brake.IsConnected()){
+        this->brake.CloseAllRailBrake();
+        this->brake.CloseAllCableBrake();
+    }
     this->isConnected = false;
 
     if (this->isOnline)

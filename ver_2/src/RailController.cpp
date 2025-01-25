@@ -37,6 +37,8 @@ void RailController::SelectWorkingMotor(int index){
 }
 
 void RailController::MoveMotorCmdAbsuloteById(int id, double cmd){
+    
+    id = (id + 2) % 4;
     if(!this->useRail) return;
     this->motorNode.WriteReq("MAIN.Axis_GoalPos", cmd);
     this->motorNode.WriteReq("MAIN.startMove[" + to_string(id + 1) + "]", true);
