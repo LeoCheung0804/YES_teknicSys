@@ -72,8 +72,26 @@ void TwincatADSNode::WriteReq(string handle, bool Data){
 }
 
 void TwincatADSNode::ReadReq(string handle, bool Data){
-    return;
+    // return;
     if(!this->isOnline);
     long nErr = AdsSyncReadReq(this->pAddr, ADSIGRP_SYM_VALBYHND, handlers[handle], sizeof(bool), &Data);
+    if (nErr) { cout << "Error: AdsSyncReadReq: " << nErr << '\n';}
+}
+
+void TwincatADSNode::ReadReq(string handle, double Data){
+    if(!this->isOnline);
+    long nErr = AdsSyncReadReq(this->pAddr, ADSIGRP_SYM_VALBYHND, handlers[handle], sizeof(double), &Data);
+    if (nErr) { cout << "Error: AdsSyncReadReq: " << nErr << '\n';}
+}
+
+void TwincatADSNode::ReadReq(string handle, int Data){
+    if(!this->isOnline);
+    long nErr = AdsSyncReadReq(this->pAddr, ADSIGRP_SYM_VALBYHND, handlers[handle], sizeof(int), &Data);
+    if (nErr) { cout << "Error: AdsSyncReadReq: " << nErr << '\n';}
+}
+
+void TwincatADSNode::ReadReq(string handle, float Data){
+    if(!this->isOnline);
+    long nErr = AdsSyncReadReq(this->pAddr, ADSIGRP_SYM_VALBYHND, handlers[handle], sizeof(float), &Data);
     if (nErr) { cout << "Error: AdsSyncReadReq: " << nErr << '\n';}
 }

@@ -72,10 +72,10 @@ void Robot::Connect()
             int currentPos = railMotorCmd[i]; // in internal counts
             cout << "Rail " << i << " current pos: " << currentPos << endl;
             // this->rail.MoveMotorCmdAbsuloteById(i, currentPos);
-            this->brake.OpenRailBrakeByIndex(i);
-            int targetPos = this->RailMotorLengthToCmd(i, this->railOffset[i]); // length offset to internal counts
-            cout << "Rail " << i << " target pos: " << targetPos << endl;
-            this->rail.MoveMotorCmdAbsuloteById(i, targetPos);
+            // this->brake.OpenRailBrakeByIndex(i);
+            // int targetPos = this->RailMotorLengthToCmd(i, this->railOffset[i]); // length offset to internal counts
+            // cout << "Rail " << i << " target pos: " << targetPos << endl;
+            // this->rail.MoveMotorCmdAbsuloteById(i, targetPos);
             // this->brake.CloseRailBrakeByIndex(i);
         }
 
@@ -329,7 +329,7 @@ void Robot::UpdatePosFromFile(string filename, bool calibration){
                     } // reading the rail offset, then break while loop
                     else
                     {
-                        break; 
+                        break;
                     }
                     count++;
                 }
@@ -350,11 +350,11 @@ void Robot::UpdatePosFromFile(string filename, bool calibration){
                     this->cable.CalibrationMotor(index, this->CableMotorLengthToCmd(index, cableLengthList[index]));
                 }
                 // slider motors
-                // cout << "Calibrating Rail Motor" << endl;
-                // for(int index = 0; index < this->railMotorNum; index++){
-                //     this->rail.CalibrationMotor(index, this->RailMotorLengthToCmd(index, railOffset[index]));
-                // }
-                // cout << "Updating motor counts completed" << endl;
+                cout << "Calibrating Rail Motor" << endl;
+                for(int index = 0; index < this->railMotorNum; index++){
+                    this->rail.CalibrationMotor(index, this->RailMotorLengthToCmd(index, railOffset[index]));
+                }
+                cout << "Updating motor counts completed" << endl;
             }
             this->PrintEEPos();
             // for teknic motors
@@ -550,7 +550,8 @@ vector<double> Robot::EEPoseToCableLength(double eePos[], double railOffset[])
         double l_arc = pulleyRadius * acos(UVecCF.dot(UVecCA));
 
         ///// Sum the total cable length /////
-        result.push_back(i < 4 ? l_arc + (orA[i] - orB[i]).norm() - railOffset[i] : l_arc + (orA[i] - orB[i]).norm()); // WHY minus railOffset again?
+        // result.push_back(i < 4 ? l_arc + (orA[i] - orB[i]).norm() - railOffset[i] : l_arc + (orA[i] - orB[i]).norm()); // WHY minus railOffset again?
+        result.push_back(i < 4 ? l_arc + (orA[i] - orB[i]).norm() : l_arc + (orA[i] - orB[i]).norm());
         // lengths[i] = i < 4 ? l_arc + (orA[i] - orB[i]).norm() - railOffset[i] : l_arc + (orA[i] - orB[i]).norm(); // Need to subtract the rail offset for the bottom 4 motors
     }
     // copy(railOffset, railOffset+4, lengths+cableMotorNum); // assign array elements after motor numbers as rail lengths // rail_offset default size of 4
