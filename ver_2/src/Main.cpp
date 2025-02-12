@@ -1002,7 +1002,8 @@ void OperationMode(){
                 cout << "====== Picking up brick." << endl;
                 cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
                 cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
-                if(!CheckContinue()) break;
+                //if(!CheckContinue()) break;
+                Sleep(800); // wait for ee to stop
                 if(!robot.MoveToParaBlend(goalPos, robot.safeT * 1.2, true)) break;
 
                 // Sleep(600); //////////// FOR TESTING ONYL, delete later!!!!!!!!!!!!!!!!!!
@@ -1025,7 +1026,8 @@ void OperationMode(){
                 cout << "====== Moving to safe position." << endl;
                 cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
                 cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
-                if(!CheckContinue()) break;
+                //if(!CheckContinue()) break;
+                Sleep(800); // wait for ee to stop
                 if(!robot.MoveToParaBlend(goalPos, true)) break;
 
                 // rotate gripper to target rotation
@@ -1085,7 +1087,8 @@ void OperationMode(){
                 cout << "====== Moving to brick position." << endl;
                 cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
                 cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
-                if(!CheckContinue()) break;
+                //if(!CheckContinue()) break;
+                Sleep(800); // wait for ee to stop
                 if(!robot.MoveToParaBlend(goalPos, true)) break;
                 
                 // Place brick
@@ -1106,7 +1109,8 @@ void OperationMode(){
                 cout << "====== Moving to stand by position." << endl;
                 cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
                 cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
-                if(!CheckContinue()) break;
+                //if(!CheckContinue()) break;
+                Sleep(800); // wait for ee to stop
                 if(!robot.MoveToParaBlend(goalPos, robot.safeT, true)) break;
 
                 // move to safe point
@@ -1115,7 +1119,8 @@ void OperationMode(){
                 cout << "====== Moving to safe position." << endl;
                 cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
                 cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
-                if(!CheckContinue()) break;
+                //if(!CheckContinue()) break;
+                Sleep(800); // wait for ee to stop
                 if(robot.endEffectorPos[2] > safePt[2]){ // if current position is above safe point, then return to point above safe point then lowering z-height
                     goalPos[2] = robot.endEffectorPos[2];
                     if(!robot.MoveToParaBlend(goalPos, true)) break;
