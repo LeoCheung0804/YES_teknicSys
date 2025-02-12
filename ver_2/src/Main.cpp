@@ -924,19 +924,19 @@ void PrintOperationMenu(){
     cout << "Please Select Mode: ";
 }
 
-// bool CheckContinue(){
-//     while(true){
-//         cout << "Continue? (Y/n): ";
-//         getline(cin, userInput);
-//         if(userInput == "" || userInput == "y"){
-//             return true;
-//         }
-//         if(userInput == "n") {
-//             return false;
-//             break;
-//         }
-//     }
-// }
+bool CheckContinue(){
+    std::string userInput;
+    while(true){
+        std::cout << "Continue? (Y/n): ";
+        std::getline(std::cin, userInput);
+        if(userInput == "" || userInput == "y" || userInput == "Y"){
+            return true;
+        }
+        if(userInput == "n" || userInput == "N") {
+            return false;
+        }
+    }
+}
 
 void OperationMode(){
     while(true){
@@ -970,7 +970,7 @@ void OperationMode(){
             cout << "Speed Limit: " << robot.GetEffVelLmt() << "m/s" << endl;
             double goalPos[6] = {0};
             robot.brake.OpenAllCableBrake();
-            double safePt[6] = {8.24, 6.51, -2.7, 0, 0, -0.0237}; // a safe area near to the arm // 0.21 safe height from ABB
+            double safePt[6] = {8.24, 6.51, -2.6, 0, 0, -0.0237}; // a safe area near to the arm // 0.21 safe height from ABB
             bool stop = false;
             string brickTypes[4] = {"??Should not show this, please check", "holes", "normal", "half"};
             int brickType = 0;
