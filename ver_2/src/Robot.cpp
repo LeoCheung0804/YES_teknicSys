@@ -326,6 +326,7 @@ void Robot::UpdatePosFromFile(string filename, bool calibration){
                     else if (count < 10)
                     {
                         this->railOffset[count - 6] = stod(temp);
+                        this->startRailOffset[count - 6] = this->railOffset[count - 6];
                     } // reading the rail offset, then break while loop
                     else
                     {
@@ -550,8 +551,8 @@ vector<double> Robot::EEPoseToCableLength(double eePos[], double railOffset[])
         double l_arc = pulleyRadius * acos(UVecCF.dot(UVecCA));
 
         ///// Sum the total cable length /////
-        // result.push_back(i < 4 ? l_arc + (orA[i] - orB[i]).norm() - railOffset[i] : l_arc + (orA[i] - orB[i]).norm()); // WHY minus railOffset again?
-        result.push_back(i < 4 ? l_arc + (orA[i] - orB[i]).norm() : l_arc + (orA[i] - orB[i]).norm());
+        result.push_back(i < 4 ? l_arc + (orA[i] - orB[i]).norm() - (railOffset[i] - this->startRailOffset[i]) : l_arc + (orA[i] - orB[i]).norm()); // WHY minus railOffset again?
+        // result.push_back(i < 4 ? l_arc + (orA[i] - orB[i]).norm() : l_arc + (orA[i] - orB[i]).norm());
         // lengths[i] = i < 4 ? l_arc + (orA[i] - orB[i]).norm() - railOffset[i] : l_arc + (orA[i] - orB[i]).norm(); // Need to subtract the rail offset for the bottom 4 motors
     }
     // copy(railOffset, railOffset+4, lengths+cableMotorNum); // assign array elements after motor numbers as rail lengths // rail_offset default size of 4
