@@ -10,7 +10,7 @@ class TeknicNode{
 private:
     bool isOnline;
     int nodeNumber;
-    unsigned int portCount;
+    int portCount;
     vector<string> comHubPorts;
     vector<INode*> nodeList; // create a list for each node
     SysManager* myMgr;
