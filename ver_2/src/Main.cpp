@@ -1225,6 +1225,8 @@ int main(){
     }
 
     
+    // connect to robot
+    robot.Connect();
     // recover last pos
     if(fstream("lastPos.txt").good()){
         cout << "lastPos.txt found. Recover last position of robot." << endl;
@@ -1232,8 +1234,6 @@ int main(){
         logger.LogInfo("Reading Last Pos from pos log file");
     }
     logger.LogInfo("Connecting to robot.");
-    // connect to robot
-    robot.Connect();
 
     if(robot.IsConnected()){
         cout << "All motors, all brakes and gripper connected success." << endl;

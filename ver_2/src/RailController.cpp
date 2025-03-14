@@ -62,31 +62,32 @@ void RailController::CalibrationMotor(int index, double currentCmdPos){
     }
     this->motorNode.WriteReq("MAIN.Axis_GoalPos", currentCmdPos); // write "MAIN.Axis_GoalPos"
     homeFlag[index] = true; // signal targeted rail motor for homing
-    this->motorNode.WriteReq("MAIN.bHomeSwitch", homeFlag); // write "MAIN.bHomeSwitch"
+    this->motorNode.WriteReq("MAIN.bHomeSwitch[" + to_string(index + 1) + "]", homeFlag); // write "MAIN.bHomeSwitch"
     homeFlag[index] = false; // return to false
     busyFlag[index] = false;
 
-    while(!busyFlag[index]){ // wait for motor busy flag on, ie. update current pos started
+    while(busyFlag[index]){ // wait for motor busy flag on, ie. update current pos started
         cout << "Waiting for motor " << index << " to home" << endl;
-        this->motorNode.ReadReq("MAIN.Axis_Home.Busy", busyFlag);
-    }
-    while(busyFlag[index]){ // wait for motor busy flag off, ie. completed updated position
-        cout << "Waiting for motor " << index << " to home" << endl;
-        this->motorNode.ReadReq("MAIN.Axis_Home.Busy", busyFlag);
+        this->motorNode.ReadReq("MAIN.homeBusy", busyFlag);
     }
 }
 
 vector<int> RailController::GetMotorPosMeasured(){
     long nErr;
     bool *actPos = new bool(this->railNumber);
-    this->motorNode.ReadReq("MAIN.actPos", actPos);
-    vector<int> result(actPos, actPos + sizeof(actPos) / sizeof(actPos[0]));
+    vector<int> result;
+    for(int i = 0; i < this->railNumber; i++){
+        this->motorNode.ReadReq("MAIN.actPos[" + to_string(i + 1) + "]", actPos[i]);
+        cout << "Rail " << i << " position: " << actPos[i] << endl;
+        result.push_back((int)actPos[i]);
+    }
+    // vector<int> result(actPos, actPos + sizeof(actPos) / sizeof(actPos[0]));
     return result;
 }
 
 int RailController::GetMotorPosMeasuredById(int id){
     long nErr;
-    bool *actPos = new bool(this->railNumber);
-    this->motorNode.ReadReq("MAIN.actPos", actPos);
-    return actPos[id];
+    double actPos = 0.0;
+    this->motorNode.ReadReq("MAIN.actPos[" + to_string(id + 1) + "]", actPos);
+    return actPos;
 }

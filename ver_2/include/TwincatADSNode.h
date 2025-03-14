@@ -12,7 +12,11 @@ private:
     bool isOnline;
     AmsAddr Addr;
     // data type: double, bool[], double[], bool[], bool[].
-    string adsVarNames[9] = {"MAIN.Axis_GoalPos", "MAIN.startMove", "MAIN.actPos", "MAIN.bHomeSwitch", "MAIN.homeBusy", "MAIN.startMove[1]", "MAIN.startMove[2]", "MAIN.startMove[3]", "MAIN.startMove[4]"}; 
+    string adsVarNames[17] = {"MAIN.Axis_GoalPos", 
+    "MAIN.bHomeSwitch[1]", "MAIN.bHomeSwitch[2]", "MAIN.bHomeSwitch[3]", "MAIN.bHomeSwitch[4]", 
+    "MAIN.homeBusy[1]", "MAIN.homeBusy[2]", "MAIN.homeBusy[3]", "MAIN.homeBusy[4]",
+    "MAIN.actPos[1]", "MAIN.actPos[2]", "MAIN.actPos[3]", "MAIN.actPos[4]",
+    "MAIN.startMove[1]", "MAIN.startMove[2]", "MAIN.startMove[3]", "MAIN.startMove[4]"}; 
 public:
     map<string, unsigned long> handlers;
     PAmsAddr pAddr;
@@ -22,5 +26,8 @@ public:
     void WriteReq(string handle, double Data);
     void WriteReq(string handle, bool Data);
     void ReadReq(string handle, bool Data);
+    void ReadReq(string handle, double Data);
+    void ReadReq(string handle, int Data);
+    void ReadReq(string handle, float Data);
 };
 #endif
