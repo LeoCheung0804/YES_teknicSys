@@ -7,5 +7,5 @@
 *.log
 
 /ver_2/.VSCodeCounter
-/ver_2/temp
-/ver_2/log
+/ver_2/temp/*
+/ver_2/log/*
