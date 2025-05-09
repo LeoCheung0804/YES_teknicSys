@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 # Read the CSV file
-brick_data = np.loadtxt(r'bin\NOHOLE01.csv', delimiter=',')
+brick_data = np.loadtxt(r'bin\NOHOLE14.csv', delimiter=',')
 
 # Create a blank image
 image_height, image_width = 600, 800

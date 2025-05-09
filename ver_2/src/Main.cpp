@@ -919,24 +919,25 @@ void PrintOperationMenu(){
     cout << "\t4 - Read Trajectory File" << endl;
     cout << "\t5 - Request current cable motor torque readings" << endl;
     cout << "\t6 - Save Current EE Pos to File" << endl;
-    cout << "\t7 - Print Robot Status " << endl;
+    cout << "\t7 - Print Robot Status " << endl; 
+    cout << "\t8 - Demo Mode" << endl;
     cout << "\tq - Exit" << endl;
     cout << "Please Select Mode: ";
 }
 
-bool CheckContinue(){
-    std::string userInput;
-    while(true){
-        std::cout << "Continue? (Y/n): ";
-        std::getline(std::cin, userInput);
-        if(userInput == "" || userInput == "y" || userInput == "Y"){
-            return true;
-        }
-        if(userInput == "n" || userInput == "N") {
-            return false;
-        }
-    }
-}
+//bool CheckContinue(){
+//    std::string userInput;
+//    while(true){
+//        std::cout << "Continue? (Y/n): ";
+//        std::getline(std::cin, userInput);
+//        if(userInput == "" || userInput == "y" || userInput == "Y"){
+//            return true;
+//        }
+//        if(userInput == "n" || userInput == "N") {
+//            return false;
+//        }
+//    }
+//}
 
 void OperationMode(){
     while(true){
@@ -970,7 +971,7 @@ void OperationMode(){
             cout << "Speed Limit: " << robot.GetEffVelLmt() << "m/s" << endl;
             double goalPos[6] = {0};
             robot.brake.OpenAllCableBrake();
-            double safePt[6] = {8.24, 6.51, -2.6, 0, 0, -0.0237}; // a safe area near to the arm // 0.21 safe height from ABB
+            double safePt[6] = {8.24, 6.51, -0.6, 0, 0, -0.0237}; // a safe area near to the arm // 0.21 safe height from ABB
             bool stop = false;
             string brickTypes[4] = {"??Should not show this, please check", "holes", "normal", "half"};
             int brickType = 0;
@@ -991,7 +992,9 @@ void OperationMode(){
                 cout << "====== Moving to pre pick up position." << endl;
                 cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
                 cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
-                if(!CheckContinue()) break;
+                //if(!CheckContinue()) break;
+
+                Sleep(800); // wait for ee to start moving
                 if(!robot.MoveToParaBlend(goalPos, true)) break;
                 
                 Sleep(100); // wait for brick
@@ -1003,7 +1006,7 @@ void OperationMode(){
                 cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
                 cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
                 //if(!CheckContinue()) break;
-                Sleep(800); // wait for ee to stop
+                Sleep(1000); // wait for ee to stop
                 if(!robot.MoveToParaBlend(goalPos, robot.safeT * 1.2, true)) break;
 
                 // Sleep(600); //////////// FOR TESTING ONYL, delete later!!!!!!!!!!!!!!!!!!
@@ -1017,7 +1020,8 @@ void OperationMode(){
                 cout << "====== Raise up brick." << endl;
                 cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
                 cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
-                if(!CheckContinue()) break;
+                //if(!CheckContinue()) break;
+                Sleep(800); // wait for grippper to stop
                 if(!robot.MoveToParaBlend(goalPos, robot.safeT, true)) break;
 
                 // move to safe point                
@@ -1027,7 +1031,7 @@ void OperationMode(){
                 cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
                 cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
                 //if(!CheckContinue()) break;
-                Sleep(800); // wait for ee to stop
+                Sleep(1000); // wait for ee to stop
                 if(!robot.MoveToParaBlend(goalPos, true)) break;
 
                 // rotate gripper to target rotation
@@ -1097,7 +1101,8 @@ void OperationMode(){
                 cout << "====== Placing brick." << endl;
                 cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
                 cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
-                if(!CheckContinue()) break;
+                //if(!CheckContinue()) break;
+                Sleep(1000); // wait for grippper to stop
                 if(!robot.MoveToParaBlend(goalPos, robot.safeT, true)) break;
 
                 robot.gripper.Open();
@@ -1110,7 +1115,7 @@ void OperationMode(){
                 cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
                 cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
                 //if(!CheckContinue()) break;
-                Sleep(800); // wait for ee to stop
+                Sleep(1000); // wait for ee to stop
                 if(!robot.MoveToParaBlend(goalPos, robot.safeT, true)) break;
 
                 // move to safe point
@@ -1120,7 +1125,7 @@ void OperationMode(){
                 cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
                 cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
                 //if(!CheckContinue()) break;
-                Sleep(800); // wait for ee to stop
+                Sleep(1000); // wait for ee to stop
                 if(robot.endEffectorPos[2] > safePt[2]){ // if current position is above safe point, then return to point above safe point then lowering z-height
                     goalPos[2] = robot.endEffectorPos[2];
                     if(!robot.MoveToParaBlend(goalPos, true)) break;
@@ -1177,6 +1182,185 @@ void OperationMode(){
             robot.PrintEEPos();
             robot.PrintRailOffset();
             robot.PrintCableLength();
+            system("pause");
+        }else if(userInput == "8"){ // demo mode
+            cout << "Demo Mode" << endl;
+            string brickPosFileName;
+            cout << "Please Enter Brick Pos File Path (Default demoab1.csv): ";
+            getchar();
+            getline(cin, brickPosFileName);
+            vector<vector<double>> brickPosList = ReadBrickPosFile(brickPosFileName != "" ? brickPosFileName : "demoab1.csv", robot.rotationalAngleOffset, robot.rotationalDistanceOffset); // Read "bricks.csv"
+            if(brickPosList.size() == 0){
+                system("pause");
+                continue;  
+            } 
+            cout << "The file contains " << brickPosList.size() << " bricks." << endl;
+            cout << "Please Enter Next Brick Index (Default 0): ";
+            getline(cin, userInput);
+            char* p;
+            int brickIndex = strtol((userInput != "" ? userInput : "0").c_str(), &p, 10);
+            if(*p){
+                cout << "Please enter intager!!!";
+                continue;
+            }
+            robot.PrintEEPos();
+            robot.PrintBrickPickUpPos();
+            cout << "Speed Limit: " << robot.GetEffVelLmt() << "m/s" << endl;
+            double goalPos[6] = {0};
+            robot.brake.OpenAllCableBrake();
+            bool stop = false;
+            string brickTypes[4] = {"??Should not show this, please check", "holes", "normal", "half"};
+            int brickType = 0;
+            for(int i = brickIndex; i < brickPosList.size(); i++){
+                vector<double> brickPos = brickPosList[i];
+                // Move to pre pick up position
+                robot.gripper.Rotate(90);
+                robot.gripper.Open();
+
+                copy(robot.brickPickUpPos, robot.brickPickUpPos + 6, goalPos);
+                goalPos[2] += 0.2; // 0.2 safe height from ABB
+                cout << "Brick No. " << i << " (" << brickTypes[brickType] << ")" << endl;
+                cout << "====== Moving to pre pick up position." << endl;
+                cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
+                cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
+                //if(!CheckContinue()) break;
+                Sleep(800); // wait for ee to start moving
+                if(!robot.MoveToParaBlend(goalPos, true)) break;
+                Sleep(100); // wait for brick
+
+                // lower the ee to pickup brick
+                copy(robot.brickPickUpPos, robot.brickPickUpPos + 6, goalPos);
+                cout << "Brick No. " << i << " (" << brickTypes[brickType] << ")" << endl;
+                cout << "====== Picking up brick." << endl;
+                cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
+                cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
+                //if(!CheckContinue()) break;
+                Sleep(1000); // wait for ee to stop
+                if(!robot.MoveToParaBlend(goalPos, robot.safeT * 1.2, true)) break;
+
+                // Sleep(600); //////////// FOR TESTING ONYL, delete later!!!!!!!!!!!!!!!!!!
+                robot.gripper.Close();
+                Sleep(800); // wait for grippper to close
+
+                // raise brick
+                copy(robot.brickPickUpPos, robot.brickPickUpPos+6, begin(goalPos));
+                goalPos[2] += 0.14;
+                cout << "====== Brick No. " << i << " (" << brickTypes[brickType] << ")" << endl;
+                cout << "====== Raise up brick." << endl;
+                cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
+                cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
+                //if(!CheckContinue()) break;
+                Sleep(800); // wait for grippper to stop
+                if(!robot.MoveToParaBlend(goalPos, robot.safeT, true)) break;
+                // rotate gripper to target rotation
+                robot.gripper.Rotate((int)(brickPos[4] + 92.2 - brickPos[3]/3.1415965*180)); // <-+27, constant frame to gripper offset; - yaw rotation in EE
+                double safeH = 0.2; // meter, safety height from building brick level
+                
+                // Go to brick placing position
+                goalPos[0] = brickPos[0];
+                goalPos[1] = brickPos[1];
+                goalPos[2] = brickPos[2] + safeH;
+                //goalPos[5] = brickPos[3]; // Include yaw angle
+                cout << "====== Brick No. " << i << " (" << brickTypes[brickType] << ")" << endl;
+                cout << "====== Moving to brick position." << endl;
+                cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
+                cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
+                //if(!CheckContinue()) break;
+                Sleep(800); // wait for ee to stop
+                if(!robot.MoveToParaBlend(goalPos, true)) break;
+
+                // Place brick
+                goalPos[2] -= safeH;
+                cout << "====== Brick No. " << i << " (" << brickTypes[brickType] << ")" << endl;
+                cout << "====== Placing brick." << endl;
+                cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
+                cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
+                //if(!CheckContinue()) break;
+                Sleep(1000); // wait for grippper to stop
+                if(!robot.MoveToParaBlend(goalPos, robot.safeT, true)) break;
+
+                robot.gripper.Open();
+                Sleep(200); //Wait a while after placing brick
+
+                // Rise and leave building area
+                goalPos[2] += safeH;
+                cout << "====== Brick No. " << i << " (" << brickTypes[brickType] << ")" << endl;
+                cout << "====== Moving to stand by position." << endl;
+                cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
+                cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
+                //if(!CheckContinue()) break;
+                Sleep(1000); // wait for ee to stop
+                if(!robot.MoveToParaBlend(goalPos, robot.safeT, true)) break;
+
+                // Move down again for pick up
+                goalPos[2] -= safeH;
+                cout << "====== Brick No. " << i << " (" << brickTypes[brickType] << ")" << endl;
+                cout << "====== Moving to stand by position." << endl;
+                cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
+                cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
+                //if(!CheckContinue()) break;
+                Sleep(1000); // wait for ee to stop
+                if(!robot.MoveToParaBlend(goalPos, robot.safeT, true)) break;
+                // Sleep(600); //////////// FOR TESTING ONYL, delete later!!!!!!!!!!!!!!!!!!
+                robot.gripper.Close();
+                Sleep(800); // wait for grippper to close
+
+                // Rise and leave building area
+                goalPos[2] += safeH;
+                cout << "====== Brick No. " << i << " (" << brickTypes[brickType] << ")" << endl;
+                cout << "====== Moving to stand by position." << endl;
+                cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
+                cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
+                //if(!CheckContinue()) break;
+                Sleep(1000); // wait for ee to stop
+                if(!robot.MoveToParaBlend(goalPos, robot.safeT, true)) break;
+
+                //move to brick pick up position
+                copy(robot.brickPickUpPos, robot.brickPickUpPos + 6, goalPos);
+                goalPos[2] += 0.2; // 0.2 safe height from ABB
+                cout << "Brick No. " << i << " (" << brickTypes[brickType] << ")" << endl;
+                cout << "====== Moving to pre pick up position." << endl;
+                cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
+                cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
+                //if(!CheckContinue()) break;
+                Sleep(800); // wait for ee to start moving
+                if(!robot.MoveToParaBlend(goalPos, true)) break;
+                Sleep(100); // wait for brick
+
+                // Place brick
+                goalPos[2] -= safeH;
+                cout << "====== Brick No. " << i << " (" << brickTypes[brickType] << ")" << endl;
+                cout << "====== Placing brick." << endl;
+                cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
+                cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
+                //if(!CheckContinue()) break;
+                Sleep(1000); // wait for grippper to stop
+                if(!robot.MoveToParaBlend(goalPos, robot.safeT, true)) break;
+
+                robot.gripper.Open();
+                Sleep(200); //Wait a while after placing brick
+
+                // Rise and leave building area
+                goalPos[2] += safeH;
+                cout << "====== Brick No. " << i << " (" << brickTypes[brickType] << ")" << endl;
+                cout << "====== Moving to stand by position." << endl;
+                cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
+                cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
+                //if(!CheckContinue()) break;
+
+                Sleep(1000); // wait for ee to stop
+                if(!robot.MoveToParaBlend(goalPos, robot.safeT, true)) break;
+
+                //Move to home position
+                copy(robot.homePos, robot.homePos+6, begin(goalPos)); // home x,y,z position
+                cout << "====== Brick No. " << i << " (" << brickTypes[brickType] << ")" << endl;   
+                cout << "====== Moving to home postition." << endl;
+                cout << "Pos: " << "x: " << goalPos[0] << " y: " << goalPos[1] << " z: " << goalPos[2] << endl;
+                cout << "Rot: " << "roll: " << goalPos[3] << " pitch: " << goalPos[4] << " yaw: " << goalPos[5] << endl;
+                //if(!CheckContinue()) break;
+                Sleep(1000); // wait for ee to stop
+                if(!robot.MoveToParaBlend(goalPos, robot.safeT * 2, true)) break;
+            }
             system("pause");
         }
     }

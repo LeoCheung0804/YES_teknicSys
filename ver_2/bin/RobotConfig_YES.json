@@ -1,0 +1,83 @@
+{
+    "ModelName": "YES",
+    "isOnline": true,
+    "cableMotorNum": 8,    
+    "railMotorNum": 4,
+    "homePos": {
+        "x": 7.3, 
+        "y": 6.2, 
+        "z": -0.6, 
+        "roll": 0, 
+        "pitch": 0, 
+        "yaw": -0.0344
+    },
+    "endEffectorPosLimit": {
+        "x": -0.1,
+        "y":  11.5, 
+        "z": -0.02, 
+        "roll":  13.8, 
+        "pitch": -3.75, 
+        "yaw": 0.3
+    },
+    "brickPickUpPos": {
+        "x": 9.88,
+        "y": 6.69,
+        "z": -1.1,
+        "roll":  1.75929e-07, 
+        "pitch": 8.89684e-07, 
+        "yaw": 0.0130997
+    },
+    "brickPickUpPosNew": {
+        "x": 6.7104,
+        "y":  5.09, 
+        "z": -2.97,
+        "roll":  0, 
+        "pitch": 0, 
+        "yaw": -0.0344
+    },
+    "brickPickUpOffset": 0.21,
+    "endEffVelLmt": 0.45,
+    "railVelLmt": 0.01,
+    "endEffToGroundOffset": -0.0816,
+    "targetTorque": -3.5,
+    "absTrqLmt": 6,
+    "cableMotorScale": 509295.8179,
+    "railMotorScale": -7388.5256197,
+    "pulleyRadius": 0.045, 
+    "rotationalAngleOffset": 71.5,
+    "rotationalDistanceOffset": 0.00158,
+    "pulleyZdir": [-1, -1, -1, -1, 1, 1, 1, 1],
+    "frameAttachments":[
+        [-0.1182, 0.2852, -3.3929],
+        [11.4867, -0.0825, -3.3908],
+        [10.7518, 11.2025, -3.4034],
+        [1.5658, 13.8955, -3.4064],
+        [-0.0190, -0.0288, 0.0544],
+        [11.7885, -0.0267, 0.0261],
+        [10.6545, 11.5086, 0.0415],
+        [1.2375, 13.8490, 0.0592]
+    ],
+    "endEffectorAttachments":[
+        [-0.100, -0.220, 0.100],
+        [0.100, -0.220, 0.100],
+        [0.100, 0.220, 0.100],
+        [-0.100, 0.220, 0.100],
+        [-0.180, -0.220, -0.100],
+        [0.180, -0.220, -0.100],
+        [0.180, 0.220, -0.100],
+        [-0.180, 0.220, -0.100]
+    ],
+    "gripperCommPort": "\\\\.\\COM16",
+    "railBrakeCommPort": "\\\\.\\COM23",
+    "useGripper": false,
+    "useCableMotor": true,
+    "useCableBraker": false,
+    "useRailMotor": false,
+    "useRailBraker": false,
+    "useIndividualCableScale": true,
+    "cableMotorScaleIndividual": [509295.8179, 509295.8179, 509295.8179, 509295.8179, 509295.8179, 509295.8179, 509295.8179, 509295.8179],
+    "RPiIP": "192.168.101.30",
+    "RPiPort": 5000,
+    "LastBrickFile": "nohole02.csv",
+    "LastBrickIndex": 25
+}

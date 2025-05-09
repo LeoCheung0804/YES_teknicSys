@@ -1,53 +1,46 @@
 {
-    "ModelName": "YES",
+    "ModelName": "AB1",
     "isOnline": true,
     "cableMotorNum": 8,    
     "railMotorNum": 4,
     "homePos": {
-        "x": 7.3, 
-        "y": 6.2, 
-        "z": -2.7, 
+        "x": 1, 
+        "y": 1, 
+        "z": -0.9, 
         "roll": 0, 
         "pitch": 0, 
-        "yaw": -0.0344
+        "yaw": -0
     },
     "endEffectorPosLimit": {
         "x": -0.1,
-        "y":  11.5, 
+        "y":  2, 
         "z": -0.02, 
         "roll":  13.8, 
         "pitch": -3.75, 
         "yaw": 0.3
     },
     "brickPickUpPos": {
-        "x": 9.91,
-        "y": 6.71, 
-        "z": -3.21,
-        "roll":  1.75929e-07, 
-        "pitch": 8.89684e-07, 
-        "yaw": 0.0130997
-    },
-    "brickPickUpPosNew": {
-        "x": 6.7104,
-        "y":  5.09, 
-        "z": -2.97,
+        "x": 0.7,
+        "y": 0.7,
+        "z": -1.7,
         "roll":  0, 
         "pitch": 0, 
-        "yaw": -0.0344
+        "yaw": -0
     },
     "brickPickUpOffset": 0.21,
-    "endEffVelLmt": 0.45,
+    "endEffVelLmt": 0.2,
     "railVelLmt": 0.01,
     "endEffToGroundOffset": -0.0816,
     "targetTorque": -3.5,
     "absTrqLmt": 6,
-    "cableMotorScale": 509295.8179,
+    "cableMotorScaleold": 509295.8179,
+    "cableMotorScale": 815027.0614,
     "railMotorScale": -7388.5256197,
     "pulleyRadius": 0.045, 
     "rotationalAngleOffset": 71.5,
     "rotationalDistanceOffset": 0.00158,
     "pulleyZdir": [-1, -1, -1, -1, 1, 1, 1, 1],
-    "frameAttachments":[
+    "frameAttachmentsold":[
         [-0.1182, 0.2852, -3.3929],
         [11.4867, -0.0825, -3.3908],
         [10.7518, 11.2025, -3.4034],
@@ -56,6 +49,16 @@
         [11.7885, -0.0267, 0.0261],
         [10.6545, 11.5086, 0.0415],
         [1.2375, 13.8490, 0.0592]
+    ],
+    "frameAttachments":[
+        [0, 0, -1.9],
+        [2.0125, 0, -1.9],
+        [2.0125, 2.0125, -1.9],
+        [0, 2.0125, -1.9],
+        [0, 0, 0],
+        [2.0125, 0, 0],
+        [2.0125, 2.0125, 0],
+        [0, 2.0125, 0]
     ],
     "endEffectorAttachments":[
         [-0.100, -0.220, 0.100],
@@ -69,15 +72,16 @@
     ],
     "gripperCommPort": "\\\\.\\COM16",
     "railBrakeCommPort": "\\\\.\\COM23",
-    "useGripper": false,
+    "useGripper": true,
     "useCableMotor": true,
-    "useCableBraker": true,
-    "useRailMotor": true,
-    "useRailBraker": true,
-    "useIndividualCableScale": true,
-    "cableMotorScaleIndividual": [509295.8179, 509295.8179, 509295.8179, 509295.8179, 509295.8179, 509295.8179, 509295.8179, 509295.8179],
+    "useCableBraker": false,
+    "useRailMotor": false,
+    "useRailBraker": false,
+    "useIndividualCableScale": false,
+    "cableMotorScaleIndividual": [815027.0614, 815027.0614, 815027.0614, 815027.0614, 815027.0614, 815027.0614, 815027.0614, 815027.0614],
     "RPiIP": "192.168.101.30",
     "RPiPort": 5000,
     "LastBrickFile": "nohole02.csv",
     "LastBrickIndex": 25
 }
+
