@@ -400642,3 +400642,45 @@ msg=Node @ 2 error. Reported by function: unsigned int __thiscall sFnd::CPMmotio
 
 Error: cnErrCode 0x8004002E
 
+
+ERROR: Motor [2] command failed. 12:53:48
+Caught error: addr=2, err=8004002e
+msg=Node @ 2 error. Reported by function: unsigned int __thiscall sFnd::CPMmotion::MovePosnStart(int,bool,bool).
+
+Error: cnErrCode 0x8004002E
+
+
+ERROR: Motor [5] command failed. 15:0:27
+Caught error: addr=17, err=8004002e
+msg=Node @ 17 error. Reported by function: unsigned int __thiscall sFnd::CPMmotion::MovePosnStart(int,bool,bool).
+
+Error: cnErrCode 0x8004002E
+
+
+ERROR: Motor [0] command failed. 10:8:36
+Caught error: addr=0, err=8004010a
+msg=Node @ 0 error. Reported by function: unsigned int __thiscall sFnd::CPMmotion::MovePosnStart(int,bool,bool).
+
+Error: cnErrCode 0x8004010A
+
+
+ERROR: Motor [6] command failed. 10:8:36
+Caught error: addr=6, err=8004010a
+msg=Node @ 6 error. Reported by function: unsigned int __thiscall sFnd::CPMmotion::MovePosnStart(int,bool,bool).
+
+Error: cnErrCode 0x8004010A
+
+
+ERROR: Motor [0] command failed. 11:30:1
+Caught error: addr=0, err=8004010a
+msg=Node @ 0 error. Reported by function: unsigned int __thiscall sFnd::CPMmotion::MovePosnStart(int,bool,bool).
+
+Error: cnErrCode 0x8004010A
+
+
+ERROR: Motor [2] command failed. 11:30:1
+Caught error: addr=2, err=8004010a
+msg=Node @ 2 error. Reported by function: unsigned int __thiscall sFnd::CPMmotion::MovePosnStart(int,bool,bool).
+
+Error: cnErrCode 0x8004010A
+
