@@ -1,12 +1,12 @@
 #pragma comment(lib, "User32.lib")
-#include "..\include\Logger.h"
-#include "..\include\Robot.h"
-#include "..\include\TrajectoryGenerator.h"
+#include "../include/Logger.h"
+#include "../include/Robot.h"
+#include "../include/TrajectoryGenerator.h"
 #include <iostream>
 #include <string>
 #include <fstream>
-#include "..\tools\json.hpp"
-#include "..\include\utils.h"
+#include "../tools/json.hpp"
+#include "../include/utils.h"
 
 #pragma comment(lib, "ws2_32.lib")
 

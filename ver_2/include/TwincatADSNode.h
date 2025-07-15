@@ -4,8 +4,8 @@
 #include <vector>
 #include <map>
 #include <Windows.h>
-#include "..\Dependencies\TcAdsDll\Include\TcAdsDef.h" // Define Ads Def-s before using API
-#include "..\Dependencies\TcAdsDll\Include\TcAdsAPI.h"
+#include "../Dependencies/TcAdsDll/Include/TcAdsDef.h" // Define Ads Def-s before using API
+#include "../Dependencies/TcAdsDll/Include/TcAdsAPI.h"
 using namespace std;
 class TwincatADSNode{
 private:

@@ -1,7 +1,7 @@
 #ifndef Robot_H
 #define Robot_H
 
-#include "..\Dependencies\eigen-3.3.7\Eigen\Dense"
+#include "../Dependencies/eigen-3.3.7/Eigen/Dense"
 #include "GripperController.h"
 #include "RailController.h"
 #include "CableController.h"

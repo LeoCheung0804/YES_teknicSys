@@ -1,4 +1,4 @@
-#include "..\include\COMPortNode.h"
+#include "../include/COMPortNode.h"
 #include <iostream>
 #include <thread>
 

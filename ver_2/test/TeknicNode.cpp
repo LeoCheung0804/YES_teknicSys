@@ -1,4 +1,4 @@
-#include "..\include\TeknicNode.h"
+#include "../include/TeknicNode.h"
 #include <iostream>
 
 using namespace std;

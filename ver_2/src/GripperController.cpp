@@ -1,4 +1,4 @@
-#include "..\include\GripperController.h"
+#include "../include/GripperController.h"
 #include <iostream>
 #include <assert.h>
 

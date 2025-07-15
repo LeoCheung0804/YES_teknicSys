@@ -2,8 +2,8 @@
 #include <windows.h>         // Add this first
 #include <WinSock2.h>
 #include <WS2tcpip.h>
-#include "..\include\RailController.h"
-#include "..\tools\json.hpp"
+#include "../include/RailController.h"
+#include "../tools/json.hpp"
 #include <string>
 #include <iostream>  // Add this for std::cout, std::cerr, std::endl
 

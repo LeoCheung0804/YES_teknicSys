@@ -1,7 +1,7 @@
-#include "..\include\Robot.h"
-#include "..\tools\json.hpp"
-#include "..\Dependencies\eigen-3.3.7\Eigen\Dense"
-#include "..\include\TrajectoryGenerator.h"
+#include "../include/Robot.h"
+#include "../tools/json.hpp"
+#include "../Dependencies/eigen-3.3.7/Eigen/Dense"
+#include "../include/TrajectoryGenerator.h"
 #include <iostream>
 #include <fstream>
 #include <cmath>
