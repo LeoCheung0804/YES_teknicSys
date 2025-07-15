@@ -4,9 +4,9 @@
     "cableMotorNum": 8,    
     "railMotorNum": 4,
     "homePos": {
-        "x": 1, 
-        "y": 1, 
-        "z": -0.9, 
+        "x": 1.0575, 
+        "y": 1.0575, 
+        "z": -0.89, 
         "roll": 0, 
         "pitch": 0, 
         "yaw": -0
@@ -51,14 +51,14 @@
         [1.2375, 13.8490, 0.0592]
     ],
     "frameAttachments":[
-        [0, 0, -1.9],
-        [2.0125, 0, -1.9],
-        [2.0125, 2.0125, -1.9],
-        [0, 2.0125, -1.9],
+        [0, 0, -1.78],
+        [2.115, 0, -1.78],
+        [2.115, 2.115, -1.78],
+        [0, 2.115, -1.78],
         [0, 0, 0],
-        [2.0125, 0, 0],
-        [2.0125, 2.0125, 0],
-        [0, 2.0125, 0]
+        [2.115, 0, 0],
+        [2.115, 2.115, 0],
+        [0, 2.115, 0]
     ],
     "endEffectorAttachments":[
         [-0.100, -0.220, 0.100],
@@ -70,16 +70,16 @@
         [0.180, 0.220, -0.100],
         [-0.180, 0.220, -0.100]
     ],
-    "gripperCommPort": "\\\\.\\COM16",
+    "gripperCommPort": "\\\\.\\COM13",
     "railBrakeCommPort": "\\\\.\\COM23",
-    "useGripper": true,
+    "useGripper": false,
     "useCableMotor": true,
     "useCableBraker": false,
     "useRailMotor": false,
     "useRailBraker": false,
     "useIndividualCableScale": false,
     "cableMotorScaleIndividual": [815027.0614, 815027.0614, 815027.0614, 815027.0614, 815027.0614, 815027.0614, 815027.0614, 815027.0614],
-    "RPiIP": "192.168.101.30",
+    "RPiIP": "19268.101.30",
     "RPiPort": 5000,
     "LastBrickFile": "nohole02.csv",
     "LastBrickIndex": 25
