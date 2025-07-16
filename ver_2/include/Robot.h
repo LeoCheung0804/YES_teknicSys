@@ -51,6 +51,7 @@ private:
     int MILLIS_TO_NEXT_FRAME = 50;
     bool eBrake(bool cableBrake, bool railBrake);
 
+
 public:
     int railMotorCableMotorOffset = 2; // offset from rail motor to cable motor, in index
     double rotationalAngleOffset{0}; // rotational angel offset
@@ -60,6 +61,7 @@ public:
     double endEffectorPos[6]{}; // end-effector task-space position {x,y,z, alpha, beta, gama}, in meter and radian
     // double cableLength[8]{}; // cable lengths in meter //12 assume there are 8 motors + 4 linear rails
     double railOffset[4]{}; // individual heights or positions of the rails
+    double startRailOffset[4]{}; // individual heights or positions of the rails at the start of the program. For raise rail with cable command 
     double brickPickUpPos[6]{}; // position at 5th pole for brick pick up with possible z-rotaion
     double brickPrePickUpPos[6]{}; // position at 5th pole for brick pick up with possible z-rotaion
     CableController cable;
