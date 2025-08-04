@@ -1,0 +1,34 @@
+[project]
+name = "raspberrypi"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "clip",
+    "matplotlib",
+    "numpy",
+    "opencv-contrib-python",
+    "opencv-python",
+    "ultralytics",
+    "tensorrt",
+    "onnx",
+    "onnxslim",
+    "onnxruntime-gpu",
+    "torch",
+    "torchvision",
+]
+
+[tool.uv.sources]
+clip = { git = "https://github.com/ultralytics/CLIP.git" }
+torch = [
+    { index = "pytorch-gpu" },
+]
+torchvision = [
+    { index = "pytorch-gpu" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-gpu"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true

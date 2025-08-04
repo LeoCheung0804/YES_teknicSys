@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <Windows.h>
+#include <windows.h>
 #include "../Dependencies/TcAdsDll/Include/TcAdsDef.h" // Define Ads Def-s before using API
 #include "../Dependencies/TcAdsDll/Include/TcAdsAPI.h"
 using namespace std;

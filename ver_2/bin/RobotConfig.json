@@ -19,6 +19,10 @@
         "pitch": -3.75, 
         "yaw": 0.3
     },
+    "cameraOffset": {
+        "x": -0.243,
+        "y": -0.09624
+    },
     "brickPickUpPos": {
         "x": 0.7,
         "y": 0.7,

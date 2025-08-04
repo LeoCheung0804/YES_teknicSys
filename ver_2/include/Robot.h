@@ -1,6 +1,14 @@
 #ifndef Robot_H
 #define Robot_H
 
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <WinSock2.h>
+#include <WS2tcpip.h>
+#pragma comment(lib, "ws2_32.lib")
+
+#include <string>
+#include <vector>
 #include "../Dependencies/eigen-3.3.7/Eigen/Dense"
 #include "GripperController.h"
 #include "RailController.h"
@@ -8,8 +16,6 @@
 #include "BrakeController.h"
 #include "Logger.h"
 #include "utils.h"
-#include <string>
-#include <vector>
 using namespace Eigen;
 using namespace std;
 
@@ -23,6 +29,7 @@ private:
     int cableMotorBrakeNum{4}; // !!!!! IMPORTANT !!!!! Put in the number of motors for cables before compiling the programme    
     int railMotorNum{4}; // Typical 4 linear rails
     double endEffToGroundOffset = -0.125; // offset from endeffector to ground, in meters // YES -0.280
+    double cameraOffset[2]{-0.2383, -0.09666}; // offset from endeffector to camera, in meters
     double cableMotorScale = 509295.8179; // 6400 encoder count per revoltion, 25 times gearbox, 50mm spool radias. ie 6400*25/(2*pi*0.05) 
     double cableMotorScaleIndividual[8] = {509295.8179, 509295.8179, 509295.8179, 509295.8179, 509295.8179, 509295.8179, 509295.8179, 509295.8179}; // 6400 encoder count per revoltion, 25 times gearbox, 50mm spool radias. ie 6400*25/(2*pi*0.05) 
     double railMotorScale = 38400000; // 6400 encoder count per revoltion, 30 times gearbox, linear rail pitch 5mm. ie 6400*30/0.005 
@@ -189,6 +196,10 @@ public:
     /// @return Double, Effector offset from end effector to ground, in meter.
     double GetEEToGroundOffset();
 
+    /// @brief Get camera offset from end effector to camera, in meter.
+    /// @return double array, Camera offset from end effector to camera, in meter.
+    double* GetCameraOffset();
+
     /// @brief Get target torque.
     /// @return float, Target torque.
     float GetWorkingTrq();
@@ -228,6 +239,8 @@ public:
     float GetEffVelLmt();
     void SavePosToFile(string filename);
     int GetCableMotorBrakeNum();
+
+    bool GetMoveToBrickPos(SOCKET udpSocket, sockaddr_in serverAddr, double offsets[], double& angle);
 
     
 // Setter

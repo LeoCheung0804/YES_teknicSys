@@ -3,7 +3,7 @@
 #include <fstream>
 #include <thread>
 #include <assert.h>
-#include <Windows.h>
+#include <windows.h>
 #include <conio.h>
 #include <queue>
 
