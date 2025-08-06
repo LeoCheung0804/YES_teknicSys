@@ -108,6 +108,10 @@ For running robot tasks, brick placement, and demos. Menu options:
    Show current end effector position, rail offsets, and cable lengths.
 8. **Demo Mode**  
    Run a demonstration sequence using a sample brick position file.
+9. **Auto Aim Mode**
+   Read cameraOffset in RobotConfig.json,
+   Move to the nearest brick, pick up the brick, move to the other nearest brick
+   Place a brick at the right/left/top of the brick
 q. **Exit**  
    Exit operation mode and return to the main menu.
 
