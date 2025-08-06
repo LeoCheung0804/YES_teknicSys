@@ -1,9 +1,9 @@
-#include "..\include\CableController.h"
+#include "../include/CableController.h"
 #include <iostream>
 #include <fstream>
 #include <thread>
 #include <assert.h>
-#include <Windows.h>
+#include <windows.h>
 #include <conio.h>
 #include <queue>
 

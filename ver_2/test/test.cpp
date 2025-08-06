@@ -1,7 +1,7 @@
 #pragma comment(lib, "User32.lib")
 #include "../include/TeknicNode.h"
 #include "../include/Logger.h"
-#include <Windows.h>
+#include <windows.h>
 #include <iostream>
 #include <conio.h>
 #include <thread>

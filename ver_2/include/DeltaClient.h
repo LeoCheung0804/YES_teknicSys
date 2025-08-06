@@ -2,13 +2,13 @@
 #define DeltaClient_H
 
 #include "vector"
-#include "..\include\Logger.h"
-#include "..\include\Robot.h"
-#include "..\include\TrajectoryGenerator.h"
+#include "../include/Logger.h"
+#include "../include/Robot.h"
+#include "../include/TrajectoryGenerator.h"
 #include <iostream>
 #include <string>
 #include <fstream>
-#include "..\tools\json.hpp"
+#include "../tools/json.hpp"
 #include <assert.h>
 #pragma comment(lib, "User32.lib")
 

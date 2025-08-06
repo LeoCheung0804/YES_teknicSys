@@ -1,4 +1,4 @@
-#include "..\include\TwincatADSNode.h"
+#include "../include/TwincatADSNode.h"
 #include <iostream>
 TwincatADSNode::TwincatADSNode(bool isOnline){ this->isOnline = isOnline; }
 

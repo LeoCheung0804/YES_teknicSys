@@ -1,6 +1,6 @@
 #ifndef TeknicNode_H
 #define TeknicNode_H
-#include "..\Dependencies\sFoundation20\inc\pubSysCls.h"
+#include "../Dependencies/sFoundation20/inc/pubSysCls.h"
 #include <vector>
 #include <string>
 

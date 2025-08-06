@@ -1,7 +1,7 @@
-#include "..\include\Robot.h"
-#include "..\tools\json.hpp"
-#include "..\Dependencies\eigen-3.3.7\Eigen\Dense"
-#include "..\include\TrajectoryGenerator.h"
+#include "../include/Robot.h"
+#include "../tools/json.hpp"
+#include "../Dependencies/eigen-3.3.7/Eigen/Dense"
+#include "../include/TrajectoryGenerator.h"
 #include <iostream>
 #include <fstream>
 #include <cmath>
@@ -208,6 +208,8 @@ void Robot::UpdateModelFromFile(string filename, bool reconnect)
         this->railMotorCableMotorOffset = model.value("railMotorCableMotorOffset", 2);
         this->absTrqLmt = model.value("absTrqLmt", 10);
         this->endEffToGroundOffset = model.value("endEffToGroundOffset", -0.28);
+        this->cameraOffset[0] = model.value("cameraOffset.x", -0.2383);
+        this->cameraOffset[1] = model.value("cameraOffset.y", -0.09666);
         this->targetTrq = model.value("targetTorque", -2.5);
         this->cableMotorScale = model.value("cableMotorScale", 509295);
         this->railMotorScale = model.value("railMotorScale", 38400000);
@@ -577,6 +579,8 @@ vector<double> Robot::EEPoseToCableLength(vector<double> eePosVector, double rai
 
 double Robot::GetEEToGroundOffset() { return endEffToGroundOffset; }
 
+double* Robot::GetCameraOffset() { return cameraOffset; }
+
 float Robot::GetWorkingTrq() { return targetTrq; }
 
 float Robot::GetAbsTrqLmt() { return absTrqLmt; }
@@ -598,6 +602,78 @@ double Robot::GetRailMotorScale() { return railMotorScale; }
 float Robot::GetEffVelLmt() { return endEffVelLmt; }
 
 int Robot::GetCableMotorBrakeNum() { return cableMotorBrakeNum; }
+
+bool Robot::GetMoveToBrickPos(SOCKET udpSocket, sockaddr_in serverAddr, double offsets[], double& angle) {
+
+    // Check if socket is valid
+    if (udpSocket == INVALID_SOCKET) {
+        cout << "Error: Invalid socket" << endl;
+        system("pause");
+        return false;
+    }
+
+    // Set socket timeout (5 seconds)
+    DWORD timeout = 5000; // 5 seconds in milliseconds
+    if (setsockopt(udpSocket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout)) == SOCKET_ERROR) {
+        cout << "Warning: Failed to set socket timeout" << endl;
+    }
+
+    // Send request
+    const char* request = "get_brick_position";
+    if (sendto(udpSocket, request, strlen(request), 0, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
+        cout << "Failed to send request" << endl;
+        system("pause");
+        return false;
+    }
+
+    // Receive response
+    char buffer[1024];
+    memset(buffer, 0, sizeof(buffer)); // Initialize buffer
+    int serverAddrLen = sizeof(serverAddr);
+    
+    int bytesReceived = recvfrom(udpSocket, buffer, sizeof(buffer) - 1, 0, (sockaddr*)&serverAddr, &serverAddrLen);
+    
+    if (bytesReceived == SOCKET_ERROR) {
+        cout << "Failed to receive response" << endl;
+        system("pause");
+        return false;
+    }
+
+    // Null terminate the received data
+    buffer[bytesReceived] = '\0';
+    json jsonData;
+    try{
+        jsonData = json::parse(buffer);
+    }catch(const json::parse_error& e){
+        cout << "Error parsing JSON: " << e.what() << endl;
+        cout << "Received data: " << buffer << endl;
+        system("pause");
+        return false;
+    }
+
+    // Validate JSON structure
+    if (!jsonData.contains("x") || !jsonData.contains("y") || !jsonData.contains("z") || !jsonData.contains("angle")) {
+        cout << "Error: Missing required coordinates in JSON response" << endl;
+        cout << "Received JSON: " << jsonData.dump() << endl;
+        system("pause");
+        return false;
+    }
+
+    try {
+        offsets[1] = jsonData["x"].get<double>();
+        offsets[0] = jsonData["y"].get<double>();
+        offsets[2] = 0.5 - jsonData["z"].get<double>();
+        angle = jsonData["angle"].get<double>();
+
+        cout << "Brick position offsets: x=" << offsets[1] << ", y=" << offsets[0] << ", z=" << offsets[2] << ", angle=" << angle << endl;
+    } catch (const exception& e) {
+        cout << "Error extracting coordinates from JSON: " << e.what() << endl;
+        system("pause");
+        return false;
+    }
+
+    return true;
+}
 
 
 int32_t Robot::CableMotorLengthToCmd(int motorID, double length)
@@ -791,6 +867,7 @@ bool Robot::MoveToParaBlend(double dest[], int time, bool showAtten)
 bool Robot::MoveToParaBlend(double dest[], bool showAtten)
 {
     float time = sqrt(pow(dest[0] - this->endEffectorPos[0], 2) + pow(dest[1] - endEffectorPos[1], 2) + pow(dest[2] - endEffectorPos[2], 2)) / this->endEffVelLmt * 1000;
+    time = max(time, 1000.0); // ensure minimum time is 1 second
     return this->RunCableTraj(GenParaBlendTrajForCableMotor(this->endEffectorPos, dest, time), showAtten);
 }
 

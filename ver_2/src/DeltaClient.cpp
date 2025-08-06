@@ -1,5 +1,5 @@
 
-#include "..\include\DeltaClient.h"
+#include "../include/DeltaClient.h"
 
 DeltaClient::DeltaClient(bool isOnline, bool useRail){ 
     // init Winsock

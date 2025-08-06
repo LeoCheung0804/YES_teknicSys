@@ -1,12 +1,12 @@
 #pragma comment(lib, "User32.lib")
-#include "..\include\Logger.h"
-#include "..\include\Robot.h"
-#include "..\include\TrajectoryGenerator.h"
+#include "../include/Logger.h"
+#include "../include/Robot.h"
+#include "../include/TrajectoryGenerator.h"
 #include <iostream>
 #include <string>
 #include <fstream>
-#include "..\tools\json.hpp"
-#include "..\include\utils.h"
+#include "../tools/json.hpp"
+#include "../include/utils.h"
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -774,7 +774,7 @@ void CalibrationMode(){
                 cout << "Please enter a number !!!" << endl;
             }
             system("pause");
-        }else if(userInput == "2"){ // requst current torque readings
+        }else if(userInput == "2"){ // requst current torque readings 
             cout << "Current Measured Cable Motor Trq: " << endl;
             // robot.brake.OpenAllCableBrake();
             for(int i = 0; i < robot.GetCableMotorNum(); i++){
@@ -921,6 +921,7 @@ void PrintOperationMenu(){
     cout << "\t6 - Save Current EE Pos to File" << endl;
     cout << "\t7 - Print Robot Status " << endl; 
     cout << "\t8 - Demo Mode" << endl;
+    cout << "\t9 - Auto Aiming Mode" << endl;
     cout << "\tq - Exit" << endl;
     cout << "Please Select Mode: ";
 }
@@ -1362,6 +1363,113 @@ void OperationMode(){
                 if(!robot.MoveToParaBlend(goalPos, robot.safeT * 2, true)) break;
             }
             system("pause");
+        }else if(userInput == "9"){ // auto aiming mode
+            WSADATA wsaData;
+            double* camera_offset = robot.GetCameraOffset(); // camera offset from end effector
+            if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+                cout << "Failed to initialize Winsock" << endl;
+                return;
+            }
+
+            // Create UDP socket
+            SOCKET udpSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+            if (udpSocket == INVALID_SOCKET) {
+                cout << "Failed to create socket" << endl;
+                system("pause");
+                continue;
+            }
+
+            // Set up server address
+            sockaddr_in serverAddr;
+            serverAddr.sin_family = AF_INET;
+            // serverAddr.sin_port = htons(robot.RPiPort); // Use appropriate port number
+            // serverAddr.sin_addr.s_addr = inet_addr(robot.RPiIP.c_str()); // Use RPi's IP address
+            // localhost for testing
+            serverAddr.sin_port = htons(5000); // Use appropriate port number
+            serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+            cout << "Connecting to RPi at " << robot.RPiIP << ":" << robot.RPiPort << endl;
+
+            double offset[3];
+            double angle;
+            double goalPos[6];
+            copy(robot.endEffectorPos, robot.endEffectorPos + 6, goalPos);
+            while (true) {
+                for (int i = 0; i < 3; i++) {
+                    if (!robot.GetMoveToBrickPos(udpSocket, serverAddr, offset, angle)) {
+                        cout << "Failed to get offset from RPi." << endl;
+                        break;
+                    }
+                    cout << "Received offset: x=" << offset[0] << ", y=" << offset[1] << ", z=" << offset[2] << endl;
+                    // Move to the new position
+                    goalPos[0] += offset[0];
+                    goalPos[1] += offset[1];
+                    goalPos[2] += offset[2];
+                    cout << "Moving to new position: x=" << goalPos[0] << ", y=" << goalPos[1] << ", z=" << goalPos[2] << endl;
+                    robot.MoveToParaBlend(goalPos, true);
+                    Sleep(500);
+                }
+
+                char userInput;
+                cout << "Continue to next offset? (y/n/(g)rip/(p)lace): ";
+                cin >> userInput;
+                if (userInput == 'n' || userInput == 'N')
+                    break;
+                else if (userInput == 'g' || userInput == 'G') {
+                    cout << "Gripping the brick..." << endl;
+                    robot.gripper.Open();
+                    goalPos[0] += camera_offset[0];
+                    goalPos[1] += camera_offset[1];
+                    goalPos[2] += -0.30;
+                    robot.MoveToParaBlend(goalPos, true);
+                    robot.gripper.Rotate(-angle);
+                    Sleep(1000);
+                    goalPos[2] += -0.185;
+                    robot.MoveToParaBlend(goalPos, 2000, true);
+                    robot.gripper.Close();
+                    Sleep(1000);
+                    copy(robot.homePos, robot.homePos+6, begin(goalPos)); // home x,y,z position
+                    robot.MoveToParaBlend(goalPos, true);
+
+                    break;
+                } else if (userInput == 'p' || userInput == 'P') {
+                    cout << "Placing the brick..." << endl;
+                    robot.gripper.Rotate(-angle);
+                    double x = 0.28 * cos((90 - angle) * 3.1415 / 180.0);
+                    double y = 0.28 * sin((90 - angle) * 3.1415 / 180.0);
+                    cout << "place offset: x=" << x << ", y=" << y << " right side? y/n/(t)op: ";
+                    cin >> userInput;
+                    if (userInput == 'n' || userInput == 'N') {
+                        x = -x; // flip the x offset
+                        y = -y; // flip the y offset
+                        cout << "place offset: x=" << x << ", y=" << y << endl;
+                    } else if (userInput == 't' || userInput == 'T') {
+                        // place on top
+                        x = 0;
+                        y = 0;
+                        goalPos[2] += 0.055; // height of a brick
+                    }
+                    goalPos[0] += x + camera_offset[0];
+                    goalPos[1] += y + camera_offset[1];
+                    goalPos[2] += -0.30;
+                    robot.MoveToParaBlend(goalPos, true);
+                    
+                    goalPos[2] += -0.185;
+                    robot.MoveToParaBlend(goalPos, 2000, true);
+                    robot.gripper.Open();
+                    Sleep(1500);
+                    goalPos[2] += 0.185;
+                    robot.MoveToParaBlend(goalPos, true);
+                    copy(robot.homePos, robot.homePos+6, begin(goalPos)); // home x,y,z position
+                    robot.MoveToParaBlend(goalPos, true);
+                    break;
+                } else if (userInput != 'y' && userInput != 'Y') {
+                    cout << "Invalid input, exiting auto aiming mode." << endl;
+                    break;
+                }
+            }
+            // Close socket
+            closesocket(udpSocket);
         }
     }
 }

@@ -1,4 +1,4 @@
-#include "..\include\Logger.h"
+#include "../include/Logger.h"
 
 Logger::Logger(){}
 

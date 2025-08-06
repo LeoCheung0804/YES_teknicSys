@@ -1,5 +1,5 @@
 #define _USE_MATH_DEFINES
-#include "..\include\TrajectoryGenerator.h"
+#include "../include/TrajectoryGenerator.h"
 #include <iostream>
 #include <sstream>
 #include <fstream>
