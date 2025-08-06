@@ -23,6 +23,7 @@ This project is a comprehensive robot control system for cable-driven parallel r
 - Windows OS
 - Visual Studio 20xx Developer Command Prompt
 - Visual Studio Code
+- Teknic ClearPath Driver: https://teknic.com/downloads/
 - Required hardware connected and powered
 
 ### Build
