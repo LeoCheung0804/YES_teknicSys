@@ -33,11 +33,7 @@ This project is a comprehensive robot control system for cable-driven parallel r
    ```sh
    cd ver_2
    ```
-3. Open `Main.cpp` in VS Code:
-   ```sh
-   code src/Main.cpp
-   ```
-4. Build the project:
+3. Build the project:
    ```sh
    Terminal -> Run Build Task C/C++: cl.exe build active files.
    ```
