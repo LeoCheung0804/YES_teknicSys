@@ -922,6 +922,7 @@ void PrintOperationMenu(){
     cout << "\t7 - Print Robot Status " << endl; 
     cout << "\t8 - Demo Mode" << endl;
     cout << "\t9 - Auto Aiming Mode" << endl;
+    cout << "\t10 - Drone Mode" << endl;
     cout << "\tq - Exit" << endl;
     cout << "Please Select Mode: ";
 }
