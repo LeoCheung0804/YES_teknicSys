@@ -1470,7 +1470,36 @@ void OperationMode(){
             }
             // Close socket
             closesocket(udpSocket);
-        }
+        }else if(userInput == "10"){ // Drone Trajectory Mode
+            cout << "Drone Trajectory Mode" << endl;
+            cout << "Please Enter Length in Meters (enter q to exit): ";
+                cin >> userInput;
+                if(userInput == "q"){
+                    break;
+                }else{
+                    char* p;
+                    double length = strtod(userInput.c_str(), &p);
+                    if(!*p) {  // valid number
+                        cout << "Moving Bottom 4 Cable By Length: " << length << endl;
+                        if(length > 0.5 || length < -0.5){ // limit step size to 0.5m
+                            cout << "Step too large! range should be in -0.5m(" << -0.5 * robot.GetCableMotorScale(selectedCable) << ") ~ 0.5m(" << 0.5 * robot.GetCableMotorScale(selectedCable) << ")." << endl;
+                            continue;
+                        }
+                        double goalPos[6] = {0};
+                        copy(robot.endEffectorPos, robot.endEffectorPos + 6, goalPos);
+                        goalPos[2] += length;
+                        robot.MoveToParaBlend(goalPos, 3000, true);
+                        Sleep(800); // wait for ee to start moving
+                        if(!robot.MoveToParaBlend(goalPos, true)) break;
+                        Sleep(100); // waits
+                    }else{
+                        cout << "Please enter a number!!!" << endl;
+                    }
+                }
+            break;
+        }else if(userInput == "q"){ // exit
+            break;
+            }
     }
 }
 
